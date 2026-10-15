@@ -1,8 +1,0 @@
-[INFO] [1792061447.720677382] [amcl]: 
-	amcl lifecycle node launched. 
-	Waiting on external lifecycle transitions to activate
-	See https://design.ros2.org/articles/node_lifecycle.html for more information.
-[INFO] [1792061447.735108659] [amcl]: Creating
-[INFO] [1792061505.739522172] [rclcpp]: signal_handler(signum=2)
-[INFO] [1792061505.739835506] [amcl]: Running Nav2 LifecycleNode rcl preshutdown (amcl)
-[INFO] [1792061505.740048895] [amcl]: Destroying bond (amcl) to lifecycle manager.

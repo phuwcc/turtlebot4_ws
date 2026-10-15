@@ -1,6 +1,0 @@
-1792050122.9815030 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/slam_smoke/2026-10-15-07-42-02-972937-ubuntu-79739
-1792050122.9837351 [INFO] [launch]: Default logging verbosity is set to INFO
-1792050123.8008790 [INFO] [async_slam_toolbox_node-1]: process started with pid [79776]
-1792050145.1284332 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
-1792050145.1413639 [INFO] [async_slam_toolbox_node-1]: sending signal 'SIGINT' to process[async_slam_toolbox_node-1]
-1792050145.3289723 [INFO] [async_slam_toolbox_node-1]: process has finished cleanly [pid 79776]

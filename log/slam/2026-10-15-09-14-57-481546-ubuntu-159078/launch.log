@@ -1,5 +1,0 @@
-1792055697.4859500 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/slam/2026-10-15-09-14-57-481546-ubuntu-159078
-1792055697.4867697 [INFO] [launch]: Default logging verbosity is set to INFO
-1792055697.8964398 [INFO] [async_slam_toolbox_node-1]: process started with pid [159125]
-1792055950.7214410 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
-1792055951.2624831 [INFO] [async_slam_toolbox_node-1]: process has finished cleanly [pid 159125]

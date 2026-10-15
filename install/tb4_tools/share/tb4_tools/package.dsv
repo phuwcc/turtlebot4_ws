@@ -1,8 +1,0 @@
-source;share/tb4_tools/hook/cmake_prefix_path.ps1
-source;share/tb4_tools/hook/cmake_prefix_path.dsv
-source;share/tb4_tools/hook/cmake_prefix_path.sh
-source;share/tb4_tools/local_setup.bash
-source;share/tb4_tools/local_setup.dsv
-source;share/tb4_tools/local_setup.ps1
-source;share/tb4_tools/local_setup.sh
-source;share/tb4_tools/local_setup.zsh

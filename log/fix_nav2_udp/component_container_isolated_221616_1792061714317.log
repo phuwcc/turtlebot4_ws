@@ -1,4 +1,0 @@
-[INFO] [1792061754.264590268] [nav2_container]: Load Library: /opt/ros/humble/lib/libsmoother_server_core.so
-[INFO] [1792061754.287772451] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<nav2_smoother::SmootherServer>
-[INFO] [1792061754.287912173] [nav2_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<nav2_smoother::SmootherServer>
-[INFO] [1792061754.414957004] [rclcpp]: signal_handler(signum=2)

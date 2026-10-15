@@ -1,1 +1,0 @@
-ament_cmake_symlink_install_targets("TARGET_FILES" "/home/ubuntu/turtlebot4_ws/build/tb4_tools/start_relative_mapping" "/home/ubuntu/turtlebot4_ws/build/tb4_tools/teleop_keyboard" "TARGETS" "start_relative_mapping" "teleop_keyboard" "DESTINATION" "lib/tb4_tools")

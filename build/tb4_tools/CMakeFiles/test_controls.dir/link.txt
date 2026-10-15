@@ -1,1 +1,0 @@
-/usr/bin/c++ -O1 -DNDEBUG CMakeFiles/test_controls.dir/test/test_controls.cpp.o -o test_controls 

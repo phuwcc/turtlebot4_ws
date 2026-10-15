@@ -1,8 +1,0 @@
-{
-  "source_frame": "odom",
-  "base_frame": "base_link",
-  "captured_x": -3.5537276268005371,
-  "captured_y": 4.0463581085205078,
-  "captured_yaw_rad": 0.15542539580523815,
-  "mapping_odom_to_odom": {"x": 2.8845123941719688, "y": -4.5477007636544577, "yaw_rad": -0.15542539580523815}
-}

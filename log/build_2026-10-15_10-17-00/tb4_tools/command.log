@@ -1,2 +1,0 @@
-Invoking command in '/home/ubuntu/turtlebot4_ws/build/tb4_tools': /usr/bin/cmake /home/ubuntu/turtlebot4_ws/src/tb4_tools -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=/home/ubuntu/turtlebot4_ws/install/tb4_tools
-Invoked command in '/home/ubuntu/turtlebot4_ws/build/tb4_tools' returned '1': /usr/bin/cmake /home/ubuntu/turtlebot4_ws/src/tb4_tools -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=/home/ubuntu/turtlebot4_ws/install/tb4_tools

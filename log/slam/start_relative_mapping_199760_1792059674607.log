@@ -1,3 +1,0 @@
-[INFO] [1792059674.762575610] [mapping_start_origin]: Keep the robot still. Waiting for fresh odom and TF...
-[INFO] [1792059677.266872168] [mapping_start_origin]: Start origin captured: (-3.554, 4.046, 0.155 rad) -> mapping (0,0,0). Keep still until SLAM registers the laser.
-[INFO] [1792059788.564520926] [rclcpp]: signal_handler(signum=2)

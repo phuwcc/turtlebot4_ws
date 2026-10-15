@@ -1,6 +1,0 @@
-1792050187.1122491 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/slam_from_source/2026-10-15-07-43-07-106602-ubuntu-80143
-1792050187.1132252 [INFO] [launch]: Default logging verbosity is set to INFO
-1792050187.8805759 [INFO] [async_slam_toolbox_node-1]: process started with pid [80158]
-1792050204.4307413 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
-1792050204.4760892 [INFO] [async_slam_toolbox_node-1]: sending signal 'SIGINT' to process[async_slam_toolbox_node-1]
-1792050204.4922071 [ERROR] [async_slam_toolbox_node-1]: process has died [pid 80158, exit code -2, cmd '/opt/ros/humble/lib/slam_toolbox/async_slam_toolbox_node --ros-args -r __node:=slam_toolbox -r __ns:=/ --params-file /tmp/tmpcwrdb7ga --params-file /tmp/launch_params_nknw4ags -r /tf:=tf -r /tf_static:=tf_static -r /scan:=scan -r /map:=map -r /map_metadata:=map_metadata'].
