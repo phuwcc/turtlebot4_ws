@@ -1,0 +1,18 @@
+1792060036.1140945 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/nav2/2026-10-15-10-27-16-095989-ubuntu-209022
+1792060036.1188152 [INFO] [launch]: Default logging verbosity is set to INFO
+1792060039.5544653 [INFO] [component_container_isolated-1]: process started with pid [209208]
+1792060041.7242279 [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/controller_server' in container '/nav2_container'
+1792060041.8935370 [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/smoother_server' in container '/nav2_container'
+1792060042.2939398 [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/planner_server' in container '/nav2_container'
+1792060042.4916618 [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/behavior_server' in container '/nav2_container'
+1792060042.7413588 [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/bt_navigator' in container '/nav2_container'
+1792060043.0037632 [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/waypoint_follower' in container '/nav2_container'
+1792060043.2754543 [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/velocity_smoother' in container '/nav2_container'
+1792060043.5333095 [INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/lifecycle_manager_navigation' in container '/nav2_container'
+1792060080.7003016 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1792060081.6532097 [INFO] [component_container_isolated-1]: sending signal 'SIGINT' to process[component_container_isolated-1]
+1792060086.6524887 [ERROR] [component_container_isolated-1]: process[component_container_isolated-1] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1792060086.6539013 [INFO] [component_container_isolated-1]: sending signal 'SIGTERM' to process[component_container_isolated-1]
+1792060091.6555653 [ERROR] [component_container_isolated-1]: process[component_container_isolated-1] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+1792060091.6576340 [INFO] [component_container_isolated-1]: sending signal 'SIGKILL' to process[component_container_isolated-1]
+1792060091.6799824 [ERROR] [component_container_isolated-1]: process has died [pid 209208, exit code -9, cmd '/opt/ros/humble/lib/rclcpp_components/component_container_isolated --ros-args -r __node:=nav2_container -r __ns:=/ --params-file /tmp/launch_params_uby7qs1l -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].

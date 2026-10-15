@@ -1,0 +1,27 @@
+{
+  "TF_age": {
+    "base_link": 0.03860116004943848,
+    "base_footprint": 0.03860116004943848,
+    "left_wheel": 0.004213809967041016,
+    "right_wheel": 0.004213809967041016,
+    "wheel_drop_left": 0.004213809967041016,
+    "wheel_drop_right": 0.004213809967041016,
+    "odom": -0.8744802474975586
+  },
+  "TF_counts": {
+    "base_link": 290,
+    "base_footprint": 290,
+    "left_wheel": 145,
+    "right_wheel": 145,
+    "wheel_drop_left": 145,
+    "wheel_drop_right": 145,
+    "odom": 110
+  },
+  "lifecycle": {
+    "/amcl": "active",
+    "/map_server": "active",
+    "/controller_server": "TIMEOUT",
+    "/planner_server": "inactive",
+    "/bt_navigator": "inactive"
+  }
+}

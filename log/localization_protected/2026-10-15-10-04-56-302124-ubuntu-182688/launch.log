@@ -1,0 +1,16 @@
+1792058696.3078389 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/localization_protected/2026-10-15-10-04-56-302124-ubuntu-182688
+1792058696.3092620 [INFO] [launch]: Default logging verbosity is set to INFO
+1792058697.1177058 [INFO] [map_server-1]: process started with pid [182708]
+1792058697.1190972 [INFO] [amcl-2]: process started with pid [182710]
+1792058697.1214828 [INFO] [lifecycle_manager-3]: process started with pid [182712]
+1792058750.9823866 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1792058751.0290194 [INFO] [lifecycle_manager-3]: sending signal 'SIGINT' to process[lifecycle_manager-3]
+1792058751.0534332 [INFO] [amcl-2]: sending signal 'SIGINT' to process[amcl-2]
+1792058751.1006463 [INFO] [map_server-1]: sending signal 'SIGINT' to process[map_server-1]
+1792058751.1340244 [ERROR] [map_server-1]: process has died [pid 182708, exit code -2, cmd '/opt/ros/humble/lib/nav2_map_server/map_server --ros-args --log-level info --ros-args -r __node:=map_server -r __ns:=/ --params-file /tmp/launch_params_ts_z9bpd -r initialpose:=amcl/manual_initialpose -r /tf:=tf -r /tf_static:=tf_static'].
+1792058751.2897837 [INFO] [lifecycle_manager-3]: process has finished cleanly [pid 182712]
+1792058756.0202055 [ERROR] [amcl-2]: process[amcl-2] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1792058756.0223496 [INFO] [amcl-2]: sending signal 'SIGTERM' to process[amcl-2]
+1792058761.0230165 [ERROR] [amcl-2]: process[amcl-2] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+1792058761.0256891 [INFO] [amcl-2]: sending signal 'SIGKILL' to process[amcl-2]
+1792058761.0374637 [ERROR] [amcl-2]: process has died [pid 182710, exit code -9, cmd '/opt/ros/humble/lib/nav2_amcl/amcl --ros-args --log-level info --ros-args -r __node:=amcl -r __ns:=/ --params-file /tmp/launch_params_ts_z9bpd -r initialpose:=amcl/manual_initialpose -r /tf:=tf -r /tf_static:=tf_static'].

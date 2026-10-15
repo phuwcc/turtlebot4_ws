@@ -1,0 +1,235 @@
+[INFO] [1792060041.299219506] [nav2_container]: Load Library: /opt/ros/humble/lib/libcontroller_server_core.so
+[INFO] [1792060041.343014385] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<nav2_controller::ControllerServer>
+[INFO] [1792060041.347022674] [nav2_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<nav2_controller::ControllerServer>
+[INFO] [1792060041.505512425] [controller_server]: 
+	controller_server lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792060041.545635739] [controller_server]: Creating controller server
+[INFO] [1792060041.686441404] [local_costmap.local_costmap]: 
+	local_costmap lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792060041.690778027] [local_costmap.local_costmap]: Creating Costmap
+[INFO] [1792060041.735347928] [nav2_container]: Load Library: /opt/ros/humble/lib/libsmoother_server_core.so
+[INFO] [1792060041.739846237] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<nav2_smoother::SmootherServer>
+[INFO] [1792060041.740016941] [nav2_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<nav2_smoother::SmootherServer>
+[INFO] [1792060041.858803842] [smoother_server]: 
+	smoother_server lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792060041.877775394] [smoother_server]: Creating smoother server
+[INFO] [1792060041.899783158] [nav2_container]: Load Library: /opt/ros/humble/lib/libplanner_server_core.so
+[INFO] [1792060041.901990831] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<nav2_planner::PlannerServer>
+[INFO] [1792060041.902119202] [nav2_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<nav2_planner::PlannerServer>
+[INFO] [1792060042.048626753] [planner_server]: 
+	planner_server lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792060042.074196860] [planner_server]: Creating
+[INFO] [1792060042.232147684] [global_costmap.global_costmap]: 
+	global_costmap lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792060042.237851885] [global_costmap.global_costmap]: Creating Costmap
+[INFO] [1792060042.302389896] [nav2_container]: Load Library: /opt/ros/humble/lib/libbehavior_server_core.so
+[INFO] [1792060042.321793653] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<behavior_server::BehaviorServer>
+[INFO] [1792060042.323200101] [nav2_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<behavior_server::BehaviorServer>
+[INFO] [1792060042.458348936] [behavior_server]: 
+	behavior_server lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792060042.497922230] [nav2_container]: Load Library: /opt/ros/humble/lib/libbt_navigator_core.so
+[INFO] [1792060042.504103006] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<nav2_bt_navigator::BtNavigator>
+[INFO] [1792060042.504272692] [nav2_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<nav2_bt_navigator::BtNavigator>
+[INFO] [1792060042.734409307] [bt_navigator]: 
+	bt_navigator lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792060042.734680974] [bt_navigator]: Creating
+[INFO] [1792060042.745667467] [nav2_container]: Load Library: /opt/ros/humble/lib/libwaypoint_follower_core.so
+[INFO] [1792060042.747769121] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<nav2_waypoint_follower::WaypointFollower>
+[INFO] [1792060042.748100011] [nav2_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<nav2_waypoint_follower::WaypointFollower>
+[INFO] [1792060042.943061529] [waypoint_follower]: 
+	waypoint_follower lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792060042.951901313] [waypoint_follower]: Creating
+[INFO] [1792060043.014352225] [nav2_container]: Load Library: /opt/ros/humble/lib/libvelocity_smoother_core.so
+[INFO] [1792060043.017024399] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<nav2_velocity_smoother::VelocitySmoother>
+[INFO] [1792060043.017211140] [nav2_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<nav2_velocity_smoother::VelocitySmoother>
+[INFO] [1792060043.266502734] [velocity_smoother]: 
+	velocity_smoother lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792060043.280967959] [nav2_container]: Load Library: /opt/ros/humble/lib/libnav2_lifecycle_manager_core.so
+[INFO] [1792060043.284783303] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<nav2_lifecycle_manager::LifecycleManager>
+[INFO] [1792060043.284986877] [nav2_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<nav2_lifecycle_manager::LifecycleManager>
+[INFO] [1792060043.461359437] [lifecycle_manager_navigation]: Creating
+[INFO] [1792060043.520036802] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[INFO] [1792060043.755461061] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[INFO] [1792060043.755683691] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[INFO] [1792060043.757121658] [controller_server]: Configuring controller interface
+[INFO] [1792060043.758431939] [controller_server]: getting goal checker plugins..
+[INFO] [1792060043.764063418] [controller_server]: Controller frequency set to 10.0000Hz
+[INFO] [1792060043.764374622] [local_costmap.local_costmap]: Configuring
+[INFO] [1792060043.864353527] [local_costmap.local_costmap]: Using plugin "static_layer"
+[INFO] [1792060043.925094027] [local_costmap.local_costmap]: Subscribing to the map topic (/map) with transient local durability
+[INFO] [1792060043.935582260] [local_costmap.local_costmap]: Initialized plugin "static_layer"
+[INFO] [1792060043.940866071] [local_costmap.local_costmap]: Using plugin "obstacle_layer"
+[INFO] [1792060043.992129193] [local_costmap.local_costmap]: Subscribed to Topics: 
+[INFO] [1792060043.992442139] [local_costmap.local_costmap]: Initialized plugin "obstacle_layer"
+[INFO] [1792060043.992534046] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[INFO] [1792060044.027070456] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[INFO] [1792060044.155828403] [local_costmap.local_costmap]: StaticLayer: Resizing costmap to 93 X 150 at 0.050000 m/pix
+[INFO] [1792060044.158235188] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[INFO] [1792060044.191842873] [controller_server]: Created goal checker : general_goal_checker of type nav2_controller::SimpleGoalChecker
+[INFO] [1792060044.218818391] [controller_server]: Controller Server has general_goal_checker  goal checkers available.
+[INFO] [1792060044.233650951] [controller_server]: Created controller : FollowPath of type dwb_core::DWBLocalPlanner
+[INFO] [1792060044.306969819] [controller_server]: Setting transform_tolerance to 0.200000
+[INFO] [1792060044.607156571] [controller_server]: Using critic "RotateToGoal" (dwb_critics::RotateToGoalCritic)
+[INFO] [1792060044.638288971] [controller_server]: Critic plugin initialized
+[INFO] [1792060044.644332692] [controller_server]: Using critic "Oscillation" (dwb_critics::OscillationCritic)
+[INFO] [1792060044.675770260] [controller_server]: Critic plugin initialized
+[INFO] [1792060044.681437312] [controller_server]: Using critic "BaseObstacle" (dwb_critics::BaseObstacleCritic)
+[INFO] [1792060044.697704376] [controller_server]: Critic plugin initialized
+[INFO] [1792060044.708373924] [controller_server]: Using critic "GoalAlign" (dwb_critics::GoalAlignCritic)
+[INFO] [1792060044.731672414] [controller_server]: Critic plugin initialized
+[INFO] [1792060044.737002280] [controller_server]: Using critic "PathAlign" (dwb_critics::PathAlignCritic)
+[INFO] [1792060044.760258177] [controller_server]: Critic plugin initialized
+[INFO] [1792060044.768408237] [controller_server]: Using critic "PathDist" (dwb_critics::PathDistCritic)
+[INFO] [1792060044.789332517] [controller_server]: Critic plugin initialized
+[INFO] [1792060044.798587913] [controller_server]: Using critic "GoalDist" (dwb_critics::GoalDistCritic)
+[INFO] [1792060044.814444790] [controller_server]: Critic plugin initialized
+[INFO] [1792060044.814631753] [controller_server]: Controller Server has FollowPath  controllers available.
+[INFO] [1792060044.921396639] [lifecycle_manager_navigation]: [34m[1mConfiguring smoother_server[0m[0m
+[INFO] [1792060044.923386423] [smoother_server]: Configuring smoother server
+[INFO] [1792060045.060825819] [smoother_server]: Created smoother : simple_smoother of type nav2_smoother::SimpleSmoother
+[INFO] [1792060045.092836833] [smoother_server]: Smoother Server has simple_smoother  smoothers available.
+[INFO] [1792060045.177151102] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[INFO] [1792060045.181807060] [planner_server]: Configuring
+[INFO] [1792060045.182095412] [global_costmap.global_costmap]: Configuring
+[INFO] [1792060045.261317741] [global_costmap.global_costmap]: Using plugin "static_layer"
+[INFO] [1792060045.318160009] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[INFO] [1792060045.327154089] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[INFO] [1792060045.327361275] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[INFO] [1792060045.389140223] [global_costmap.global_costmap]: Subscribed to Topics: 
+[INFO] [1792060045.391476951] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[INFO] [1792060045.391587637] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[INFO] [1792060045.454825218] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[INFO] [1792060045.587460713] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 93 X 150 at 0.050000 m/pix
+[INFO] [1792060045.597021258] [planner_server]: Created global planner plugin GridBased of type nav2_navfn_planner/NavfnPlanner
+[INFO] [1792060045.598893689] [planner_server]: Configuring plugin GridBased of type NavfnPlanner
+[INFO] [1792060045.616373311] [planner_server]: Planner Server has GridBased  planners available.
+[INFO] [1792060045.741189969] [lifecycle_manager_navigation]: [34m[1mConfiguring behavior_server[0m[0m
+[INFO] [1792060045.742261676] [behavior_server]: Configuring
+[INFO] [1792060045.843766548] [behavior_server]: Creating behavior plugin spin of type nav2_behaviors/Spin
+[INFO] [1792060045.856097804] [behavior_server]: Configuring spin
+[INFO] [1792060045.959424440] [behavior_server]: Creating behavior plugin backup of type nav2_behaviors/BackUp
+[INFO] [1792060045.972559569] [behavior_server]: Configuring backup
+[INFO] [1792060046.072132732] [behavior_server]: Creating behavior plugin drive_on_heading of type nav2_behaviors/DriveOnHeading
+[INFO] [1792060046.084143746] [behavior_server]: Configuring drive_on_heading
+[INFO] [1792060046.156537816] [behavior_server]: Creating behavior plugin assisted_teleop of type nav2_behaviors/AssistedTeleop
+[INFO] [1792060046.184722023] [behavior_server]: Configuring assisted_teleop
+[INFO] [1792060046.281944420] [behavior_server]: Creating behavior plugin wait of type nav2_behaviors/Wait
+[INFO] [1792060046.293808231] [behavior_server]: Configuring wait
+[INFO] [1792060046.353248913] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[INFO] [1792060046.354589824] [bt_navigator]: Configuring
+[INFO] [1792060047.350495935] [lifecycle_manager_navigation]: [34m[1mConfiguring waypoint_follower[0m[0m
+[INFO] [1792060047.354704094] [waypoint_follower]: Configuring
+[INFO] [1792060047.464342340] [waypoint_follower]: Created waypoint_task_executor : wait_at_waypoint of type nav2_waypoint_follower::WaitAtWaypoint
+[INFO] [1792060047.481967111] [lifecycle_manager_navigation]: [34m[1mConfiguring velocity_smoother[0m[0m
+[INFO] [1792060047.485380695] [velocity_smoother]: Configuring velocity smoother
+[INFO] [1792060047.545444286] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[INFO] [1792060047.546772493] [controller_server]: Activating
+[INFO] [1792060047.546976549] [local_costmap.local_costmap]: Activating
+[INFO] [1792060047.547091346] [local_costmap.local_costmap]: Checking transform
+[INFO] [1792060047.547321773] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060048.047374574] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060048.547407562] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060049.047460530] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060049.547396017] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060050.047367930] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060050.547458195] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060051.047401515] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060051.547358483] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060052.047373878] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060052.547371846] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060053.047370889] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060053.547369431] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060054.047380399] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060054.547378831] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060055.047363429] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060055.547377138] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060056.047379921] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060056.547429334] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060057.047381358] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060057.547328012] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060058.047376536] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060058.547363708] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060059.047404103] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060059.547382238] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060060.047389076] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060060.547460434] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060061.047370310] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060061.547385056] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060062.047402265] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060062.547374678] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060063.047374072] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060063.547378152] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060064.047378250] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060064.547365366] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060065.047359187] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060065.547398507] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060066.047383735] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060066.547363444] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060067.047371227] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060067.547368973] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060068.047367183] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060068.547367355] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060069.047387527] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060069.547367051] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060070.047365297] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060070.547398117] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060071.047322586] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060071.547363850] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060072.047366078] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060072.547401639] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060073.047492997] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060073.547343854] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060074.047415767] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060074.547370920] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060075.047372259] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060075.547589969] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060076.047365529] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060076.547364646] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060077.047367670] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060077.547390861] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060078.047373144] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060078.547388742] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060079.047360896] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060079.547359290] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060080.047361295] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060080.547370320] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060080.703296063] [rclcpp]: signal_handler(signum=2)
+[INFO] [1792060080.703669916] [velocity_smoother]: Running Nav2 LifecycleNode rcl preshutdown (velocity_smoother)
+[INFO] [1792060080.703953843] [velocity_smoother]: Cleaning up
+[INFO] [1792060080.704103917] [velocity_smoother]: Destroying bond (velocity_smoother) to lifecycle manager.
+[INFO] [1792060080.704150751] [bt_navigator]: Running Nav2 LifecycleNode rcl preshutdown (bt_navigator)
+[INFO] [1792060080.704227510] [bt_navigator]: Cleaning up
+[INFO] [1792060081.049443442] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060081.142350716] [bt_navigator]: Completed Cleaning up
+[INFO] [1792060081.142565068] [bt_navigator]: Destroying bond (bt_navigator) to lifecycle manager.
+[INFO] [1792060081.142625569] [behavior_server]: Running Nav2 LifecycleNode rcl preshutdown (behavior_server)
+[INFO] [1792060081.142733069] [behavior_server]: Cleaning up
+[INFO] [1792060081.162438679] [behavior_server]: Destroying bond (behavior_server) to lifecycle manager.
+[INFO] [1792060081.162590586] [lifecycle_manager_navigation]: Running Nav2 LifecycleManager rcl preshutdown (lifecycle_manager_navigation)
+[INFO] [1792060081.547407775] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060081.655441369] [rclcpp]: signal_handler(signum=2)
+[INFO] [1792060082.047388595] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060082.547374416] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060083.047420921] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060083.547374112] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060084.047375525] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060084.547325011] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "base_link" passed to canTransform argument source_frame - frame does not exist
+[INFO] [1792060085.047370998] [local_costmap.local_costmap]: Timed

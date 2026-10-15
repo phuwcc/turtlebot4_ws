@@ -1,0 +1,21 @@
+[INFO] [1792061028.390863289] [map_server]: 
+	map_server lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792061028.394703076] [map_server]: Creating
+[INFO] [1792061030.123789459] [map_server]: Configuring
+[INFO] [1792061030.124014885] [map_io]: Loading yaml file: /home/ubuntu/turtlebot4_ws/maps/my_room.yaml
+[INFO] [1792061030.124840110] [map_io]: resolution: 0.05
+[INFO] [1792061030.124914943] [map_io]: origin[0]: -3.82
+[INFO] [1792061030.124940906] [map_io]: origin[1]: -2.47
+[INFO] [1792061030.124964480] [map_io]: origin[2]: 0
+[INFO] [1792061030.124986943] [map_io]: free_thresh: 0.25
+[INFO] [1792061030.125009573] [map_io]: occupied_thresh: 0.65
+[INFO] [1792061030.125035351] [map_io]: mode: trinary
+[INFO] [1792061030.125060110] [map_io]: negate: 0
+[INFO] [1792061030.125743593] [map_io]: Loading image_file: /home/ubuntu/turtlebot4_ws/maps/my_room.pgm
+[INFO] [1792061030.131278292] [map_io]: Read map /home/ubuntu/turtlebot4_ws/maps/my_room.pgm: 93 X 150 map @ 0.05 m/cell
+[INFO] [1792061109.329610162] [rclcpp]: signal_handler(signum=2)
+[INFO] [1792061109.329981977] [map_server]: Running Nav2 LifecycleNode rcl preshutdown (map_server)
+[INFO] [1792061109.330234571] [map_server]: Cleaning up
+[INFO] [1792061109.330363830] [map_server]: Destroying bond (map_server) to lifecycle manager.

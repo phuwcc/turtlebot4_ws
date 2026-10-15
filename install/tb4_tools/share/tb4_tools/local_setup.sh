@@ -1,0 +1,1 @@
+/home/ubuntu/turtlebot4_ws/build/tb4_tools/ament_cmake_environment_hooks/local_setup.sh

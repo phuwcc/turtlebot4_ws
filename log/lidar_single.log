@@ -1,0 +1,15 @@
+[INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/lidar_single/2026-10-15-07-56-29-296446-ubuntu-86268
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [rplidar_composition-1]: process started with pid [86278]
+[rplidar_composition-1] [INFO] [1792050989.719499016] [rplidar_composition]: RPLidar running on ROS2 package rplidar_ros. RPLIDAR SDK Version:2.0.0
+[rplidar_composition-1] [INFO] [1792050989.773380157] [rplidar_composition]: RPLidar S/N: 5DEFED93C0EA98C9C2E29EF5AF35406E
+[rplidar_composition-1] [INFO] [1792050989.773533306] [rplidar_composition]: Firmware Ver: 1.29
+[rplidar_composition-1] [INFO] [1792050989.773570269] [rplidar_composition]: Hardware Rev: 7
+[rplidar_composition-1] [INFO] [1792050989.824953442] [rplidar_composition]: RPLidar health status : 0
+[rplidar_composition-1] [INFO] [1792050989.826486853] [rplidar_composition]: RPLidar health status : OK.
+[rplidar_composition-1] [INFO] [1792050991.838809394] [rplidar_composition]: Start
+[rplidar_composition-1] [INFO] [1792050992.534107054] [rplidar_composition]: current scan mode: Sensitivity, sample rate: 8 Khz, max_distance: 12.0 m, scan frequency:10.0 Hz, 
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [rplidar_composition-1]: sending signal 'SIGINT' to process[rplidar_composition-1]
+[rplidar_composition-1] [INFO] [1792062244.163517850] [rplidar_composition]: Stop motor
+[INFO] [rplidar_composition-1]: process has finished cleanly [pid 86278]

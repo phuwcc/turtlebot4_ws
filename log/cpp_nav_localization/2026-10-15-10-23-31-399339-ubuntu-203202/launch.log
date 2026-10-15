@@ -1,0 +1,12 @@
+1792059811.4066467 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/cpp_nav_localization/2026-10-15-10-23-31-399339-ubuntu-203202
+1792059811.4084458 [INFO] [launch]: Default logging verbosity is set to INFO
+1792059812.7456295 [INFO] [map_server-1]: process started with pid [204087]
+1792059812.7483554 [INFO] [amcl-2]: process started with pid [204089]
+1792059812.7522089 [INFO] [lifecycle_manager-3]: process started with pid [204093]
+1792059966.9553587 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1792059966.9992003 [INFO] [lifecycle_manager-3]: sending signal 'SIGINT' to process[lifecycle_manager-3]
+1792059967.0205276 [INFO] [amcl-2]: sending signal 'SIGINT' to process[amcl-2]
+1792059967.0456195 [INFO] [map_server-1]: sending signal 'SIGINT' to process[map_server-1]
+1792059967.0777564 [ERROR] [map_server-1]: process has died [pid 204087, exit code -2, cmd '/opt/ros/humble/lib/nav2_map_server/map_server --ros-args --log-level info --ros-args -r __node:=map_server -r __ns:=/ --params-file /tmp/launch_params_95lmbh1m -r initialpose:=amcl/manual_initialpose -r /tf:=tf -r /tf_static:=tf_static'].
+1792059970.8537481 [INFO] [amcl-2]: process has finished cleanly [pid 204089]
+1792059971.3201199 [INFO] [lifecycle_manager-3]: process has finished cleanly [pid 204093]

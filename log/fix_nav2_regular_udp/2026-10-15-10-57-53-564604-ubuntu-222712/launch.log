@@ -1,0 +1,29 @@
+1792061873.5686123 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/fix_nav2_regular_udp/2026-10-15-10-57-53-564604-ubuntu-222712
+1792061873.5692496 [INFO] [launch]: Default logging verbosity is set to INFO
+1792061874.7218256 [INFO] [controller_server-1]: process started with pid [222727]
+1792061874.7228019 [INFO] [smoother_server-2]: process started with pid [222729]
+1792061874.7448175 [INFO] [planner_server-3]: process started with pid [222731]
+1792061874.7473536 [INFO] [behavior_server-4]: process started with pid [222733]
+1792061874.7490582 [INFO] [bt_navigator-5]: process started with pid [222735]
+1792061874.7559507 [INFO] [waypoint_follower-6]: process started with pid [222737]
+1792061874.7594585 [INFO] [velocity_smoother-7]: process started with pid [222739]
+1792061874.7605555 [INFO] [lifecycle_manager-8]: process started with pid [222743]
+1792061922.7519162 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1792061923.3339341 [INFO] [lifecycle_manager-8]: sending signal 'SIGINT' to process[lifecycle_manager-8]
+1792061923.4702389 [INFO] [velocity_smoother-7]: sending signal 'SIGINT' to process[velocity_smoother-7]
+1792061923.4762635 [INFO] [waypoint_follower-6]: sending signal 'SIGINT' to process[waypoint_follower-6]
+1792061923.5223451 [INFO] [bt_navigator-5]: sending signal 'SIGINT' to process[bt_navigator-5]
+1792061923.5573690 [INFO] [behavior_server-4]: sending signal 'SIGINT' to process[behavior_server-4]
+1792061923.5771964 [INFO] [planner_server-3]: sending signal 'SIGINT' to process[planner_server-3]
+1792061923.6750367 [INFO] [smoother_server-2]: sending signal 'SIGINT' to process[smoother_server-2]
+1792061923.8810248 [INFO] [controller_server-1]: sending signal 'SIGINT' to process[controller_server-1]
+1792061924.3432815 [INFO] [velocity_smoother-7]: process has finished cleanly [pid 222739]
+1792061924.7922029 [INFO] [waypoint_follower-6]: process has finished cleanly [pid 222737]
+1792061925.1759303 [INFO] [lifecycle_manager-8]: process has finished cleanly [pid 222743]
+1792061925.2189767 [INFO] [smoother_server-2]: process has finished cleanly [pid 222729]
+1792061925.6072955 [INFO] [behavior_server-4]: process has finished cleanly [pid 222733]
+1792061927.3001978 [INFO] [bt_navigator-5]: process has finished cleanly [pid 222735]
+1792061927.6087573 [INFO] [planner_server-3]: process has finished cleanly [pid 222731]
+1792061928.2905707 [ERROR] [controller_server-1]: process[controller_server-1] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1792061928.2964578 [INFO] [controller_server-1]: sending signal 'SIGTERM' to process[controller_server-1]
+1792061928.3161461 [ERROR] [controller_server-1]: process has died [pid 222727, exit code -15, cmd '/opt/ros/humble/lib/nav2_controller/controller_server --ros-args --log-level info --ros-args -r __ns:=/ --params-file /tmp/launch_params_u_erb5ie -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static -r cmd_vel:=cmd_vel_nav'].

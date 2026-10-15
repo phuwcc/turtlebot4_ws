@@ -1,0 +1,99 @@
+[INFO] [1792062145.600665826] [planner_server]: 
+	planner_server lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792062145.767893388] [planner_server]: Creating
+[INFO] [1792062146.267801741] [global_costmap.global_costmap]: 
+	global_costmap lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792062146.272236874] [global_costmap.global_costmap]: Creating Costmap
+[INFO] [1792062181.441479503] [planner_server]: Configuring
+[INFO] [1792062181.441708262] [global_costmap.global_costmap]: Configuring
+[INFO] [1792062181.550281468] [global_costmap.global_costmap]: Using plugin "static_layer"
+[INFO] [1792062181.652538170] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[INFO] [1792062181.691717050] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[INFO] [1792062181.694736829] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[INFO] [1792062181.760836432] [global_costmap.global_costmap]: Subscribed to Topics: scan
+[INFO] [1792062181.942050522] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[INFO] [1792062181.942283023] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[INFO] [1792062181.989544982] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[INFO] [1792062182.196914073] [planner_server]: Created global planner plugin GridBased of type nav2_navfn_planner/NavfnPlanner
+[INFO] [1792062182.204113411] [planner_server]: Configuring plugin GridBased of type NavfnPlanner
+[INFO] [1792062182.216838976] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 93 X 150 at 0.050000 m/pix
+[INFO] [1792062182.229368207] [planner_server]: Planner Server has GridBased  planners available.
+[INFO] [1792062186.825527987] [planner_server]: Activating
+[INFO] [1792062186.825699801] [global_costmap.global_costmap]: Activating
+[INFO] [1792062186.825778968] [global_costmap.global_costmap]: Checking transform
+[INFO] [1792062186.826164191] [global_costmap.global_costmap]: start
+[INFO] [1792062186.884475213] [planner_server]: Activating plugin GridBased of type NavfnPlanner
+[INFO] [1792062186.900624428] [planner_server]: Creating bond (planner_server) to lifecycle manager.
+[INFO] [1792062206.806913159] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062206.077 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062207.003455816] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062206.212 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062207.068025843] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062206.326 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062207.190373355] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062206.581 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062207.195278266] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062206.718 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062213.412093745] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062212.784 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062213.582857551] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062212.919 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062213.779112763] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062213.058 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062213.850320184] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062213.183 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062213.950911440] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062213.448 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062214.104873345] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062213.583 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062226.735723498] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.236 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062226.896904593] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.373 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062226.954104078] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.503 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062227.096853660] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.638 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062227.305321140] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.765 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062227.343502112] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.896 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062227.529922817] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.033 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062227.827705990] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.168 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062227.853559842] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.290 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062227.922186131] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.440 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062228.039866455] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.562 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062228.218972729] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.696 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062228.277263067] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.822 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062233.253486133] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062232.715 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062233.312151545] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062232.834 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062233.439789246] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062232.968 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062233.559744868] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062233.102 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062233.696193872] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062233.243 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062233.903348018] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062233.360 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062233.940983433] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062233.492 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062234.099739971] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062233.636 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062238.851579509] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062238.368 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062238.961602865] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062238.505 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062239.142548437] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062238.642 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062239.490805997] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062238.805 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062239.499158429] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062238.896 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062239.766497507] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062239.031 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062239.997265262] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062239.180 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062240.019950611] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062239.431 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062240.494483391] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062239.559 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062241.146643869] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062239.694 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062241.159662489] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062240.092 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062241.165964864] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062240.223 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062241.641248422] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062240.751 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062241.651872300] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062240.873 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062242.157156045] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062241.266 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062242.204367523] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062241.402 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062242.213599844] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062241.540 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062242.365624766] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062241.833 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062242.730326709] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062241.940 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062242.730825561] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.071 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062242.781968893] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.323 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062242.985250389] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.457 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062243.048382933] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.593 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062243.166317368] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.740 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062243.334807172] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.861 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[INFO] [1792062244.225281486] [rclcpp]: signal_handler(signum=2)
+[INFO] [1792062244.241662294] [planner_server]: Running Nav2 LifecycleNode rcl preshutdown (planner_server)
+[INFO] [1792062244.242086053] [planner_server]: Deactivating
+[INFO] [1792062244.242224405] [global_costmap.global_costmap]: Deactivating
+[INFO] [1792062244.851392983] [planner_server]: Deactivating plugin GridBased of type NavfnPlanner
+[INFO] [1792062244.851603150] [planner_server]: Destroying bond (planner_server) to lifecycle manager.
+[INFO] [1792062244.862051194] [planner_server]: Cleaning up
+[INFO] [1792062245.562821633] [global_costmap.global_costmap]: Cleaning up
+[INFO] [1792062249.120858273] [rclcpp]: signal_handler(signum=15)
+[INFO] [1792062250.423925452] [planner_server]: Cleaning up plugin GridBased of type NavfnPlanner
+[INFO] [1792062250.424152508] [planner_server]: Destroying plugin GridBased of type NavfnPlanner
+[INFO] [1792062250.720519643] [planner_server]: Destroying bond (planner_server) to lifecycle manager.

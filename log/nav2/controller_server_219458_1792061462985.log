@@ -1,0 +1,47 @@
+[INFO] [1792061463.660241518] [controller_server]: 
+	controller_server lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792061463.860820772] [controller_server]: Creating controller server
+[INFO] [1792061463.968254649] [local_costmap.local_costmap]: 
+	local_costmap lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1792061463.988257421] [local_costmap.local_costmap]: Creating Costmap
+[INFO] [1792061476.073542886] [controller_server]: Configuring controller interface
+[INFO] [1792061476.074367203] [controller_server]: getting goal checker plugins..
+[INFO] [1792061476.075052631] [controller_server]: Controller frequency set to 10.0000Hz
+[INFO] [1792061476.075385373] [local_costmap.local_costmap]: Configuring
+[INFO] [1792061476.446785734] [local_costmap.local_costmap]: Using plugin "static_layer"
+[INFO] [1792061476.578952505] [local_costmap.local_costmap]: Subscribing to the map topic (/map) with transient local durability
+[INFO] [1792061476.606598166] [local_costmap.local_costmap]: Initialized plugin "static_layer"
+[INFO] [1792061476.606752389] [local_costmap.local_costmap]: Using plugin "voxel_layer"
+[INFO] [1792061476.633057232] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[INFO] [1792061476.912557904] [local_costmap.local_costmap]: Initialized plugin "voxel_layer"
+[INFO] [1792061476.912708663] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[INFO] [1792061476.919922811] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[INFO] [1792061477.213344258] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[INFO] [1792061477.277052026] [controller_server]: Created goal checker : general_goal_checker of type nav2_controller::SimpleGoalChecker
+[INFO] [1792061477.323154973] [controller_server]: Controller Server has general_goal_checker  goal checkers available.
+[INFO] [1792061477.389605712] [controller_server]: Created controller : FollowPath of type dwb_core::DWBLocalPlanner
+[INFO] [1792061477.487268083] [controller_server]: Setting transform_tolerance to 0.200000
+[INFO] [1792061477.955593277] [controller_server]: Using critic "RotateToGoal" (dwb_critics::RotateToGoalCritic)
+[INFO] [1792061478.000227516] [controller_server]: Critic plugin initialized
+[INFO] [1792061478.009446836] [controller_server]: Using critic "Oscillation" (dwb_critics::OscillationCritic)
+[INFO] [1792061478.052461738] [controller_server]: Critic plugin initialized
+[INFO] [1792061478.075314646] [controller_server]: Using critic "BaseObstacle" (dwb_critics::BaseObstacleCritic)
+[INFO] [1792061478.131426655] [controller_server]: Critic plugin initialized
+[INFO] [1792061478.152465226] [controller_server]: Using critic "GoalAlign" (dwb_critics::GoalAlignCritic)
+[INFO] [1792061478.203373926] [controller_server]: Critic plugin initialized
+[INFO] [1792061478.218220314] [controller_server]: Using critic "PathAlign" (dwb_critics::PathAlignCritic)
+[INFO] [1792061478.269035292] [controller_server]: Critic plugin initialized
+[INFO] [1792061478.290862142] [controller_server]: Using critic "PathDist" (dwb_critics::PathDistCritic)
+[INFO] [1792061478.336902941] [controller_server]: Critic plugin initialized
+[INFO] [1792061478.361375946] [controller_server]: Using critic "GoalDist" (dwb_critics::GoalDistCritic)
+[INFO] [1792061478.413012425] [controller_server]: Critic plugin initialized
+[INFO] [1792061478.416580619] [controller_server]: Controller Server has FollowPath  controllers available.
+[INFO] [1792061484.595543457] [controller_server]: Activating
+[INFO] [1792061484.595732513] [local_costmap.local_costmap]: Activating
+[INFO] [1792061484.595816884] [local_costmap.local_costmap]: Checking transform
+[INFO] [1792061484.596311570] [local_costmap.local_costmap]: start
+[INFO] [1792061484.659574912] [controller_server]: Creating bond (contro

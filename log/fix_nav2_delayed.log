@@ -1,0 +1,332 @@
+[INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/fix_nav2_delayed/2026-10-15-11-02-22-744770-ubuntu-224532
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [controller_server-1]: process started with pid [224562]
+[INFO] [smoother_server-2]: process started with pid [224564]
+[INFO] [planner_server-3]: process started with pid [224566]
+[INFO] [behavior_server-4]: process started with pid [224568]
+[INFO] [bt_navigator-5]: process started with pid [224570]
+[INFO] [waypoint_follower-6]: process started with pid [224572]
+[INFO] [velocity_smoother-7]: process started with pid [224574]
+[INFO] [lifecycle_manager-8]: process started with pid [224576]
+[bt_navigator-5] [INFO] [1792062144.908157337] [bt_navigator]: 
+[bt_navigator-5] 	bt_navigator lifecycle node launched. 
+[bt_navigator-5] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-5] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-5] [INFO] [1792062144.921549606] [bt_navigator]: Creating
+[waypoint_follower-6] [INFO] [1792062145.013855412] [waypoint_follower]: 
+[waypoint_follower-6] 	waypoint_follower lifecycle node launched. 
+[waypoint_follower-6] 	Waiting on external lifecycle transitions to activate
+[waypoint_follower-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[behavior_server-4] [INFO] [1792062145.037245113] [behavior_server]: 
+[behavior_server-4] 	behavior_server lifecycle node launched. 
+[behavior_server-4] 	Waiting on external lifecycle transitions to activate
+[behavior_server-4] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-6] [INFO] [1792062145.047088231] [waypoint_follower]: Creating
+[controller_server-1] [INFO] [1792062145.189144887] [controller_server]: 
+[lifecycle_manager-8] [INFO] [1792062145.190013351] [lifecycle_manager_navigation]: Creating
+[controller_server-1] 	controller_server lifecycle node launched. 
+[controller_server-1] 	Waiting on external lifecycle transitions to activate
+[controller_server-1] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[lifecycle_manager-8] [INFO] [1792062145.236058994] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[controller_server-1] [INFO] [1792062145.439387749] [controller_server]: Creating controller server
+[smoother_server-2] [INFO] [1792062145.445569513] [smoother_server]: 
+[smoother_server-2] 	smoother_server lifecycle node launched. 
+[smoother_server-2] 	Waiting on external lifecycle transitions to activate
+[smoother_server-2] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[smoother_server-2] [INFO] [1792062145.582718480] [smoother_server]: Creating smoother server
+[velocity_smoother-7] [INFO] [1792062145.592895654] [velocity_smoother]: 
+[velocity_smoother-7] 	velocity_smoother lifecycle node launched. 
+[velocity_smoother-7] 	Waiting on external lifecycle transitions to activate
+[velocity_smoother-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-3] [INFO] [1792062145.600665826] [planner_server]: 
+[planner_server-3] 	planner_server lifecycle node launched. 
+[planner_server-3] 	Waiting on external lifecycle transitions to activate
+[planner_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-3] [INFO] [1792062145.767893388] [planner_server]: Creating
+[controller_server-1] [INFO] [1792062145.857662600] [local_costmap.local_costmap]: 
+[controller_server-1] 	local_costmap lifecycle node launched. 
+[controller_server-1] 	Waiting on external lifecycle transitions to activate
+[controller_server-1] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-1] [INFO] [1792062145.883855748] [local_costmap.local_costmap]: Creating Costmap
+[planner_server-3] [INFO] [1792062146.267801741] [global_costmap.global_costmap]: 
+[planner_server-3] 	global_costmap lifecycle node launched. 
+[planner_server-3] 	Waiting on external lifecycle transitions to activate
+[planner_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-3] [INFO] [1792062146.272236874] [global_costmap.global_costmap]: Creating Costmap
+[lifecycle_manager-8] [INFO] [1792062147.335440809] [lifecycle_manager_navigation]: Waiting for service controller_server/get_state...
+[lifecycle_manager-8] [INFO] [1792062179.876134472] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-8] [INFO] [1792062179.876456287] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[controller_server-1] [INFO] [1792062179.878184881] [controller_server]: Configuring controller interface
+[controller_server-1] [INFO] [1792062179.886141979] [controller_server]: getting goal checker plugins..
+[controller_server-1] [INFO] [1792062179.886860350] [controller_server]: Controller frequency set to 10.0000Hz
+[controller_server-1] [INFO] [1792062179.887165721] [local_costmap.local_costmap]: Configuring
+[controller_server-1] [INFO] [1792062180.003561192] [local_costmap.local_costmap]: Using plugin "static_layer"
+[controller_server-1] [INFO] [1792062180.065849199] [local_costmap.local_costmap]: Subscribing to the map topic (/map) with transient local durability
+[controller_server-1] [INFO] [1792062180.089473752] [local_costmap.local_costmap]: Initialized plugin "static_layer"
+[controller_server-1] [INFO] [1792062180.089840753] [local_costmap.local_costmap]: Using plugin "voxel_layer"
+[controller_server-1] [INFO] [1792062180.126736612] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[controller_server-1] [INFO] [1792062180.272672900] [local_costmap.local_costmap]: Initialized plugin "voxel_layer"
+[controller_server-1] [INFO] [1792062180.272802382] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-1] [INFO] [1792062180.290451690] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[controller_server-1] [INFO] [1792062180.403333233] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[controller_server-1] [INFO] [1792062180.424801396] [controller_server]: Created goal checker : general_goal_checker of type nav2_controller::SimpleGoalChecker
+[controller_server-1] [INFO] [1792062180.426039138] [local_costmap.local_costmap]: StaticLayer: Resizing static layer to 93 X 150 at 0.050000 m/pix
+[controller_server-1] [INFO] [1792062180.450175544] [controller_server]: Controller Server has general_goal_checker  goal checkers available.
+[controller_server-1] [INFO] [1792062180.472199189] [controller_server]: Created controller : FollowPath of type dwb_core::DWBLocalPlanner
+[controller_server-1] [INFO] [1792062180.529976452] [controller_server]: Setting transform_tolerance to 0.200000
+[controller_server-1] [INFO] [1792062180.692459622] [controller_server]: Using critic "RotateToGoal" (dwb_critics::RotateToGoalCritic)
+[controller_server-1] [INFO] [1792062180.725416571] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792062180.734339763] [controller_server]: Using critic "Oscillation" (dwb_critics::OscillationCritic)
+[controller_server-1] [INFO] [1792062180.768075824] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792062180.775481885] [controller_server]: Using critic "BaseObstacle" (dwb_critics::BaseObstacleCritic)
+[controller_server-1] [INFO] [1792062180.784629909] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792062180.792329415] [controller_server]: Using critic "GoalAlign" (dwb_critics::GoalAlignCritic)
+[controller_server-1] [INFO] [1792062180.815930339] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792062180.823228066] [controller_server]: Using critic "PathAlign" (dwb_critics::PathAlignCritic)
+[controller_server-1] [INFO] [1792062180.844082081] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792062180.864310040] [controller_server]: Using critic "PathDist" (dwb_critics::PathDistCritic)
+[controller_server-1] [INFO] [1792062180.889430946] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792062180.901200492] [controller_server]: Using critic "GoalDist" (dwb_critics::GoalDistCritic)
+[controller_server-1] [INFO] [1792062180.927547677] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792062180.927746103] [controller_server]: Controller Server has FollowPath  controllers available.
+[lifecycle_manager-8] [INFO] [1792062181.067042238] [lifecycle_manager_navigation]: [34m[1mConfiguring smoother_server[0m[0m
+[smoother_server-2] [INFO] [1792062181.068509332] [smoother_server]: Configuring smoother server
+[smoother_server-2] [INFO] [1792062181.264068766] [smoother_server]: Created smoother : simple_smoother of type nav2_smoother::SimpleSmoother
+[smoother_server-2] [INFO] [1792062181.324305661] [smoother_server]: Smoother Server has simple_smoother  smoothers available.
+[lifecycle_manager-8] [INFO] [1792062181.440478076] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[planner_server-3] [INFO] [1792062181.441479503] [planner_server]: Configuring
+[planner_server-3] [INFO] [1792062181.441708262] [global_costmap.global_costmap]: Configuring
+[planner_server-3] [INFO] [1792062181.550281468] [global_costmap.global_costmap]: Using plugin "static_layer"
+[planner_server-3] [INFO] [1792062181.652538170] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[planner_server-3] [INFO] [1792062181.691717050] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[planner_server-3] [INFO] [1792062181.694736829] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[planner_server-3] [INFO] [1792062181.760836432] [global_costmap.global_costmap]: Subscribed to Topics: scan
+[planner_server-3] [INFO] [1792062181.942050522] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[planner_server-3] [INFO] [1792062181.942283023] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[planner_server-3] [INFO] [1792062181.989544982] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[planner_server-3] [INFO] [1792062182.196914073] [planner_server]: Created global planner plugin GridBased of type nav2_navfn_planner/NavfnPlanner
+[planner_server-3] [INFO] [1792062182.204113411] [planner_server]: Configuring plugin GridBased of type NavfnPlanner
+[planner_server-3] [INFO] [1792062182.216838976] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 93 X 150 at 0.050000 m/pix
+[planner_server-3] [INFO] [1792062182.229368207] [planner_server]: Planner Server has GridBased  planners available.
+[lifecycle_manager-8] [INFO] [1792062182.434187703] [lifecycle_manager_navigation]: [34m[1mConfiguring behavior_server[0m[0m
+[behavior_server-4] [INFO] [1792062182.440438281] [behavior_server]: Configuring
+[behavior_server-4] [INFO] [1792062182.645337685] [behavior_server]: Creating behavior plugin spin of type nav2_behaviors/Spin
+[behavior_server-4] [INFO] [1792062182.658164454] [behavior_server]: Configuring spin
+[behavior_server-4] [INFO] [1792062182.890520025] [behavior_server]: Creating behavior plugin backup of type nav2_behaviors/BackUp
+[behavior_server-4] [INFO] [1792062182.912338614] [behavior_server]: Configuring backup
+[behavior_server-4] [INFO] [1792062183.178129061] [behavior_server]: Creating behavior plugin drive_on_heading of type nav2_behaviors/DriveOnHeading
+[behavior_server-4] [INFO] [1792062183.202251263] [behavior_server]: Configuring drive_on_heading
+[behavior_server-4] [INFO] [1792062183.381708075] [behavior_server]: Creating behavior plugin assisted_teleop of type nav2_behaviors/AssistedTeleop
+[behavior_server-4] [INFO] [1792062183.409848502] [behavior_server]: Configuring assisted_teleop
+[behavior_server-4] [INFO] [1792062183.606454845] [behavior_server]: Creating behavior plugin wait of type nav2_behaviors/Wait
+[behavior_server-4] [INFO] [1792062183.620227873] [behavior_server]: Configuring wait
+[lifecycle_manager-8] [INFO] [1792062183.777142002] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[bt_navigator-5] [INFO] [1792062183.778185892] [bt_navigator]: Configuring
+[lifecycle_manager-8] [INFO] [1792062185.617168615] [lifecycle_manager_navigation]: [34m[1mConfiguring waypoint_follower[0m[0m
+[waypoint_follower-6] [INFO] [1792062185.623354120] [waypoint_follower]: Configuring
+[waypoint_follower-6] [INFO] [1792062185.909042988] [waypoint_follower]: Created waypoint_task_executor : wait_at_waypoint of type nav2_waypoint_follower::WaitAtWaypoint
+[lifecycle_manager-8] [INFO] [1792062185.973303070] [lifecycle_manager_navigation]: [34m[1mConfiguring velocity_smoother[0m[0m
+[velocity_smoother-7] [INFO] [1792062185.977531055] [velocity_smoother]: Configuring velocity smoother
+[lifecycle_manager-8] [INFO] [1792062186.054900424] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[controller_server-1] [INFO] [1792062186.165160335] [controller_server]: Activating
+[controller_server-1] [INFO] [1792062186.165333854] [local_costmap.local_costmap]: Activating
+[controller_server-1] [INFO] [1792062186.165394169] [local_costmap.local_costmap]: Checking transform
+[controller_server-1] [INFO] [1792062186.165727965] [local_costmap.local_costmap]: start
+[controller_server-1] [INFO] [1792062186.390250902] [controller_server]: Creating bond (controller_server) to lifecycle manager.
+[lifecycle_manager-8] [INFO] [1792062186.596160658] [lifecycle_manager_navigation]: Server controller_server connected with bond.
+[lifecycle_manager-8] [INFO] [1792062186.596372751] [lifecycle_manager_navigation]: [34m[1mActivating smoother_server[0m[0m
+[smoother_server-2] [INFO] [1792062186.597358548] [smoother_server]: Activating
+[smoother_server-2] [INFO] [1792062186.597503307] [smoother_server]: Creating bond (smoother_server) to lifecycle manager.
+[lifecycle_manager-8] [INFO] [1792062186.824756060] [lifecycle_manager_navigation]: Server smoother_server connected with bond.
+[lifecycle_manager-8] [INFO] [1792062186.824935079] [lifecycle_manager_navigation]: [34m[1mActivating planner_server[0m[0m
+[planner_server-3] [INFO] [1792062186.825527987] [planner_server]: Activating
+[planner_server-3] [INFO] [1792062186.825699801] [global_costmap.global_costmap]: Activating
+[planner_server-3] [INFO] [1792062186.825778968] [global_costmap.global_costmap]: Checking transform
+[planner_server-3] [INFO] [1792062186.826164191] [global_costmap.global_costmap]: start
+[planner_server-3] [INFO] [1792062186.884475213] [planner_server]: Activating plugin GridBased of type NavfnPlanner
+[planner_server-3] [INFO] [1792062186.900624428] [planner_server]: Creating bond (planner_server) to lifecycle manager.
+[lifecycle_manager-8] [INFO] [1792062187.044693493] [lifecycle_manager_navigation]: Server planner_server connected with bond.
+[lifecycle_manager-8] [INFO] [1792062187.044855975] [lifecycle_manager_navigation]: [34m[1mActivating behavior_server[0m[0m
+[behavior_server-4] [INFO] [1792062187.045789438] [behavior_server]: Activating
+[behavior_server-4] [INFO] [1792062187.045924272] [behavior_server]: Activating spin
+[behavior_server-4] [INFO] [1792062187.045980420] [behavior_server]: Activating backup
+[behavior_server-4] [INFO] [1792062187.046018827] [behavior_server]: Activating drive_on_heading
+[behavior_server-4] [INFO] [1792062187.046056864] [behavior_server]: Activating assisted_teleop
+[behavior_server-4] [INFO] [1792062187.046097809] [behavior_server]: Activating wait
+[behavior_server-4] [INFO] [1792062187.046148790] [behavior_server]: Creating bond (behavior_server) to lifecycle manager.
+[lifecycle_manager-8] [INFO] [1792062187.267267576] [lifecycle_manager_navigation]: Server behavior_server connected with bond.
+[lifecycle_manager-8] [INFO] [1792062187.267486947] [lifecycle_manager_navigation]: [34m[1mActivating bt_navigator[0m[0m
+[bt_navigator-5] [INFO] [1792062187.268359132] [bt_navigator]: Activating
+[bt_navigator-5] [INFO] [1792062189.552613244] [bt_navigator]: Creating bond (bt_navigator) to lifecycle manager.
+[lifecycle_manager-8] [INFO] [1792062190.120366737] [lifecycle_manager_navigation]: Server bt_navigator connected with bond.
+[lifecycle_manager-8] [INFO] [1792062190.120556293] [lifecycle_manager_navigation]: [34m[1mActivating waypoint_follower[0m[0m
+[waypoint_follower-6] [INFO] [1792062190.124842296] [waypoint_follower]: Activating
+[waypoint_follower-6] [INFO] [1792062190.124997018] [waypoint_follower]: Creating bond (waypoint_follower) to lifecycle manager.
+[lifecycle_manager-8] [INFO] [1792062190.470673947] [lifecycle_manager_navigation]: Server waypoint_follower connected with bond.
+[lifecycle_manager-8] [INFO] [1792062190.473531486] [lifecycle_manager_navigation]: [34m[1mActivating velocity_smoother[0m[0m
+[velocity_smoother-7] [INFO] [1792062190.484109975] [velocity_smoother]: Activating
+[velocity_smoother-7] [INFO] [1792062190.484346790] [velocity_smoother]: Creating bond (velocity_smoother) to lifecycle manager.
+[lifecycle_manager-8] [INFO] [1792062190.876376993] [lifecycle_manager_navigation]: Server velocity_smoother connected with bond.
+[lifecycle_manager-8] [INFO] [1792062190.876547197] [lifecycle_manager_navigation]: [34m[1mManaged nodes are active[0m[0m
+[lifecycle_manager-8] [INFO] [1792062190.876603604] [lifecycle_manager_navigation]: [34m[1mCreating bond timer...[0m[0m
+[planner_server-3] [INFO] [1792062206.806913159] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062206.077 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062207.003455816] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062206.212 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062207.068025843] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062206.326 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062207.190373355] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062206.581 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062207.195278266] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062206.718 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[lifecycle_manager-8] [INFO] [1792062210.876874012] [lifecycle_manager_navigation]: [34m[1mHave not received a heartbeat from behavior_server.[0m[0m
+[lifecycle_manager-8] [ERROR] [1792062210.877027679] [lifecycle_manager_navigation]: CRITICAL FAILURE: SERVER behavior_server IS DOWN after not receiving a heartbeat for 4000 ms. Shutting down related nodes.
+[lifecycle_manager-8] [INFO] [1792062210.877076956] [lifecycle_manager_navigation]: [34m[1mTerminating bond timer...[0m[0m
+[lifecycle_manager-8] [INFO] [1792062210.877543605] [lifecycle_manager_navigation]: [34m[1mResetting managed nodes...[0m[0m
+[lifecycle_manager-8] [INFO] [1792062210.877609161] [lifecycle_manager_navigation]: [34m[1mDeactivating velocity_smoother[0m[0m
+[velocity_smoother-7] [INFO] [1792062210.939644741] [velocity_smoother]: Deactivating
+[velocity_smoother-7] [INFO] [1792062210.939888279] [velocity_smoother]: Destroying bond (velocity_smoother) to lifecycle manager.
+[lifecycle_manager-8] [INFO] [1792062211.714423862] [lifecycle_manager_navigation]: [34m[1mDeactivating waypoint_follower[0m[0m
+[waypoint_follower-6] [INFO] [1792062211.719658569] [waypoint_follower]: Deactivating
+[waypoint_follower-6] [INFO] [1792062211.764175712] [waypoint_follower]: Destroying bond (waypoint_follower) to lifecycle manager.
+[lifecycle_manager-8] [INFO] [1792062212.353348220] [lifecycle_manager_navigation]: [34m[1mDeactivating bt_navigator[0m[0m
+[bt_navigator-5] [INFO] [1792062212.642054831] [bt_navigator]: Deactivating
+[bt_navigator-5] [INFO] [1792062212.642278609] [bt_navigator]: Destroying bond (bt_navigator) to lifecycle manager.
+[planner_server-3] [INFO] [1792062213.412093745] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062212.784 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[lifecycle_manager-8] [INFO] [1792062213.461986928] [lifecycle_manager_navigation]: [34m[1mDeactivating behavior_server[0m[0m
+[planner_server-3] [INFO] [1792062213.582857551] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062212.919 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062213.779112763] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062213.058 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062213.850320184] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062213.183 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062213.950911440] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062213.448 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062214.104873345] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062213.583 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[behavior_server-4] [INFO] [1792062214.481289129] [behavior_server]: Deactivating
+[behavior_server-4] [INFO] [1792062214.481490222] [behavior_server]: Destroying bond (behavior_server) to lifecycle manager.
+[lifecycle_manager-8] [ERROR] [1792062216.634953797] [lifecycle_manager_navigation]: Failed to change state for node: behavior_server. Exception: behavior_server/get_state service client: async_send_request failed.
+[lifecycle_manager-8] [INFO] [1792062216.638085225] [lifecycle_manager_navigation]: [34m[1mManaged nodes have been reset[0m[0m
+[lifecycle_manager-8] [INFO] [1792062218.503350597] [lifecycle_manager_navigation]: [34m[1mSuccessfully re-established connections from server respawns, starting back up.[0m[0m
+[lifecycle_manager-8] [INFO] [1792062218.503513097] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-8] [INFO] [1792062218.503562412] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[controller_server-1] [WARN] [1792062218.647764976] [rcl_lifecycle]: No transition matching 1 found for current state active
+[controller_server-1] [ERROR] [1792062218.647880050] [controller_server]: Unable to start transition 1 from current state active: Transition is not registered., at ./src/rcl_lifecycle.c:355
+[lifecycle_manager-8] [ERROR] [1792062218.792783986] [lifecycle_manager_navigation]: Failed to change state for node: controller_server
+[lifecycle_manager-8] [ERROR] [1792062218.792921634] [lifecycle_manager_navigation]: Failed to bring up all requested nodes. Aborting bringup.
+[planner_server-3] [INFO] [1792062226.735723498] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.236 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062226.896904593] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.373 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062226.954104078] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.503 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062227.096853660] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.638 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062227.305321140] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.765 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062227.343502112] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062226.896 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062227.529922817] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.033 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062227.827705990] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.168 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062227.853559842] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.290 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062227.922186131] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.440 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062228.039866455] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.562 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062228.218972729] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.696 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062228.277263067] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062227.822 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062233.253486133] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062232.715 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062233.312151545] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062232.834 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062233.439789246] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062232.968 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062233.559744868] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062233.102 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062233.696193872] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062233.243 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062233.903348018] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062233.360 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062233.940983433] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062233.492 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062234.099739971] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062233.636 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062238.851579509] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062238.368 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062238.961602865] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062238.505 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062239.142548437] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062238.642 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062239.490805997] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062238.805 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062239.499158429] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062238.896 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062239.766497507] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062239.031 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062239.997265262] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062239.180 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062240.019950611] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062239.431 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062240.494483391] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062239.559 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062241.146643869] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062239.694 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062241.159662489] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062240.092 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062241.165964864] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062240.223 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062241.641248422] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062240.751 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062241.651872300] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062240.873 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062242.157156045] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062241.266 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062242.204367523] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062241.402 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062242.213599844] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062241.540 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062242.365624766] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062241.833 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062242.730326709] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062241.940 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062242.730825561] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.071 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062242.781968893] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.323 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062242.985250389] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.457 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062243.048382933] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.593 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062243.166317368] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.740 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[planner_server-3] [INFO] [1792062243.334807172] [global_costmap.global_costmap]: Message Filter dropping message: frame 'rplidar_link' at time 1792062242.861 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [lifecycle_manager-8]: sending signal 'SIGINT' to process[lifecycle_manager-8]
+[INFO] [velocity_smoother-7]: sending signal 'SIGINT' to process[velocity_smoother-7]
+[INFO] [waypoint_follower-6]: sending signal 'SIGINT' to process[waypoint_follower-6]
+[INFO] [bt_navigator-5]: sending signal 'SIGINT' to process[bt_navigator-5]
+[INFO] [behavior_server-4]: sending signal 'SIGINT' to process[behavior_server-4]
+[INFO] [planner_server-3]: sending signal 'SIGINT' to process[planner_server-3]
+[INFO] [smoother_server-2]: sending signal 'SIGINT' to process[smoother_server-2]
+[INFO] [controller_server-1]: sending signal 'SIGINT' to process[controller_server-1]
+[lifecycle_manager-8] [INFO] [1792062244.080321143] [rclcpp]: signal_handler(signum=2)
+[lifecycle_manager-8] [INFO] [1792062244.080705495] [lifecycle_manager_navigation]: Running Nav2 LifecycleManager rcl preshutdown (lifecycle_manager_navigation)
+[velocity_smoother-7] [INFO] [1792062244.094421227] [rclcpp]: signal_handler(signum=2)
+[velocity_smoother-7] [INFO] [1792062244.094768672] [velocity_smoother]: Running Nav2 LifecycleNode rcl preshutdown (velocity_smoother)
+[velocity_smoother-7] [INFO] [1792062244.095014524] [velocity_smoother]: Cleaning up
+[velocity_smoother-7] [INFO] [1792062244.095248135] [velocity_smoother]: Destroying bond (velocity_smoother) to lifecycle manager.
+[velocity_smoother-7] [INFO] [1792062244.121855431] [velocity_smoother]: Destroying
+[waypoint_follower-6] [INFO] [1792062244.146985319] [rclcpp]: signal_handler(signum=2)
+[waypoint_follower-6] [INFO] [1792062244.147319468] [waypoint_follower]: Running Nav2 LifecycleNode rcl preshutdown (waypoint_follower)
+[waypoint_follower-6] [INFO] [1792062244.148549358] [waypoint_follower]: Cleaning up
+[bt_navigator-5] [INFO] [1792062244.212028717] [rclcpp]: signal_handler(signum=2)
+[bt_navigator-5] [INFO] [1792062244.212514736] [bt_navigator]: Running Nav2 LifecycleNode rcl preshutdown (bt_navigator)
+[bt_navigator-5] [INFO] [1792062244.212985792] [bt_navigator]: Cleaning up
+[behavior_server-4] [INFO] [1792062244.225144838] [rclcpp]: signal_handler(signum=2)
+[behavior_server-4] [INFO] [1792062244.225675671] [behavior_server]: Running Nav2 LifecycleNode rcl preshutdown (behavior_server)
+[behavior_server-4] [INFO] [1792062244.225959412] [behavior_server]: Cleaning up
+[planner_server-3] [INFO] [1792062244.225281486] [rclcpp]: signal_handler(signum=2)
+[planner_server-3] [INFO] [1792062244.241662294] [planner_server]: Running Nav2 LifecycleNode rcl preshutdown (planner_server)
+[planner_server-3] [INFO] [1792062244.242086053] [planner_server]: Deactivating
+[planner_server-3] [INFO] [1792062244.242224405] [global_costmap.global_costmap]: Deactivating
+[smoother_server-2] [INFO] [1792062244.242596813] [rclcpp]: signal_handler(signum=2)
+[smoother_server-2] [INFO] [1792062244.248427724] [smoother_server]: Running Nav2 LifecycleNode rcl preshutdown (smoother_server)
+[smoother_server-2] [INFO] [1792062244.248710706] [smoother_server]: Deactivating
+[smoother_server-2] [INFO] [1792062244.248817706] [smoother_server]: Destroying bond (smoother_server) to lifecycle manager.
+[controller_server-1] [INFO] [1792062244.257130249] [rclcpp]: signal_handler(signum=2)
+[controller_server-1] [INFO] [1792062244.257394916] [controller_server]: Running Nav2 LifecycleNode rcl preshutdown (controller_server)
+[controller_server-1] [INFO] [1792062244.257627157] [controller_server]: Deactivating
+[controller_server-1] [INFO] [1792062244.257814731] [local_costmap.local_costmap]: Deactivating
+[smoother_server-2] [INFO] [1792062244.266971608] [smoother_server]: Cleaning up
+[controller_server-1] [INFO] [1792062244.373807035] [controller_server]: Destroying bond (controller_server) to lifecycle manager.
+[waypoint_follower-6] [INFO] [1792062244.438482118] [waypoint_follower]: Destroying bond (waypoint_follower) to lifecycle manager.
+[controller_server-1] [INFO] [1792062244.474979921] [controller_server]: Cleaning up
+[controller_server-1] [INFO] [1792062244.475435551] [local_costmap.local_costmap]: Cleaning up
+[behavior_server-4] [INFO] [1792062244.500279939] [behavior_server]: Destroying bond (behavior_server) to lifecycle manager.
+[waypoint_follower-6] [INFO] [1792062244.533517240] [waypoint_follower]: Destroying
+[smoother_server-2] [INFO] [1792062244.756115268] [smoother_server]: Destroying bond (smoother_server) to lifecycle manager.
+[planner_server-3] [INFO] [1792062244.851392983] [planner_server]: Deactivating plugin GridBased of type NavfnPlanner
+[planner_server-3] [INFO] [1792062244.851603150] [planner_server]: Destroying bond (planner_server) to lifecycle manager.
+[planner_server-3] [INFO] [1792062244.862051194] [planner_server]: Cleaning up
+[lifecycle_manager-8] [INFO] [1792062244.993669898] [lifecycle_manager_navigation]: Destroying lifecycle_manager_navigation
+[smoother_server-2] [INFO] [1792062245.039462597] [smoother_server]: Destroying
+[INFO] [waypoint_follower-6]: process has finished cleanly [pid 224572]
+[INFO] [velocity_smoother-7]: process has finished cleanly [pid 224574]
+[planner_server-3] [INFO] [1792062245.562821633] [global_costmap.global_costmap]: Cleaning up
+[behavior_server-4] [INFO] [1792062245.980110594] [behavior_server]: Destroying
+[INFO] [lifecycle_manager-8]: process has finished cleanly [pid 224576]
+[INFO] [smoother_server-2]: process has finished cleanly [pid 224564]
+[INFO] [behavior_server-4]: process has finished cleanly [pid 224568]
+[ERROR] [bt_navigator-5]: process[bt_navigator-5] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+[INFO] [bt_navigator-5]: sending signal 'SIGTERM' to process[bt_navigator-5]
+[ERROR] [planner_server-3]: process[planner_server-3] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+[bt_navigator-5] [INFO] [1792062249.077240354] [rclcpp]: signal_handler(signum=15)
+[ERROR] [controller_server-1]: process[controller_server-1] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+[INFO] [planner_server-3]: sending signal 'SIGTERM' to process[planner_server-3]
+[INFO] [controller_server-1]: sending signal 'SIGTERM' to process[controller_server-1]
+[planner_server-3] [INFO] [1792062249.120858273] [rclcpp]: signal_handler(signum=15)
+[controller_server-1] [INFO] [1792062249.136128840] [rclcpp]: signal_handler(signum=15)
+[planner_server-3] [INFO] [1792062250.423925452] [planner_server]: Cleaning up plugin GridBased of type NavfnPlanner
+[planner_server-3] [INFO] [1792062250.424152508] [planner_server]: Destroying plugin GridBased of type NavfnPlanner
+[planner_server-3] [INFO] [1792062250.720519643] [planner_server]: Destroying bond (planner_server) to lifecycle manager.
+[planner_server-3] [INFO] [1792062251.021880874] [global_costmap.global_costmap]: Destroying
+[planner_server-3] [INFO] [1792062252.232498598] [planner_server]: Destroying
+[INFO] [planner_server-3]: process has finished cleanly [pid 224566]
+[controller_server-1] [INFO] [1792062254.047882564] [controller_server]: Destroying bond (controller_server) to lifecycle manager.
+[ERROR] [bt_navigator-5]: process[bt_navigator-5] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+[INFO] [bt_navigator-5]: sending signal 'SIGKILL' to process[bt_navigator-5]
+[ERROR] [controller_server-1]: process[controller_server-1] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+[INFO] [controller_server-1]: sending signal 'SIGKILL' to process[controller_server-1]
+[ERROR] [bt_navigator-5]: process has died [pid 224570, exit code -9, cmd '/opt/ros/humble/lib/nav2_bt_navigator/bt_navigator --ros-args --log-level info --ros-args -r __node:=bt_navigator -r __ns:=/ --params-file /tmp/launch_params_el3xwt_3 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [controller_server-1]: process has died [pid 224562, exit code -9, cmd '/opt/ros/humble/lib/nav2_controller/controller_server --ros-args --log-level info --ros-args -r __ns:=/ --params-file /tmp/launch_params_el3xwt_3 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static -r cmd_vel:=cmd_vel_nav'].

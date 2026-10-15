@@ -1,0 +1,7 @@
+1792057248.1893859 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/slam/2026-10-15-09-40-48-185095-ubuntu-171338
+1792057248.1900294 [INFO] [launch]: Default logging verbosity is set to INFO
+1792057248.4677904 [INFO] [async_slam_toolbox_node-1]: process started with pid [171432]
+1792057480.1823931 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1792057485.1920443 [ERROR] [async_slam_toolbox_node-1]: process[async_slam_toolbox_node-1] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1792057485.6284924 [INFO] [async_slam_toolbox_node-1]: sending signal 'SIGTERM' to process[async_slam_toolbox_node-1]
+1792057486.1983199 [INFO] [async_slam_toolbox_node-1]: process has finished cleanly [pid 171432]

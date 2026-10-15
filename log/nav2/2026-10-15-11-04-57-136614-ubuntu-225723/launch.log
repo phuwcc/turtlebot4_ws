@@ -1,0 +1,10 @@
+1792062297.1536784 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/nav2/2026-10-15-11-04-57-136614-ubuntu-225723
+1792062297.1550632 [INFO] [launch]: Default logging verbosity is set to INFO
+1792062298.9582925 [INFO] [controller_server-1]: process started with pid [225844]
+1792062298.9607110 [INFO] [smoother_server-2]: process started with pid [225846]
+1792062298.9625907 [INFO] [planner_server-3]: process started with pid [225848]
+1792062298.9641795 [INFO] [behavior_server-4]: process started with pid [225850]
+1792062298.9656906 [INFO] [bt_navigator-5]: process started with pid [225852]
+1792062298.9741054 [INFO] [waypoint_follower-6]: process started with pid [225854]
+1792062298.9845998 [INFO] [velocity_smoother-7]: process started with pid [225856]
+1792062298.9880879 [INFO] [lifecycle_manager-8]: process started with pid [225858]

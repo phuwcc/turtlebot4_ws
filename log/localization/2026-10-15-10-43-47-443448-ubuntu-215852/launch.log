@@ -1,0 +1,16 @@
+1792061027.4479280 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/localization/2026-10-15-10-43-47-443448-ubuntu-215852
+1792061027.4487033 [INFO] [launch]: Default logging verbosity is set to INFO
+1792061028.0830195 [INFO] [map_server-1]: process started with pid [215914]
+1792061028.0847909 [INFO] [amcl-2]: process started with pid [215916]
+1792061028.0861223 [INFO] [lifecycle_manager-3]: process started with pid [215918]
+1792061109.2317555 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1792061109.2741737 [INFO] [lifecycle_manager-3]: sending signal 'SIGINT' to process[lifecycle_manager-3]
+1792061109.2915604 [INFO] [amcl-2]: sending signal 'SIGINT' to process[amcl-2]
+1792061109.3282502 [INFO] [map_server-1]: sending signal 'SIGINT' to process[map_server-1]
+1792061109.6301975 [INFO] [map_server-1]: process has finished cleanly [pid 215914]
+1792061109.8778527 [INFO] [amcl-2]: process has finished cleanly [pid 215916]
+1792061114.2561746 [ERROR] [lifecycle_manager-3]: process[lifecycle_manager-3] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1792061114.2577548 [INFO] [lifecycle_manager-3]: sending signal 'SIGTERM' to process[lifecycle_manager-3]
+1792061119.2577178 [ERROR] [lifecycle_manager-3]: process[lifecycle_manager-3] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+1792061119.2604964 [INFO] [lifecycle_manager-3]: sending signal 'SIGKILL' to process[lifecycle_manager-3]
+1792061119.2801280 [ERROR] [lifecycle_manager-3]: process has died [pid 215918, exit code -9, cmd '/opt/ros/humble/lib/nav2_lifecycle_manager/lifecycle_manager --ros-args --log-level info --ros-args -r __node:=lifecycle_manager_localization -r __ns:=/ --params-file /tmp/launch_params_kfikvxuh --params-file /tmp/launch_params_ury558b3 --params-file /tmp/launch_params_rp85kquq -r initialpose:=amcl/manual_initialpose'].

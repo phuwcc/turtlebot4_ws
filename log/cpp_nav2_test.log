@@ -1,0 +1,151 @@
+[INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/nav2/2026-10-15-10-23-39-877017-ubuntu-203694
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [controller_server-1]: process started with pid [205716]
+[INFO] [smoother_server-2]: process started with pid [205723]
+[INFO] [planner_server-3]: process started with pid [205725]
+[INFO] [behavior_server-4]: process started with pid [205732]
+[INFO] [bt_navigator-5]: process started with pid [205739]
+[INFO] [waypoint_follower-6]: process started with pid [205747]
+[INFO] [velocity_smoother-7]: process started with pid [205754]
+[INFO] [lifecycle_manager-8]: process started with pid [205766]
+[velocity_smoother-7] [INFO] [1792059821.723895948] [velocity_smoother]: 
+[velocity_smoother-7] 	velocity_smoother lifecycle node launched. 
+[velocity_smoother-7] 	Waiting on external lifecycle transitions to activate
+[velocity_smoother-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-3] [INFO] [1792059821.922306735] [planner_server]: 
+[planner_server-3] 	planner_server lifecycle node launched. 
+[planner_server-3] 	Waiting on external lifecycle transitions to activate
+[planner_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[smoother_server-2] [INFO] [1792059822.005838817] [smoother_server]: 
+[smoother_server-2] 	smoother_server lifecycle node launched. 
+[smoother_server-2] 	Waiting on external lifecycle transitions to activate
+[smoother_server-2] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[smoother_server-2] [INFO] [1792059822.115495211] [smoother_server]: Creating smoother server
+[planner_server-3] [INFO] [1792059822.122135433] [planner_server]: Creating
+[behavior_server-4] [INFO] [1792059822.149597064] [behavior_server]: 
+[behavior_server-4] 	behavior_server lifecycle node launched. 
+[behavior_server-4] 	Waiting on external lifecycle transitions to activate
+[behavior_server-4] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-6] [INFO] [1792059822.193589574] [waypoint_follower]: 
+[waypoint_follower-6] 	waypoint_follower lifecycle node launched. 
+[waypoint_follower-6] 	Waiting on external lifecycle transitions to activate
+[waypoint_follower-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-6] [INFO] [1792059822.221041946] [waypoint_follower]: Creating
+[lifecycle_manager-8] [INFO] [1792059822.271263084] [lifecycle_manager_navigation]: Creating
+[lifecycle_manager-8] [INFO] [1792059822.296313338] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[controller_server-1] [INFO] [1792059822.338504380] [controller_server]: 
+[controller_server-1] 	controller_server lifecycle node launched. 
+[controller_server-1] 	Waiting on external lifecycle transitions to activate
+[controller_server-1] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-1] [INFO] [1792059822.411951360] [controller_server]: Creating controller server
+[bt_navigator-5] [INFO] [1792059822.461468941] [bt_navigator]: 
+[bt_navigator-5] 	bt_navigator lifecycle node launched. 
+[bt_navigator-5] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-5] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-5] [INFO] [1792059822.521914440] [bt_navigator]: Creating
+[controller_server-1] [INFO] [1792059822.536151405] [local_costmap.local_costmap]: 
+[controller_server-1] 	local_costmap lifecycle node launched. 
+[controller_server-1] 	Waiting on external lifecycle transitions to activate
+[controller_server-1] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-1] [INFO] [1792059822.579270524] [local_costmap.local_costmap]: Creating Costmap
+[planner_server-3] [INFO] [1792059822.801239190] [global_costmap.global_costmap]: 
+[planner_server-3] 	global_costmap lifecycle node launched. 
+[planner_server-3] 	Waiting on external lifecycle transitions to activate
+[planner_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-3] [INFO] [1792059822.817732199] [global_costmap.global_costmap]: Creating Costmap
+[lifecycle_manager-8] [INFO] [1792059824.327267686] [lifecycle_manager_navigation]: Waiting for service controller_server/get_state...
+[lifecycle_manager-8] [INFO] [1792059826.337113809] [lifecycle_manager_navigation]: Waiting for service controller_server/get_state...
+[lifecycle_manager-8] [INFO] [1792059828.339588190] [lifecycle_manager_navigation]: Waiting for service controller_server/get_state...
+[lifecycle_manager-8] [INFO] [1792059830.700228278] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-8] [INFO] [1792059830.700459575] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[controller_server-1] [INFO] [1792059830.706466943] [controller_server]: Configuring controller interface
+[controller_server-1] [INFO] [1792059830.708296485] [controller_server]: getting goal checker plugins..
+[controller_server-1] [INFO] [1792059830.708839024] [controller_server]: Controller frequency set to 10.0000Hz
+[controller_server-1] [INFO] [1792059830.709041506] [local_costmap.local_costmap]: Configuring
+[controller_server-1] [INFO] [1792059830.978296136] [local_costmap.local_costmap]: Using plugin "static_layer"
+[controller_server-1] [INFO] [1792059831.229353771] [local_costmap.local_costmap]: Subscribing to the map topic (/map) with transient local durability
+[controller_server-1] [INFO] [1792059831.321258616] [local_costmap.local_costmap]: Initialized plugin "static_layer"
+[controller_server-1] [INFO] [1792059831.321415672] [local_costmap.local_costmap]: Using plugin "voxel_layer"
+[controller_server-1] [INFO] [1792059831.435657765] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[controller_server-1] [INFO] [1792059831.891998409] [local_costmap.local_costmap]: Initialized plugin "voxel_layer"
+[controller_server-1] [INFO] [1792059831.892164428] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-1] [INFO] [1792059831.992555593] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[controller_server-1] [INFO] [1792059832.670084217] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[controller_server-1] [INFO] [1792059832.722070453] [controller_server]: Created goal checker : general_goal_checker of type nav2_controller::SimpleGoalChecker
+[controller_server-1] [INFO] [1792059832.763909475] [controller_server]: Controller Server has general_goal_checker  goal checkers available.
+[controller_server-1] [INFO] [1792059832.880817982] [controller_server]: Created controller : FollowPath of type dwb_core::DWBLocalPlanner
+[controller_server-1] [INFO] [1792059833.037624191] [controller_server]: Setting transform_tolerance to 0.200000
+[controller_server-1] [INFO] [1792059833.877925152] [controller_server]: Using critic "RotateToGoal" (dwb_critics::RotateToGoalCritic)
+[controller_server-1] [INFO] [1792059833.900968400] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792059833.957946446] [controller_server]: Using critic "Oscillation" (dwb_critics::OscillationCritic)
+[controller_server-1] [INFO] [1792059834.027839101] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792059834.049765236] [controller_server]: Using critic "BaseObstacle" (dwb_critics::BaseObstacleCritic)
+[controller_server-1] [INFO] [1792059834.077944276] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792059834.081223193] [controller_server]: Using critic "GoalAlign" (dwb_critics::GoalAlignCritic)
+[controller_server-1] [INFO] [1792059834.132246000] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792059834.144557237] [controller_server]: Using critic "PathAlign" (dwb_critics::PathAlignCritic)
+[controller_server-1] [INFO] [1792059834.180574077] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792059834.190634771] [controller_server]: Using critic "PathDist" (dwb_critics::PathDistCritic)
+[controller_server-1] [INFO] [1792059834.210893549] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792059834.211726478] [controller_server]: Using critic "GoalDist" (dwb_critics::GoalDistCritic)
+[controller_server-1] [INFO] [1792059834.213013685] [controller_server]: Critic plugin initialized
+[controller_server-1] [INFO] [1792059834.213156963] [controller_server]: Controller Server has FollowPath  controllers available.
+[controller_server-1] [WARN] [1792059834.614547679] [controller_server.rclcpp]: failed to send response to /controller_server/change_state (timeout): client will not receive response, at ./src/rmw_response.cpp:154, at ./src/rcl/service.c:314
+[controller_server-1] [INFO] [1792059843.077305540] [local_costmap.local_costmap]: StaticLayer: Resizing static layer to 93 X 150 at 0.050000 m/pix
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[bt_navigator-5] [INFO] [1792059965.948910164] [rclcpp]: signal_handler(signum=2)
+[waypoint_follower-6] [INFO] [1792059965.948925646] [rclcpp]: signal_handler(signum=2)
+[waypoint_follower-6] [INFO] [1792059965.950859892] [waypoint_follower]: Running Nav2 LifecycleNode rcl preshutdown (waypoint_follower)
+[waypoint_follower-6] [INFO] [1792059965.951098448] [waypoint_follower]: Destroying bond (waypoint_follower) to lifecycle manager.
+[lifecycle_manager-8] [INFO] [1792059965.949010498] [rclcpp]: signal_handler(signum=2)
+[lifecycle_manager-8] [INFO] [1792059965.950384538] [lifecycle_manager_navigation]: Running Nav2 LifecycleManager rcl preshutdown (lifecycle_manager_navigation)
+[behavior_server-4] [INFO] [1792059965.949294943] [rclcpp]: signal_handler(signum=2)
+[behavior_server-4] [INFO] [1792059965.953964771] [behavior_server]: Running Nav2 LifecycleNode rcl preshutdown (behavior_server)
+[behavior_server-4] [INFO] [1792059965.954234827] [behavior_server]: Destroying bond (behavior_server) to lifecycle manager.
+[velocity_smoother-7] [INFO] [1792059965.949322091] [rclcpp]: signal_handler(signum=2)
+[velocity_smoother-7] [INFO] [1792059965.950859781] [velocity_smoother]: Running Nav2 LifecycleNode rcl preshutdown (velocity_smoother)
+[velocity_smoother-7] [INFO] [1792059965.951098392] [velocity_smoother]: Destroying bond (velocity_smoother) to lifecycle manager.
+[controller_server-1] [INFO] [1792059965.949630185] [rclcpp]: signal_handler(signum=2)
+[controller_server-1] [INFO] [1792059965.959907417] [controller_server]: Running Nav2 LifecycleNode rcl preshutdown (controller_server)
+[controller_server-1] [INFO] [1792059965.960205843] [controller_server]: Cleaning up
+[planner_server-3] [INFO] [1792059965.949648444] [rclcpp]: signal_handler(signum=2)
+[planner_server-3] [INFO] [1792059965.952060858] [planner_server]: Running Nav2 LifecycleNode rcl preshutdown (planner_server)
+[planner_server-3] [INFO] [1792059965.952303192] [planner_server]: Destroying bond (planner_server) to lifecycle manager.
+[smoother_server-2] [INFO] [1792059965.949679722] [rclcpp]: signal_handler(signum=2)
+[smoother_server-2] [INFO] [1792059965.950130760] [smoother_server]: Running Nav2 LifecycleNode rcl preshutdown (smoother_server)
+[smoother_server-2] [INFO] [1792059965.951564857] [smoother_server]: Destroying bond (smoother_server) to lifecycle manager.
+[INFO] [lifecycle_manager-8]: sending signal 'SIGINT' to process[lifecycle_manager-8]
+[INFO] [velocity_smoother-7]: sending signal 'SIGINT' to process[velocity_smoother-7]
+[INFO] [waypoint_follower-6]: sending signal 'SIGINT' to process[waypoint_follower-6]
+[INFO] [bt_navigator-5]: sending signal 'SIGINT' to process[bt_navigator-5]
+[INFO] [behavior_server-4]: sending signal 'SIGINT' to process[behavior_server-4]
+[INFO] [planner_server-3]: sending signal 'SIGINT' to process[planner_server-3]
+[INFO] [smoother_server-2]: sending signal 'SIGINT' to process[smoother_server-2]
+[INFO] [controller_server-1]: sending signal 'SIGINT' to process[controller_server-1]
+[ERROR] [velocity_smoother-7]: process has died [pid 205754, exit code -2, cmd '/opt/ros/humble/lib/nav2_velocity_smoother/velocity_smoother --ros-args --log-level info --ros-args -r __node:=velocity_smoother -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static -r cmd_vel:=cmd_vel_nav -r cmd_vel_smoothed:=cmd_vel'].
+[bt_navigator-5] [INFO] [1792059965.951447393] [bt_navigator]: Running Nav2 LifecycleNode rcl preshutdown (bt_navigator)
+[bt_navigator-5] [INFO] [1792059965.951695412] [bt_navigator]: Destroying bond (bt_navigator) to lifecycle manager.
+[bt_navigator-5] [INFO] [1792059965.997019222] [bt_navigator]: Destroying
+[ERROR] [waypoint_follower-6]: process has died [pid 205747, exit code -2, cmd '/opt/ros/humble/lib/nav2_waypoint_follower/waypoint_follower --ros-args --log-level info --ros-args -r __node:=waypoint_follower -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].
+[controller_server-1] [INFO] [1792059965.984831911] [local_costmap.local_costmap]: Cleaning up
+[ERROR] [bt_navigator-5]: process has died [pid 205739, exit code -2, cmd '/opt/ros/humble/lib/nav2_bt_navigator/bt_navigator --ros-args --log-level info --ros-args -r __node:=bt_navigator -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].
+[planner_server-3] [INFO] [1792059965.985399079] [global_costmap.global_costmap]: Destroying
+[ERROR] [behavior_server-4]: process has died [pid 205732, exit code -2, cmd '/opt/ros/humble/lib/nav2_behaviors/behavior_server --ros-args --log-level info --ros-args -r __node:=behavior_server -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [planner_server-3]: process has died [pid 205725, exit code -2, cmd '/opt/ros/humble/lib/nav2_planner/planner_server --ros-args --log-level info --ros-args -r __node:=planner_server -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [smoother_server-2]: process has died [pid 205723, exit code -2, cmd '/opt/ros/humble/lib/nav2_smoother/smoother_server --ros-args --log-level info --ros-args -r __node:=smoother_server -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].
+[waypoint_follower-6] [INFO] [1792059965.997747132] [waypoint_follower]: Destroying
+[behavior_server-4] [INFO] [1792059966.006071210] [behavior_server]: Destroying
+[lifecycle_manager-8] [INFO] [1792059966.056372497] [rclcpp]: signal_handler(signum=2)
+[velocity_smoother-7] [INFO] [1792059966.056951072] [velocity_smoother]: Destroying
+[smoother_server-2] [INFO] [1792059966.076397663] [smoother_server]: Destroying
+[ERROR] [lifecycle_manager-8]: process[lifecycle_manager-8] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+[INFO] [lifecycle_manager-8]: sending signal 'SIGTERM' to process[lifecycle_manager-8]
+[ERROR] [controller_server-1]: process[controller_server-1] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+[lifecycle_manager-8] [INFO] [1792059971.035512179] [rclcpp]: signal_handler(signum=15)
+[INFO] [controller_server-1]: sending signal 'SIGTERM' to process[controller_server-1]
+[ERROR] [lifecycle_manager-8]: process[lifecycle_manager-8] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+[INFO] [lifecycle_manager-8]: sending signal 'SIGKILL' to process[lifecycle_manager-8]
+[ERROR] [controller_server-1]: process[controller_server-1] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+[INFO] [controller_server-1]: sending signal 'SIGKILL' to process[controller_server-1]
+[ERROR] [lifecycle_manager-8]: process has died [pid 205766, exit code -9, cmd '/opt/ros/humble/lib/nav2_lifecycle_manager/lifecycle_manager --ros-args --log-level info --ros-args -r __node:=lifecycle_manager_navigation -r __ns:=/ --params-file /tmp/launch_params_9but_lkt --params-file /tmp/launch_params_sndqhl06 --params-file /tmp/launch_params_cguuzn_x -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan'].
+[ERROR] [controller_server-1]: process has died [pid 205716, exit code -9, cmd '/opt/ros/humble/lib/nav2_controller/controller_server --ros-args --log-level info --ros-args -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static -r cmd_vel:=cmd_vel_nav'].

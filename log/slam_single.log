@@ -1,0 +1,13 @@
+[INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/slam_single/2026-10-15-08-38-20-881521-ubuntu-120981
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [async_slam_toolbox_node-1]: process started with pid [120993]
+[async_slam_toolbox_node-1] [INFO] [1792053501.450502656] [slam_toolbox]: Node using stack size 40000000
+[async_slam_toolbox_node-1] [INFO] [1792053501.658285304] [slam_toolbox]: Using solver plugin solver_plugins::CeresSolver
+[async_slam_toolbox_node-1] [INFO] [1792053501.658850213] [slam_toolbox]: CeresSolver: Using SCHUR_JACOBI preconditioner.
+[async_slam_toolbox_node-1] [INFO] [1792053502.489210322] [slam_toolbox]: Message Filter dropping message: frame 'rplidar_link' at time 1792053502.231 for reason 'discarding message because the queue is full'
+[async_slam_toolbox_node-1] [INFO] [1792053502.624619930] [slam_toolbox]: Message Filter dropping message: frame 'rplidar_link' at time 1792053502.367 for reason 'discarding message because the queue is full'
+[async_slam_toolbox_node-1] Registering sensor: [Custom Described Lidar]
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [async_slam_toolbox_node-1]: sending signal 'SIGINT' to process[async_slam_toolbox_node-1]
+[async_slam_toolbox_node-1] [INFO] [1792054593.549551240] [rclcpp]: signal_handler(signum=2)
+[INFO] [async_slam_toolbox_node-1]: process has finished cleanly [pid 120993]

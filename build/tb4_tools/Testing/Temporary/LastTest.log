@@ -1,0 +1,19 @@
+Start testing: Oct 15 10:46 UTC
+----------------------------------------------------------
+1/1 Testing: controls
+1/1 Test: controls
+Command: "/home/ubuntu/turtlebot4_ws/build/tb4_tools/test_controls"
+Directory: /home/ubuntu/turtlebot4_ws/build/tb4_tools
+"controls" start time: Oct 15 10:46 UTC
+Output:
+----------------------------------------------------------
+Origin composition, teleop directions and timeout: OK
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"controls" end time: Oct 15 10:46 UTC
+"controls" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 15 10:46 UTC

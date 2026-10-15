@@ -1,0 +1,44 @@
+[INFO] [1792062145.190013351] [lifecycle_manager_navigation]: Creating
+[INFO] [1792062145.236058994] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[INFO] [1792062147.335440809] [lifecycle_manager_navigation]: Waiting for service controller_server/get_state...
+[INFO] [1792062179.876134472] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[INFO] [1792062179.876456287] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[INFO] [1792062181.067042238] [lifecycle_manager_navigation]: [34m[1mConfiguring smoother_server[0m[0m
+[INFO] [1792062181.440478076] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[INFO] [1792062182.434187703] [lifecycle_manager_navigation]: [34m[1mConfiguring behavior_server[0m[0m
+[INFO] [1792062183.777142002] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[INFO] [1792062185.617168615] [lifecycle_manager_navigation]: [34m[1mConfiguring waypoint_follower[0m[0m
+[INFO] [1792062185.973303070] [lifecycle_manager_navigation]: [34m[1mConfiguring velocity_smoother[0m[0m
+[INFO] [1792062186.054900424] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[INFO] [1792062186.596160658] [lifecycle_manager_navigation]: Server controller_server connected with bond.
+[INFO] [1792062186.596372751] [lifecycle_manager_navigation]: [34m[1mActivating smoother_server[0m[0m
+[INFO] [1792062186.824756060] [lifecycle_manager_navigation]: Server smoother_server connected with bond.
+[INFO] [1792062186.824935079] [lifecycle_manager_navigation]: [34m[1mActivating planner_server[0m[0m
+[INFO] [1792062187.044693493] [lifecycle_manager_navigation]: Server planner_server connected with bond.
+[INFO] [1792062187.044855975] [lifecycle_manager_navigation]: [34m[1mActivating behavior_server[0m[0m
+[INFO] [1792062187.267267576] [lifecycle_manager_navigation]: Server behavior_server connected with bond.
+[INFO] [1792062187.267486947] [lifecycle_manager_navigation]: [34m[1mActivating bt_navigator[0m[0m
+[INFO] [1792062190.120366737] [lifecycle_manager_navigation]: Server bt_navigator connected with bond.
+[INFO] [1792062190.120556293] [lifecycle_manager_navigation]: [34m[1mActivating waypoint_follower[0m[0m
+[INFO] [1792062190.470673947] [lifecycle_manager_navigation]: Server waypoint_follower connected with bond.
+[INFO] [1792062190.473531486] [lifecycle_manager_navigation]: [34m[1mActivating velocity_smoother[0m[0m
+[INFO] [1792062190.876376993] [lifecycle_manager_navigation]: Server velocity_smoother connected with bond.
+[INFO] [1792062190.876547197] [lifecycle_manager_navigation]: [34m[1mManaged nodes are active[0m[0m
+[INFO] [1792062190.876603604] [lifecycle_manager_navigation]: [34m[1mCreating bond timer...[0m[0m
+[INFO] [1792062210.876874012] [lifecycle_manager_navigation]: [34m[1mHave not received a heartbeat from behavior_server.[0m[0m
+[ERROR] [1792062210.877027679] [lifecycle_manager_navigation]: CRITICAL FAILURE: SERVER behavior_server IS DOWN after not receiving a heartbeat for 4000 ms. Shutting down related nodes.
+[INFO] [1792062210.877076956] [lifecycle_manager_navigation]: [34m[1mTerminating bond timer...[0m[0m
+[INFO] [1792062210.877543605] [lifecycle_manager_navigation]: [34m[1mResetting managed nodes...[0m[0m
+[INFO] [1792062210.877609161] [lifecycle_manager_navigation]: [34m[1mDeactivating velocity_smoother[0m[0m
+[INFO] [1792062211.714423862] [lifecycle_manager_navigation]: [34m[1mDeactivating waypoint_follower[0m[0m
+[INFO] [1792062212.353348220] [lifecycle_manager_navigation]: [34m[1mDeactivating bt_navigator[0m[0m
+[INFO] [1792062213.461986928] [lifecycle_manager_navigation]: [34m[1mDeactivating behavior_server[0m[0m
+[ERROR] [1792062216.634953797] [lifecycle_manager_navigation]: Failed to change state for node: behavior_server. Exception: behavior_server/get_state service client: async_send_request failed.
+[INFO] [1792062216.638085225] [lifecycle_manager_navigation]: [34m[1mManaged nodes have been reset[0m[0m
+[INFO] [1792062218.503350597] [lifecycle_manager_navigation]: [34m[1mSuccessfully re-established connections from server respawns, starting back up.[0m[0m
+[INFO] [1792062218.503513097] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[INFO] [1792062218.503562412] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[ERROR] [1792062218.792783986] [lifecycle_manager_navigation]: Failed to change state for node: controller_server
+[ERROR] [1792062218.792921634] [lifecycle_manager_navigation]: Failed to bring up all requested nodes. Aborting bringup.
+[INFO] [1792062244.080321143] [rclcpp]: signal_handler(signum=2)
+[INFO] [1792062244.080705495] [lifecycle_manager_navigation]: Running Nav2 LifecycleManager rcl preshutdown (lifecycle_manager_navigation)

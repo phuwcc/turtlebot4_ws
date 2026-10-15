@@ -1,0 +1,47 @@
+-- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Found ament_index_cpp: 1.4.0 (/opt/ros/humble/share/ament_index_cpp/cmake)
+-- Found rclcpp: 16.0.14 (/opt/ros/humble/share/rclcpp/cmake)
+-- Found rosidl_generator_c: 3.1.7 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+-- Found rosidl_adapter: 3.1.7 (/opt/ros/humble/share/rosidl_adapter/cmake)
+-- Found rosidl_generator_cpp: 3.1.7 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+-- Found rmw_fastrtps_cpp: 6.2.8 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+-- Using RMW implementation 'rmw_fastrtps_cpp' as default
+-- Found geometry_msgs: 4.9.0 (/opt/ros/humble/share/geometry_msgs/cmake)
+-- Found nav_msgs: 4.9.0 (/opt/ros/humble/share/nav_msgs/cmake)
+-- Found tf2_ros: 0.25.15 (/opt/ros/humble/share/tf2_ros/cmake)
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/ubuntu/turtlebot4_ws/build/tb4_tools
+[ 16%] Building CXX object CMakeFiles/start_relative_mapping.dir/src/start_relative_mapping.cpp.o
+[ 33%] Linking CXX executable start_relative_mapping
+[ 33%] Built target start_relative_mapping
+[ 50%] Building CXX object CMakeFiles/teleop_keyboard.dir/src/teleop_keyboard.cpp.o
+[ 66%] Linking CXX executable teleop_keyboard
+[ 66%] Built target teleop_keyboard
+[ 83%] Building CXX object CMakeFiles/test_controls.dir/test/test_controls.cpp.o
+[100%] Linking CXX executable test_controls
+[100%] Built target test_controls
+-- Install configuration: "Release"
+-- Execute custom install script
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/lib/tb4_tools/start_relative_mapping
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/lib/tb4_tools/teleop_keyboard
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/config/nav2_pi.yaml
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/ament_index/resource_index/package_run_dependencies/tb4_tools
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/ament_index/resource_index/parent_prefix_path/tb4_tools
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/environment/ament_prefix_path.sh
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/environment/ament_prefix_path.dsv
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/environment/path.sh
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/environment/path.dsv
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/local_setup.bash
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/local_setup.sh
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/local_setup.zsh
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/local_setup.dsv
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/package.dsv
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/ament_index/resource_index/packages/tb4_tools
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/cmake/tb4_toolsConfig.cmake
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/cmake/tb4_toolsConfig-version.cmake
+-- Symlinking: /home/ubuntu/turtlebot4_ws/install/tb4_tools/share/tb4_tools/package.xml

@@ -1,0 +1,9 @@
+1792052897.5507650 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/slam/2026-10-15-08-28-17-545593-ubuntu-117853
+1792052897.5526354 [INFO] [launch]: Default logging verbosity is set to INFO
+1792052897.9808054 [INFO] [async_slam_toolbox_node-1]: process started with pid [117901]
+1792053449.6976678 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1792053454.7125299 [ERROR] [async_slam_toolbox_node-1]: process[async_slam_toolbox_node-1] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1792053454.7152033 [INFO] [async_slam_toolbox_node-1]: sending signal 'SIGTERM' to process[async_slam_toolbox_node-1]
+1792053459.7084024 [ERROR] [async_slam_toolbox_node-1]: process[async_slam_toolbox_node-1] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+1792053459.7100337 [INFO] [async_slam_toolbox_node-1]: sending signal 'SIGKILL' to process[async_slam_toolbox_node-1]
+1792053459.7607481 [ERROR] [async_slam_toolbox_node-1]: process has died [pid 117901, exit code -9, cmd '/opt/ros/humble/lib/slam_toolbox/async_slam_toolbox_node --ros-args -r __node:=slam_toolbox -r __ns:=/ --params-file /tmp/tmph6jfoax8 --params-file /tmp/launch_params_gm58ter_ -r /tf:=tf -r /tf_static:=tf_static -r /scan:=scan -r /map:=map -r /map_metadata:=map_metadata'].

@@ -1,0 +1,22 @@
+[INFO] [1792061464.308153100] [lifecycle_manager_navigation]: Creating
+[INFO] [1792061464.346264898] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[INFO] [1792061466.362642045] [lifecycle_manager_navigation]: Waiting for service controller_server/get_state...
+[INFO] [1792061468.363634637] [lifecycle_manager_navigation]: Waiting for service controller_server/get_state...
+[INFO] [1792061470.364001930] [lifecycle_manager_navigation]: Waiting for service controller_server/get_state...
+[INFO] [1792061472.571676662] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[INFO] [1792061472.574327205] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[INFO] [1792061478.854054978] [lifecycle_manager_navigation]: [34m[1mConfiguring smoother_server[0m[0m
+[INFO] [1792061479.421796713] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[INFO] [1792061481.559016419] [lifecycle_manager_navigation]: [34m[1mConfiguring behavior_server[0m[0m
+[INFO] [1792061482.556043734] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[INFO] [1792061484.188821138] [lifecycle_manager_navigation]: [34m[1mConfiguring waypoint_follower[0m[0m
+[INFO] [1792061484.471947522] [lifecycle_manager_navigation]: [34m[1mConfiguring velocity_smoother[0m[0m
+[INFO] [1792061484.586583083] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[INFO] [1792061484.963191199] [lifecycle_manager_navigation]: Server controller_server connected with bond.
+[INFO] [1792061484.963370570] [lifecycle_manager_navigation]: [34m[1mActivating smoother_server[0m[0m
+[INFO] [1792061485.098071236] [lifecycle_manager_navigation]: Server smoother_server connected with bond.
+[INFO] [1792061485.098214995] [lifecycle_manager_navigation]: [34m[1mActivating planner_server[0m[0m
+[INFO] [1792061500.167233980] [rclcpp]: signal_handler(signum=2)
+[INFO] [1792061500.168583928] [lifecycle_manager_navigation]: Running Nav2 LifecycleManager rcl preshutdown (lifecycle_manager_navigation)
+[ERROR] [1792061502.217143859] [lifecycle_manager_navigation]: Failed to change state for node: planner_server. Exception: planner_server/get_state service client: async_send_request failed.
+[ERROR] [1792061502.217309822] [lifecycle_manager_navigation]: Failed to bring up all requested nodes. Aborting bringup.

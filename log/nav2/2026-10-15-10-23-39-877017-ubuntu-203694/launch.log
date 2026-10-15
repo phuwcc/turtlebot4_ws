@@ -1,0 +1,35 @@
+1792059819.8818965 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/nav2/2026-10-15-10-23-39-877017-ubuntu-203694
+1792059819.8829331 [INFO] [launch]: Default logging verbosity is set to INFO
+1792059821.2277470 [INFO] [controller_server-1]: process started with pid [205716]
+1792059821.2342956 [INFO] [smoother_server-2]: process started with pid [205723]
+1792059821.2360246 [INFO] [planner_server-3]: process started with pid [205725]
+1792059821.2375724 [INFO] [behavior_server-4]: process started with pid [205732]
+1792059821.2390897 [INFO] [bt_navigator-5]: process started with pid [205739]
+1792059821.2600596 [INFO] [waypoint_follower-6]: process started with pid [205747]
+1792059821.2688801 [INFO] [velocity_smoother-7]: process started with pid [205754]
+1792059821.2956605 [INFO] [lifecycle_manager-8]: process started with pid [205766]
+1792059965.9655836 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1792059966.0549426 [INFO] [lifecycle_manager-8]: sending signal 'SIGINT' to process[lifecycle_manager-8]
+1792059966.0670874 [INFO] [velocity_smoother-7]: sending signal 'SIGINT' to process[velocity_smoother-7]
+1792059966.1666603 [INFO] [waypoint_follower-6]: sending signal 'SIGINT' to process[waypoint_follower-6]
+1792059966.1740086 [INFO] [bt_navigator-5]: sending signal 'SIGINT' to process[bt_navigator-5]
+1792059966.1936302 [INFO] [behavior_server-4]: sending signal 'SIGINT' to process[behavior_server-4]
+1792059966.2029700 [INFO] [planner_server-3]: sending signal 'SIGINT' to process[planner_server-3]
+1792059966.2425201 [INFO] [smoother_server-2]: sending signal 'SIGINT' to process[smoother_server-2]
+1792059966.2736118 [INFO] [controller_server-1]: sending signal 'SIGINT' to process[controller_server-1]
+1792059966.2775426 [ERROR] [velocity_smoother-7]: process has died [pid 205754, exit code -2, cmd '/opt/ros/humble/lib/nav2_velocity_smoother/velocity_smoother --ros-args --log-level info --ros-args -r __node:=velocity_smoother -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static -r cmd_vel:=cmd_vel_nav -r cmd_vel_smoothed:=cmd_vel'].
+1792059966.3000307 [ERROR] [waypoint_follower-6]: process has died [pid 205747, exit code -2, cmd '/opt/ros/humble/lib/nav2_waypoint_follower/waypoint_follower --ros-args --log-level info --ros-args -r __node:=waypoint_follower -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].
+1792059966.3303447 [ERROR] [bt_navigator-5]: process has died [pid 205739, exit code -2, cmd '/opt/ros/humble/lib/nav2_bt_navigator/bt_navigator --ros-args --log-level info --ros-args -r __node:=bt_navigator -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].
+1792059966.3461449 [ERROR] [behavior_server-4]: process has died [pid 205732, exit code -2, cmd '/opt/ros/humble/lib/nav2_behaviors/behavior_server --ros-args --log-level info --ros-args -r __node:=behavior_server -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].
+1792059966.3544612 [ERROR] [planner_server-3]: process has died [pid 205725, exit code -2, cmd '/opt/ros/humble/lib/nav2_planner/planner_server --ros-args --log-level info --ros-args -r __node:=planner_server -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].
+1792059966.3575368 [ERROR] [smoother_server-2]: process has died [pid 205723, exit code -2, cmd '/opt/ros/humble/lib/nav2_smoother/smoother_server --ros-args --log-level info --ros-args -r __node:=smoother_server -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static'].
+1792059971.0262744 [ERROR] [lifecycle_manager-8]: process[lifecycle_manager-8] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1792059971.0301311 [INFO] [lifecycle_manager-8]: sending signal 'SIGTERM' to process[lifecycle_manager-8]
+1792059971.0448396 [ERROR] [controller_server-1]: process[controller_server-1] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1792059971.0838318 [INFO] [controller_server-1]: sending signal 'SIGTERM' to process[controller_server-1]
+1792059976.0292399 [ERROR] [lifecycle_manager-8]: process[lifecycle_manager-8] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+1792059976.0352745 [INFO] [lifecycle_manager-8]: sending signal 'SIGKILL' to process[lifecycle_manager-8]
+1792059976.0455351 [ERROR] [controller_server-1]: process[controller_server-1] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+1792059976.0791769 [INFO] [controller_server-1]: sending signal 'SIGKILL' to process[controller_server-1]
+1792059976.0812492 [ERROR] [lifecycle_manager-8]: process has died [pid 205766, exit code -9, cmd '/opt/ros/humble/lib/nav2_lifecycle_manager/lifecycle_manager --ros-args --log-level info --ros-args -r __node:=lifecycle_manager_navigation -r __ns:=/ --params-file /tmp/launch_params_9but_lkt --params-file /tmp/launch_params_sndqhl06 --params-file /tmp/launch_params_cguuzn_x -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan'].
+1792059976.0934067 [ERROR] [controller_server-1]: process has died [pid 205716, exit code -9, cmd '/opt/ros/humble/lib/nav2_controller/controller_server --ros-args --log-level info --ros-args -r __ns:=/ --params-file /tmp/launch_params_hke0_574 -r /global_costmap/scan:=/scan -r /local_costmap/scan:=/scan -r /tf:=tf -r /tf_static:=tf_static -r cmd_vel:=cmd_vel_nav'].

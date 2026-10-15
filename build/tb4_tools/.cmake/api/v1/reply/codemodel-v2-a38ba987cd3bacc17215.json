@@ -1,0 +1,97 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Release-3567016744d05ce907f9.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4
+					]
+				}
+			],
+			"name" : "Release",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "tb4_tools",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "start_relative_mapping::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-start_relative_mapping-Release-9809e572cf7c8ca2e970.json",
+					"name" : "start_relative_mapping",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tb4_tools_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tb4_tools_uninstall-Release-50128c4be8284637bd14.json",
+					"name" : "tb4_tools_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "teleop_keyboard::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-teleop_keyboard-Release-cffbbafe2fb5f4049c0c.json",
+					"name" : "teleop_keyboard",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "test_controls::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-test_controls-Release-10c3a796ea8df74c841a.json",
+					"name" : "test_controls",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-Release-6b83cdb14ceb95889cd3.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/ubuntu/turtlebot4_ws/build/tb4_tools",
+		"source" : "/home/ubuntu/turtlebot4_ws/src/tb4_tools"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

@@ -1,0 +1,17 @@
+{
+  "slam_nodes": [
+    [
+      "slam_toolbox",
+      "/"
+    ]
+  ],
+  "map_publishers": [
+    "slam_toolbox"
+  ],
+  "maps": 31,
+  "tf_messages": 698,
+  "map_odom_yaw_minmax_deg": [
+    0.0009956634919042334,
+    0.002464470883323271
+  ]
+}

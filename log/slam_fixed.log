@@ -1,0 +1,11 @@
+[INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/slam_fixed/2026-10-15-07-54-43-098292-ubuntu-85392
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [async_slam_toolbox_node-1]: process started with pid [85403]
+[async_slam_toolbox_node-1] [INFO] [1792050883.627984224] [slam_toolbox]: Node using stack size 40000000
+[async_slam_toolbox_node-1] [INFO] [1792050883.800938725] [slam_toolbox]: Using solver plugin solver_plugins::CeresSolver
+[async_slam_toolbox_node-1] [INFO] [1792050883.803365989] [slam_toolbox]: CeresSolver: Using SCHUR_JACOBI preconditioner.
+[async_slam_toolbox_node-1] Registering sensor: [Custom Described Lidar]
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [async_slam_toolbox_node-1]: sending signal 'SIGINT' to process[async_slam_toolbox_node-1]
+[async_slam_toolbox_node-1] [INFO] [1792053429.515495123] [rclcpp]: signal_handler(signum=2)
+[INFO] [async_slam_toolbox_node-1]: process has finished cleanly [pid 85403]

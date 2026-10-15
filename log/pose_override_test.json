@@ -1,0 +1,17 @@
+{
+  "initialpose_subscribers": [],
+  "protected_topic_subscribers": [
+    "amcl"
+  ],
+  "before_xy_yaw_rad": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "after_xy_yaw_rad": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "wrong_rviz_pose_ignored": true
+}

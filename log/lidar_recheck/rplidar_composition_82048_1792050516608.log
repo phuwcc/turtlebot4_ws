@@ -1,0 +1,12 @@
+[INFO] [1792050516.766353135] [rplidar_composition]: RPLidar running on ROS2 package rplidar_ros. RPLIDAR SDK Version:2.0.0
+[INFO] [1792050516.833476190] [rplidar_composition]: RPLidar S/N: 5DEFED93C0EA98C9C2E29EF5AF35406E
+[INFO] [1792050516.834871045] [rplidar_composition]: Firmware Ver: 1.29
+[INFO] [1792050516.836412437] [rplidar_composition]: Hardware Rev: 7
+[INFO] [1792050516.887775888] [rplidar_composition]: RPLidar health status : 0
+[INFO] [1792050516.887960722] [rplidar_composition]: RPLidar health status : OK.
+[INFO] [1792050518.932245622] [rplidar_composition]: Start
+[INFO] [1792050519.624559702] [rplidar_composition]: current scan mode: Sensitivity, sample rate: 8 Khz, max_distance: 12.0 m, scan frequency:10.0 Hz, 
+[INFO] [1792050787.566573895] [rplidar_composition]: Stop
+[INFO] [1792050803.684828933] [rplidar_composition]: Start
+[INFO] [1792050804.381359799] [rplidar_composition]: current scan mode: Sensitivity, sample rate: 8 Khz, max_distance: 12.0 m, scan frequency:10.0 Hz, 
+[INFO] [1792050862.872677584] [rplidar_composition]: Stop motor

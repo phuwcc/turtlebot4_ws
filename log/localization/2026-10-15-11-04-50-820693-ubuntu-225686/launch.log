@@ -1,0 +1,5 @@
+1792062290.8282404 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/localization/2026-10-15-11-04-50-820693-ubuntu-225686
+1792062290.8298268 [INFO] [launch]: Default logging verbosity is set to INFO
+1792062292.5706718 [INFO] [map_server-1]: process started with pid [225783]
+1792062292.5724792 [INFO] [amcl-2]: process started with pid [225786]
+1792062292.5743830 [INFO] [lifecycle_manager-3]: process started with pid [225788]

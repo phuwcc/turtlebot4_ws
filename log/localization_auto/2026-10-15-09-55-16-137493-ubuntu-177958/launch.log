@@ -1,0 +1,12 @@
+1792058116.1454818 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/localization_auto/2026-10-15-09-55-16-137493-ubuntu-177958
+1792058116.1466279 [INFO] [launch]: Default logging verbosity is set to INFO
+1792058116.8233285 [INFO] [map_server-1]: process started with pid [177973]
+1792058116.8252292 [INFO] [amcl-2]: process started with pid [177975]
+1792058116.8354781 [INFO] [lifecycle_manager-3]: process started with pid [177977]
+1792058220.7072895 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1792058220.8040812 [INFO] [lifecycle_manager-3]: sending signal 'SIGINT' to process[lifecycle_manager-3]
+1792058220.8472135 [INFO] [amcl-2]: sending signal 'SIGINT' to process[amcl-2]
+1792058220.8521514 [INFO] [map_server-1]: sending signal 'SIGINT' to process[map_server-1]
+1792058221.5185790 [INFO] [map_server-1]: process has finished cleanly [pid 177973]
+1792058221.8965540 [INFO] [amcl-2]: process has finished cleanly [pid 177975]
+1792058221.9532733 [INFO] [lifecycle_manager-3]: process has finished cleanly [pid 177977]

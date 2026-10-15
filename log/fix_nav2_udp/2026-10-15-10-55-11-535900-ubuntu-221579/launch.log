@@ -1,0 +1,8 @@
+1792061711.5406518 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/fix_nav2_udp/2026-10-15-10-55-11-535900-ubuntu-221579
+1792061711.5414467 [INFO] [launch]: Default logging verbosity is set to INFO
+1792061714.2542868 [INFO] [component_container_isolated-1]: process started with pid [221616]
+1792061753.3288500 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1792061754.2605250 [WARNING] [launch_ros.actions.load_composable_nodes]: Abandoning wait for the '/nav2_container/_container/load_node' service response, due to shutdown.
+1792061754.4121578 [INFO] [component_container_isolated-1]: sending signal 'SIGINT' to process[component_container_isolated-1]
+1792061754.6833620 [INFO] [component_container_isolated-1]: process has finished cleanly [pid 221616]
+1792061755.2637711 [WARNING] [launch_ros.actions.load_composable_nodes]: Abandoning wait for the '/nav2_container/_container/load_node' service response, due to shutdown.

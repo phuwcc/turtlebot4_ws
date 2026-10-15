@@ -1,0 +1,22 @@
+{
+  "map": [
+    88,
+    143,
+    0.05000000074505806
+  ],
+  "recent_scan_tf_ok": 7,
+  "recent_scan_tf_errors": [
+    "Lookup would require extrapolation into the future.  Requested time 1792052608.506953 but the latest data is at time 1792052608.040640, when looking up transform from frame [rplidar_link] to frame [map]",
+    "Lookup would require extrapolation into the future.  Requested time 1792052609.179203 but the latest data is at time 1792052608.040640, when looking up transform from frame [rplidar_link] to frame [map]"
+  ],
+  "endpoint_distance_to_occupied_cell_m": {
+    "median": 0.0,
+    "p90": 0.05000000074505806,
+    "p95": 0.07071067917232597,
+    "samples": 1980
+  },
+  "stationary_per_ray_change_m": {
+    "median": 0.001999974250793457,
+    "p90": 0.025800037384033157
+  }
+}

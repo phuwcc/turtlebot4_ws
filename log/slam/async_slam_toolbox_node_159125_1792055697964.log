@@ -1,0 +1,5 @@
+[INFO] [1792055698.120829847] [slam_toolbox]: Node using stack size 40000000
+[INFO] [1792055698.327281094] [slam_toolbox]: Using solver plugin solver_plugins::CeresSolver
+[INFO] [1792055698.329528766] [slam_toolbox]: CeresSolver: Using SCHUR_JACOBI preconditioner.
+[INFO] [1792055725.211807466] [slam_toolbox]: Message Filter dropping message: frame 'rplidar_link' at time 1792055725.193 for reason 'discarding message because the queue is full'
+[INFO] [1792055950.721228004] [rclcpp]: signal_handler(signum=2)

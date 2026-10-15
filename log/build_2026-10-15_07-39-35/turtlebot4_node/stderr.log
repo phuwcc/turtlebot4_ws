@@ -1,0 +1,3 @@
+gmake[2]: *** [CMakeFiles/turtlebot4_node_lib.dir/build.make:90: CMakeFiles/turtlebot4_node_lib.dir/src/turtlebot4.cpp.o] Interrupt
+gmake[1]: *** [CMakeFiles/Makefile2:139: CMakeFiles/turtlebot4_node_lib.dir/all] Interrupt
+gmake: *** [Makefile:146: all] Interrupt

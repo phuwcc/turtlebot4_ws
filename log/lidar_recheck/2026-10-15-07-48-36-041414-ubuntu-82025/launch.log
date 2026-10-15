@@ -1,0 +1,6 @@
+1792050516.0491285 [INFO] [launch]: All log files can be found below /home/ubuntu/turtlebot4_ws/log/lidar_recheck/2026-10-15-07-48-36-041414-ubuntu-82025
+1792050516.0505631 [INFO] [launch]: Default logging verbosity is set to INFO
+1792050516.5258536 [INFO] [rplidar_composition-1]: process started with pid [82048]
+1792050862.7021866 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1792050862.7114289 [INFO] [rplidar_composition-1]: sending signal 'SIGINT' to process[rplidar_composition-1]
+1792050863.0364623 [INFO] [rplidar_composition-1]: process has finished cleanly [pid 82048]
