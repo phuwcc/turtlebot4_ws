@@ -18,18 +18,20 @@ dùng phần cứng thật với namespace mới.
 
 ## 1. Cài và build trên cả hai Pi
 
-Code dùng chung nằm trong thư mục `tb4_multi_robot/` của repository
+Code dùng chung nằm trực tiếp trong `src/tb4_multi_tools` và
+`src/tb4_multi_bringup` của repository
 [`phuwcc/turtlebot4_ws`](https://github.com/phuwcc/turtlebot4_ws).
 Trên Pi thứ hai hoặc máy chưa có code:
 
 ```bash
 git clone https://github.com/phuwcc/turtlebot4_ws.git ~/turtlebot4_ws
-cd ~/turtlebot4_ws/tb4_multi_robot
+cd ~/turtlebot4_ws
 ```
 
 Nếu đã clone repository, cập nhật từ thư mục gốc bằng `git pull --ff-only`,
-rồi vào `tb4_multi_robot/` để build. Phần này không dùng submodule TurtleBot
-ở `src/turtlebot4` của workspace robot đơn bên ngoài.
+rồi build ngay tại `~/turtlebot4_ws`. Đây là **một workspace duy nhất** cho cả
+robot đơn và hai robot; các package đa robot dùng các dependency TurtleBot/Nav2
+đã cài trên Pi.
 
 Pi cần ROS 2 Humble và các gói TurtleBot 4 đã được cấu hình cho robot thật:
 
@@ -47,13 +49,24 @@ bash scripts/build.sh
 source scripts/env.sh
 ```
 
-Script build một luồng và chỉ tìm package trong `src/`. File `COLCON_IGNORE`
-giúp workspace robot đơn bên ngoài không tự build lẫn repo này. Không cần clone
-`turtlebot4` vào `src`, không có submodule hoặc file `.a` được commit.
+Script build một luồng, chọn hai package đa robot trong `src/`, dùng chung
+`~/turtlebot4_ws/build`, `install`, `log`. Lệnh colcon tương đương:
+
+```bash
+source /opt/ros/humble/setup.bash
+cd ~/turtlebot4_ws
+CMAKE_BUILD_PARALLEL_LEVEL=1 MAKEFLAGS=-j1 colcon build \
+  --packages-select tb4_multi_tools tb4_multi_bringup --symlink-install \
+  --executor sequential --cmake-args -DCMAKE_BUILD_TYPE=Release \
+  '-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG'
+source install/setup.bash
+```
+
+Không có workspace con `tb4_multi_robot/`; các file build không được commit.
 
 ## 2. Cấu hình mạng và định danh — một lần trên mỗi robot
 
-Xem [docs/NETWORK.md](docs/NETWORK.md). Dùng `turtlebot4-setup` để đặt namespace,
+Xem [NETWORK.md](NETWORK.md). Dùng `turtlebot4-setup` để đặt namespace,
 domain và discovery server ID theo bảng đầu trang, đồng bộ với Create 3.
 Sau khi Apply, xác minh namespace Create 3 đúng; `export` ở terminal không đủ
 để thay cấu hình firmware hoặc dịch vụ đang chạy.
@@ -173,7 +186,7 @@ cho phép chọn pose trên RViz. Các script khóa mapping/navigation trên t�
 ## 6. RViz trên laptop
 
 Cài ROS 2 Humble, `ros-humble-rviz2`, `ros-humble-nav2-bringup` và build repo.
-Làm bước môi trường PC trong [docs/NETWORK.md](docs/NETWORK.md).
+Làm bước môi trường PC trong [NETWORK.md](NETWORK.md).
 
 Mở hai terminal laptop, mỗi terminal ở thư mục repo:
 
@@ -210,17 +223,24 @@ python3 tests/smoke_navigation.py robot2
 ```
 
 Smoke test dùng domain **167**, localhost, cảm biến giả và hai SLAM C++ thật;
-kiểm tra hai map/TF tách biệt và gốc riêng. Xem [docs/VALIDATION.md](docs/VALIDATION.md)
+kiểm tra hai map/TF tách biệt và gốc riêng. Xem [VALIDATION.md](VALIDATION.md)
 để biết phạm vi đã kiểm chứng. Không xem test này là đã chạy hai robot vật lý.
 
 ## Tổ chức source
 
 ```text
-src/tb4_multi_tools/       # Mapping origin + keyboard teleop C++
-src/tb4_multi_bringup/     # Launch + common config + robot1/robot2 profiles
-scripts/                  # Build, môi trường và chọn robot/chế độ
-maps/                     # Một map chung được copy sang hai Pi
-tests/                    # Kiểm tra namespace bằng cảm biến giả
+turtlebot4_ws/
+├── src/
+│   ├── turtlebot4/         # Repo upstream hiện có
+│   ├── tb4_tools/          # Công cụ robot đơn hiện có
+│   ├── tb4_multi_tools/    # Mapping origin + teleop C++ đa robot
+│   └── tb4_multi_bringup/  # Launch và cấu hình robot1/robot2
+├── scripts/               # Build, môi trường và chọn robot/chế độ
+├── maps/                  # Map chung
+├── tests/                 # Kiểm tra namespace bằng cảm biến giả
+├── build/
+├── install/
+└── log/
 ```
 
 Hướng dẫn upstream: [multi-robot TurtleBot 4](https://turtlebot.github.io/turtlebot4-user-manual/tutorials/multiple_robots.html),

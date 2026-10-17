@@ -2,9 +2,13 @@
 
 Ngày 17/10/2026, ROS 2 Humble, Ubuntu 22.04 aarch64 trên Pi.
 
+Các package hiện đặt trong `turtlebot4_ws/src/`; build và test chạy ở workspace
+chính, không còn workspace con. Dữ liệu build cũ đã chuyển vào
+`log/legacy_nested_multi_workspace/` để tham khảo, không được source hoặc build lại.
+
 | Kiểm tra | Kết quả |
 | --- | --- |
-| Build hai package độc lập | Thành công, một luồng, C++17 |
+| Build hai package trong `turtlebot4_ws` | Một luồng, C++17; cùng thư mục build/install/log với workspace chính |
 | CTest `controls` | Qua: phép nghịch đảo pose, phím teleop và timeout |
 | Hai SLAM C++ cùng lúc, domain 167 | Cả hai phát map theo namespace riêng |
 | Gốc robot 1 giả | Chụp đúng `(2, -3, 0.4)`; mapping → base gần `(0,0,0)` |
@@ -20,7 +24,7 @@ trong domain 168 và 169. Chỉ gọi `ComputePathToPose`, không gọi action �
 chuyển động `NavigateToPose`. Phép thử hai SLAM dùng chung domain 167 để kiểm tra
 đúng trường hợp frame ID giống nhau nhưng hai luồng TF tách biệt.
 
-Lệnh tái hiện từ thư mục repo:
+Lệnh tái hiện từ `~/turtlebot4_ws`:
 
 ```bash
 source install/setup.bash

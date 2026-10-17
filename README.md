@@ -1,5 +1,9 @@
 # TurtleBot 4 — quét map, teleop và navigation
 
+**Chạy hai robot:** xem [hướng dẫn đa robot](docs/MULTI_ROBOT.md).
+Các package đa robot nằm ngay trong `src/` và build tại `~/turtlebot4_ws` bằng
+`bash scripts/build.sh`; dùng chung `build/`, `install/`, `log/` của workspace này.
+
 Dành cho **robot thật / ROS 2 Humble**, workspace `~/turtlebot4_ws`.
 **Pi chạy SLAM, teleop và Nav2; laptop chạy RViz.**
 

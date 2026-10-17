@@ -1,8 +1,0 @@
-build/
-install/
-log/
-.state/
-__pycache__/
-*.pyc
-.env
-.venv/
