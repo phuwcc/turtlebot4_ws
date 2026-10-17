@@ -1,0 +1,2 @@
+# Keep the enclosing single-robot workspace from discovering this standalone repo.
+# Build this repo with: colcon build --base-paths src

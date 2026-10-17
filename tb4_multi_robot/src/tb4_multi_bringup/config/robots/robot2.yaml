@@ -1,0 +1,11 @@
+namespace: robot2
+ros_domain_id: 0
+discovery_server_id: 1
+create3_namespace: /robot2/_do_not_use
+model: standard
+frames:
+  map: map
+  odom: odom
+  base: base_link
+  lidar: rplidar_link
+  mapping: mapping_odom

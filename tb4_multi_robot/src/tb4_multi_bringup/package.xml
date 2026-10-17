@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>tb4_multi_bringup</name>
+  <version>0.1.0</version>
+  <description>Common TurtleBot 4 bringup for robot1 and robot2.</description>
+  <maintainer email="maintainer@example.com">Workspace maintainer</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>nav2_bringup</exec_depend>
+  <exec_depend>nav2_common</exec_depend>
+  <exec_depend>tb4_multi_tools</exec_depend>
+  <exec_depend>turtlebot4_bringup</exec_depend>
+  <exec_depend>turtlebot4_description</exec_depend>
+  <exec_depend>turtlebot4_node</exec_depend>
+  <exec_depend>turtlebot4_base</exec_depend>
+  <exec_depend>rplidar_ros</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>create3_republisher</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

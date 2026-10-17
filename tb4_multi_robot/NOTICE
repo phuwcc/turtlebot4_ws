@@ -1,0 +1,10 @@
+tb4_multi_robot
+Copyright (c) 2026 Phuc Dinh Van
+
+Native mapping/teleop helpers are adapted from the existing turtlebot4_ws
+workspace (MIT). See LICENSE.
+
+config/common/{slam,amcl,nav2}.yaml are derived from turtlebot/turtlebot4,
+Copyright Clearpath Robotics, under Apache License 2.0.
+See LICENSES/Apache-2.0.txt. Hardware and navigation launch orchestration uses
+installed upstream ROS packages; their original licenses remain applicable.
