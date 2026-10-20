@@ -43,8 +43,12 @@ bash scripts/build.sh
 source scripts/env.sh
 ```
 
-Các terminal tiếp theo đều bắt đầu bằng `cd ~/turtlebot4_ws`.
-`scripts/robot.sh` tự source môi trường khi chạy.
+**Mỗi terminal có môi trường riêng**: phải chạy lại các dòng `source` trong
+đúng terminal đó. Các khối lệnh bên dưới đã kèm đủ đường dẫn, có thể copy cả khối.
+`$HOME/turtlebot4_ws` là workspace của tài khoản đang đăng nhập: trên Pi trong
+ảnh là `/home/ubuntu/turtlebot4_ws`, trên laptop tài khoản `phuc` là
+`/home/phuc/turtlebot4_ws`. Không dùng đường dẫn mẫu `/duong/dan/...`.
+`scripts/robot.sh` cũng tự source môi trường Pi khi chạy.
 
 ## 2. Đặt định danh và mạng — làm một lần
 
@@ -70,6 +74,9 @@ Nếu dịch vụ hiện tại đã phát đúng topic có namespace, dùng ti�
 Nếu dùng hardware launch của repo, dừng bringup cũ trước:
 
 ```bash
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/scripts/env.sh"
 sudo systemctl stop turtlebot4
 pgrep -af '[/]rplidar_ros/rplidar_composition'
 pgrep -af '[/]create3_republisher/create3_republisher'
@@ -79,31 +86,50 @@ Chỉ mở hardware khi hai lệnh `pgrep` không còn thấy driver cũ. Nếu 
 dịch vụ riêng quản lý, dừng dịch vụ đó trước. Mỗi Pi chỉ chạy lệnh của robot mình:
 
 ```bash
-# Pi 1 — giữ terminal này chạy
-bash scripts/robot.sh robot1 hardware
+# Pi 1 — Terminal A, giữ terminal này chạy
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/scripts/env.sh"
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot1 hardware
 ```
 
 ```bash
-# Pi 2 — giữ terminal này chạy
-bash scripts/robot.sh robot2 hardware
+# Pi 2 — Terminal A, giữ terminal này chạy
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/scripts/env.sh"
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot2 hardware
 ```
 
 Launch này chạy LiDAR, robot/base node, republisher và robot description;
 không mở camera. Terminal khác trên Pi 1 kiểm tra:
 
 ```bash
-bash scripts/robot.sh robot1 check
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/scripts/env.sh"
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot1 check
 ```
 
 Phải có một publisher `/robot1/scan` và một `/robot1/odom`.
-Trên Pi 2 thay `robot1` bằng `robot2`.
+Terminal kiểm tra trên Pi 2:
+
+```bash
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/scripts/env.sh"
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot2 check
+```
 
 ## 4. Quét map và teleop — dùng robot 1 trước
 
 Terminal B trên Pi 1:
 
 ```bash
-bash scripts/robot.sh robot1 mapping
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/scripts/env.sh"
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot1 mapping
 ```
 
 Giữ robot đứng yên đến khi thấy `Start origin captured` và SLAM đăng ký LiDAR.
@@ -112,7 +138,10 @@ Vị trí/hướng thân robot lúc đó là gốc map `(0,0,0)`.
 Terminal C trên Pi 1:
 
 ```bash
-bash scripts/robot.sh robot1 teleop
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/scripts/env.sh"
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot1 teleop
 ```
 
 Phím `i/,` tiến/lùi, `j/l` quay; `k` hoặc Space dừng, `Ctrl+C` thoát.
@@ -121,9 +150,11 @@ Mặc định 0,08 m/s và 0,3 rad/s; tự dừng sau 0,6 giây không nhận ph
 Lưu map ở terminal khác khi robot đứng yên và SLAM vẫn chạy:
 
 ```bash
-source scripts/env.sh
-mkdir -p maps
-ros2 run nav2_map_server map_saver_cli -f "$PWD/maps/site" --ros-args \
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/scripts/env.sh"
+mkdir -p "$HOME/turtlebot4_ws/maps"
+ros2 run nav2_map_server map_saver_cli -f "$HOME/turtlebot4_ws/maps/site" --ros-args \
   -r __ns:=/robot1 -r map:=/robot1/map -p save_map_timeout:=15.0
 ```
 
@@ -139,14 +170,22 @@ localization riêng.
 Pi 1, nếu robot đã trở về đúng vị trí **và hướng** lúc bắt đầu quét:
 
 ```bash
-bash scripts/robot.sh robot1 navigation map:="$PWD/maps/site.yaml" \
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/scripts/env.sh"
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot1 navigation \
+  map:="$HOME/turtlebot4_ws/maps/site.yaml" \
   initialize_pose:=true initial_x:=0.0 initial_y:=0.0 initial_yaw:=0.0
 ```
 
 Pi 2, khởi tạo vị trí bằng RViz:
 
 ```bash
-bash scripts/robot.sh robot2 navigation map:="$PWD/maps/site.yaml"
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/scripts/env.sh"
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot2 navigation \
+  map:="$HOME/turtlebot4_ws/maps/site.yaml"
 ```
 
 Trên RViz của robot 2, dùng **2D Pose Estimate** đặt đúng vị trí và hướng thực tế.
@@ -154,24 +193,115 @@ Nếu Pi 1 chưa ở gốc map, cũng chạy chế độ mặc định rồi ch�
 Không đặt hai robot cùng `(0,0,0)` khi đứng khác chỗ. Chế độ
 `initialize_pose:=true` bỏ qua click initial pose để tránh ghi đè vị trí đã khai báo.
 
-## 6. Visualize và gửi goal — laptop
+## 6. Lệnh trên laptop — cài một lần, sau đó mở từng terminal
 
-Laptop cần ROS 2 Humble, `ros-humble-rviz2`, `ros-humble-nav2-bringup`, cùng
-repo đã build. Cấu hình discovery tới **cả hai Pi** theo
-[NETWORK.md](docs/NETWORK.md), dựa trên [file môi trường mẫu](scripts/pc_env.example.sh).
-Source file môi trường đã điền IP thật trong mỗi terminal laptop trước khi chạy:
+Các terminal bên dưới chạy **trực tiếp trên laptop có màn hình**, sau khi mở
+terminal mới; terminal đã SSH vào Pi vẫn đang chạy trên Pi. Hardware,
+mapping và navigation ở các mục trên chạy trên Pi tương ứng.
 
-```bash
-cd ~/turtlebot4_ws
-source /duong/dan/pc_env_da_sua.sh
-bash scripts/robot.sh robot1 rviz
-```
+### 6.1. Cài RViz và build trên laptop — làm một lần
 
-Terminal laptop thứ hai làm tương tự, đổi lệnh cuối thành:
+Laptop phải có Ubuntu 22.04 và ROS 2 Humble tại `/opt/ros/humble`.
+Nếu chưa có repo trên laptop, chạy:
 
 ```bash
-bash scripts/robot.sh robot2 rviz
+git clone https://github.com/phuwcc/turtlebot4_ws.git "$HOME/turtlebot4_ws"
 ```
+
+Nếu đã có thư mục đó, bỏ qua lệnh clone. Trong terminal laptop:
+
+```bash
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+sudo apt update
+sudo apt install python3-colcon-common-extensions python3-yaml \
+  ros-humble-rviz2 ros-humble-nav2-bringup ros-humble-navigation2 \
+  ros-humble-slam-toolbox ros-humble-rmw-fastrtps-cpp
+bash "$HOME/turtlebot4_ws/scripts/build.sh"
+source "$HOME/turtlebot4_ws/install/setup.bash"
+ros2 pkg prefix rviz2
+ros2 pkg prefix tb4_multi_bringup
+```
+
+Nếu gặp `package 'rviz2' not found` như ảnh, chạy khối cài đặt này trên
+**máy sẽ mở RViz**, rồi chạy lại terminal RViz bên dưới.
+
+### 6.2. Lưu môi trường mạng laptop — làm một lần
+
+Laptop phải kết nối được tới cả hai Pi. Hoàn tất cấu hình discovery trong
+[NETWORK.md](docs/NETWORK.md): Pi 1 server ID `0`, Pi 2 server ID `1`,
+cùng domain `0`, port `11811`. Trên từng Pi có thể dùng `hostname -I` để xem
+địa chỉ; chọn IP Wi-Fi/LAN mà laptop truy cập được.
+
+Copy cả khối sau vào **Bash trên laptop**. Khối này hỏi IP thật của từng Pi,
+rồi lưu cấu hình vào `$HOME/.config/turtlebot4/pc_env.sh`; không cần sửa file
+bằng tay. Thứ tự IP là Pi của `robot1` rồi Pi của `robot2`.
+
+```bash
+(
+  read -r -p 'IP Wi-Fi/LAN của Pi robot1 (server ID 0): ' tb4_pi1
+  read -r -p 'IP Wi-Fi/LAN của Pi robot2 (server ID 1): ' tb4_pi2
+  if [[ ! "$tb4_pi1" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ||
+        ! "$tb4_pi2" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo 'Cần nhập đủ hai địa chỉ IPv4; cấu hình chưa được ghi.' >&2
+    exit 1
+  fi
+  mkdir -p "$HOME/.config/turtlebot4"
+  cat > "$HOME/.config/turtlebot4/pc_env.sh" <<EOF
+export ROS_DOMAIN_ID=0
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export ROS_DISCOVERY_SERVER='${tb4_pi1}:11811;${tb4_pi2}:11811;'
+export ROS_SUPER_CLIENT=True
+export ROS_LOCALHOST_ONLY=0
+EOF
+)
+```
+
+Chỉ chạy lại bước này khi IP hai Pi thay đổi. File cấu hình nằm ngoài repo.
+
+### 6.3. Laptop — Terminal 1: RViz robot1
+
+```bash
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/install/setup.bash"
+source "$HOME/.config/turtlebot4/pc_env.sh"
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot1 rviz
+```
+
+Giữ terminal và cửa sổ RViz này chạy.
+
+### 6.4. Laptop — Terminal 2: RViz robot2
+
+```bash
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/install/setup.bash"
+source "$HOME/.config/turtlebot4/pc_env.sh"
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot2 rviz
+```
+
+Giữ terminal và cửa sổ RViz này chạy. Dùng **2D Pose Estimate** trong cửa sổ
+đúng robot để đặt vị trí/hướng thực tế nếu chưa khởi tạo pose.
+
+### 6.5. Laptop — Terminal 3: kiểm tra kết nối hai robot
+
+```bash
+cd "$HOME/turtlebot4_ws"
+source /opt/ros/humble/setup.bash
+source "$HOME/turtlebot4_ws/install/setup.bash"
+source "$HOME/.config/turtlebot4/pc_env.sh"
+ros2 daemon stop
+ros2 node list --no-daemon --spin-time 10
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot1 check
+bash "$HOME/turtlebot4_ws/scripts/robot.sh" robot2 check
+```
+
+Phải thấy node của cả `/robot1/...` và `/robot2/...`, mỗi robot có nguồn
+`scan` và `odom`. Nếu báo `Invalid frame ID "odom"` như ảnh, kiểm tra hardware
+trên Pi tương ứng đã chạy và có publisher odometry; kiểm tra TF và đồng hồ
+Pi/laptop khi scan báo timestamp sớm hơn dữ liệu TF. Chỉ source môi trường
+không tạo ra odometry hoặc sửa được thời gian TF.
 
 Kiểm tra scan khớp tường trên map, dừng teleop rồi dùng **Nav2 Goal** ở cửa sổ
 đúng robot. Hai cây TF nằm trên `/robot1/tf` và `/robot2/tf`, nên dùng hai RViz.
