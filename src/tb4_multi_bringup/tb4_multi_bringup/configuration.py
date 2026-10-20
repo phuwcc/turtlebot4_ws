@@ -13,7 +13,7 @@ def share(package='tb4_multi_bringup'):
 
 def robot_arguments():
     return [
-        DeclareLaunchArgument('robot_id', choices=['robot1', 'robot2'],
+        DeclareLaunchArgument('robot_id', choices=['robot1', 'robot2', 'robot3'],
                               description='Identity of this physical robot'),
         DeclareLaunchArgument('robot_config', default_value='',
                               description='Optional alternate robot YAML'),
@@ -22,8 +22,8 @@ def robot_arguments():
 
 def load_robot(context):
     identity = LaunchConfiguration('robot_id').perform(context)
-    if identity not in ('robot1', 'robot2'):
-        raise ValueError('robot_id must be robot1 or robot2')
+    if identity not in ('robot1', 'robot2', 'robot3'):
+        raise ValueError('robot_id must be robot1, robot2 or robot3')
     supplied = LaunchConfiguration('robot_config').perform(context)
     path = Path(supplied) if supplied else share() / 'config/robots' / (identity + '.yaml')
     with path.open() as stream:

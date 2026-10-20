@@ -2,7 +2,7 @@
 <package format="3">
   <name>tb4_multi_bringup</name>
   <version>0.1.0</version>
-  <description>Common TurtleBot 4 bringup for robot1 and robot2.</description>
+  <description>Common TurtleBot 4 bringup for robot1, robot2 and robot3 with a shared RViz view.</description>
   <maintainer email="maintainer@example.com">Workspace maintainer</maintainer>
   <license>MIT</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
@@ -22,5 +22,15 @@
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>create3_republisher</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>nav2_msgs</exec_depend>
+  <exec_depend>tf2_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+  <exec_depend>rviz2</exec_depend>
   <export><build_type>ament_cmake</build_type></export>
 </package>

@@ -10,10 +10,10 @@ import subprocess
 import time
 
 parser=argparse.ArgumentParser()
-parser.add_argument('robot_id', nargs='?', choices=['robot1','robot2'], default='robot1')
+parser.add_argument('robot_id', nargs='?', choices=['robot1','robot2','robot3'], default='robot1')
 identity=parser.parse_args().robot_id
 prefix='/'+identity
-domain=168 if identity=='robot1' else 169
+domain={'robot1':168, 'robot2':169, 'robot3':170}[identity]
 os.environ.update(ROS_DOMAIN_ID=str(domain), ROS_LOCALHOST_ONLY='1',
                   RMW_IMPLEMENTATION='rmw_fastrtps_cpp', ROS_SUPER_CLIENT='False')
 for key in ('ROS_DISCOVERY_SERVER', 'FASTRTPS_DEFAULT_PROFILES_FILE', 'ROS_NAMESPACE'):

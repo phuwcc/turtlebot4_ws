@@ -1,27 +1,27 @@
-# TurtleBot 4 — repo chung cho hai robot
+# TurtleBot 4 — repo chung cho ba robot, một RViz
 
-ROS 2 Humble / Ubuntu 22.04. **Cùng code trên hai Pi**, chọn `robot1` hoặc
-`robot2` khi chạy. Mapping và teleop là C++; AMCL/Nav2 dùng các node C++ có sẵn.
-Python chỉ dùng cho launch/cấu hình và kiểm thử.
+ROS 2 Humble / Ubuntu 22.04. **Cùng code trên ba Pi**, chọn `robot1`,
+`robot2` hoặc `robot3` khi chạy. Mapping và teleop là C++; AMCL/Nav2 dùng các node C++ có sẵn.
+Python dùng cho launch/cấu hình, cầu nối hiển thị trên laptop và kiểm thử.
 
-| | Pi robot 1 | Pi robot 2 |
-| --- | --- | --- |
-| Namespace ứng dụng | `/robot1` | `/robot2` |
-| Namespace Create 3 | `/robot1/_do_not_use` | `/robot2/_do_not_use` |
-| ROS domain | `0` | `0` |
-| Discovery server ID | `0` | `1` |
-| Port trên mỗi Pi | `11811` | `11811` |
+| | Pi robot 1 | Pi robot 2 | Pi robot 3 |
+| --- | --- | --- | --- |
+| Namespace ứng dụng | `/robot1` | `/robot2` | `/robot3` |
+| Namespace Create 3 | `/robot1/_do_not_use` | `/robot2/_do_not_use` | `/robot3/_do_not_use` |
+| ROS domain | `0` | `0` | `0` |
+| Discovery server ID | `0` | `1` | `2` |
+| Port trên mỗi Pi | `11811` | `11811` | `11811` |
 
 Repo chưa tự thay cấu hình mạng/Create 3 hoặc dịch vụ hệ thống. Bản robot đơn
 đang chạy vẫn giữ nguyên. Cần thực hiện bước cấu hình mỗi Pi dưới đây trước khi
 dùng phần cứng thật với namespace mới.
 
-## 1. Cài và build trên cả hai Pi
+## 1. Cài và build trên cả ba Pi
 
 Code dùng chung nằm trực tiếp trong `src/tb4_multi_tools` và
 `src/tb4_multi_bringup` của repository
 [`phuwcc/turtlebot4_ws`](https://github.com/phuwcc/turtlebot4_ws).
-Trên Pi thứ hai hoặc máy chưa có code:
+Trên Pi thứ hai, thứ ba hoặc máy chưa có code:
 
 ```bash
 git clone https://github.com/phuwcc/turtlebot4_ws.git ~/turtlebot4_ws
@@ -30,7 +30,7 @@ cd ~/turtlebot4_ws
 
 Nếu đã clone repository, cập nhật từ thư mục gốc bằng `git pull --ff-only`,
 rồi build ngay tại `~/turtlebot4_ws`. Đây là **một workspace duy nhất** cho cả
-robot đơn và hai robot; các package đa robot dùng các dependency TurtleBot/Nav2
+robot đơn và ba robot; các package đa robot dùng các dependency TurtleBot/Nav2
 đã cài trên Pi.
 
 Pi cần ROS 2 Humble và các gói TurtleBot 4 đã được cấu hình cho robot thật:
@@ -76,6 +76,7 @@ Các thông số model/frame nằm trong:
 ```text
 src/tb4_multi_bringup/config/robots/robot1.yaml
 src/tb4_multi_bringup/config/robots/robot2.yaml
+src/tb4_multi_bringup/config/robots/robot3.yaml
 ```
 
 Mặc định model `standard`. Sửa thành `lite` nếu đúng phần cứng của bạn và build lại.
@@ -109,6 +110,12 @@ Trên Pi 2:
 bash scripts/robot.sh robot2 hardware
 ```
 
+Trên Pi 3:
+
+```bash
+bash scripts/robot.sh robot3 hardware
+```
+
 Giữ Terminal A chạy. Nếu đã có bringup chuẩn chạy đúng namespace và đủ dữ liệu,
 tiếp tục dùng nó, bỏ qua bước mở hardware của repo. Wrapper từ chối mở thêm khi
 phát hiện driver đang chạy trên cùng Pi. Script không tự disable dịch vụ cũ.
@@ -119,7 +126,7 @@ Terminal khác, chọn đúng ID của Pi:
 bash scripts/robot.sh robot1 check
 ```
 
-Phải có đúng một publisher `/robot1/scan`, một `/robot1/odom`; Pi 2 tương tự.
+Phải có đúng một publisher `/robot1/scan`, một `/robot1/odom`; Pi 2 và Pi 3 tương tự.
 LiDAR dùng `/dev/RPLIDAR`, không dùng cứng `ttyUSB0`.
 
 ## 4. Quét map — dùng một robot trước
@@ -152,7 +159,7 @@ ros2 run nav2_map_server map_saver_cli -f "$PWD/maps/site" --ros-args \
   -r __ns:=/robot1 -r map:=/robot1/map -p save_map_timeout:=15.0
 ```
 
-Copy **cả YAML và ảnh PGM** sang repo trên Pi 2, giữ cùng nội dung bản đồ.
+Copy **cả YAML và ảnh PGM** sang repo trên Pi 2 và Pi 3, giữ cùng nội dung bản đồ.
 `maps/my_room.*` đi kèm là bản đồ từ workspace cũ, chỉ phù hợp đúng môi trường đó.
 Repo không hợp nhất map nếu hai robot SLAM cùng lúc.
 
@@ -167,45 +174,51 @@ bash scripts/robot.sh robot1 navigation map:="$PWD/maps/site.yaml" \
   initialize_pose:=true initial_x:=0.0 initial_y:=0.0 initial_yaw:=0.0
 ```
 
-Pi 2 nếu chưa biết pose chính xác:
+Pi 2 nếu chưa biết pose chính xác (Pi 3 dùng `robot3`):
 
 ```bash
 bash scripts/robot.sh robot2 navigation map:="$PWD/maps/site.yaml"
 ```
 
-Chọn **2D Pose Estimate** trên RViz của robot 2, đặt đúng vị trí và hướng thân
-robot trong cùng map. Sau đó kiểm tra scan khớp tường rồi mới gửi Nav2 Goal.
+Chọn robot2 trong menu laptop rồi dùng **2D Pose Estimate** trên RViz, đặt đúng vị trí và hướng thân
+robot trong cùng map. Sau đó kiểm tra scan khớp tường rồi mới gửi 2D Goal Pose.
 Có thể dùng `initialize_pose:=true` cho Pi 2 nếu cung cấp đủ x/y/yaw đúng thực tế.
-**Không đặt cả hai robot về `(0,0,0)` khi chúng đứng khác chỗ.**
+**Không đặt ba robot về `(0,0,0)` khi chúng đứng khác chỗ.**
 
 Một launch navigation mở cả map server, AMCL và Nav2 cho robot đó. Chế độ tự
 khởi tạo pose bỏ qua click `/initialpose` để tránh ghi đè nhầm; chế độ mặc định
 cho phép chọn pose trên RViz. Các script khóa mapping/navigation trên từng robot
 để tránh cùng phát TF định vị; chạy trực tiếp launch không có khóa shell này.
 
-## 6. RViz trên laptop
+## 6. Một RViz cho ba robot trên laptop
 
-Cài ROS 2 Humble, `ros-humble-rviz2`, `ros-humble-nav2-bringup` và build repo.
-Làm bước môi trường PC trong [NETWORK.md](NETWORK.md).
+Các khối lệnh đầy đủ cho từng terminal nằm ở [README phần A](../README.md).
+Cài/build và lưu **ba IP** theo phần D trước khi mở RViz.
 
-Mở hai terminal laptop, mỗi terminal ở thư mục repo:
+- Terminal 1 chạy `ros2 launch tb4_multi_bringup fleet_visualization.launch.py`.
+- Terminal 2 mở menu chọn robot `1/2/3`, hủy goal robot đang chọn bằng `c`.
+- Terminal 3 kiểm tra publisher scan/odom của cả ba robot.
 
-```bash
-bash scripts/robot.sh robot1 rviz
-```
+Cầu nối `fleet_view` tạo bản sao TF có prefix riêng (`robot1/odom`,
+`robot2/odom`, `robot3/odom`) và map chung trên `/tb4_view/tf`. Nó chuyển header
+scan, map, path, costmap và footprint tương ứng sang các topic hiển thị riêng.
+RobotModel lấy URDF gốc và dùng `TF Prefix` theo robot. Static TF được gom vào
+một mẫu transient-local đầy đủ để RViz mở muộn vẫn nhận cả ba cây.
 
-```bash
-bash scripts/robot.sh robot2 rviz
-```
+Dùng `2D Pose Estimate` và `2D Goal Pose` cho robot đang chọn. Nhãn trên map
+cho biết đích điều khiển hiện tại. Goal được gửi bằng action
+`/robotN/navigate_to_pose`; initial pose đi vào `/robotN/initialpose`.
+Không gửi goal mới khi goal cũ của cùng robot chưa kết thúc; dùng menu hủy trước.
+Chọn robot khác không hủy goal của robot trước, cho phép ba goal cùng chạy.
+Đóng RViz không tự hủy goal; hủy từng robot trước khi đóng.
 
-Mỗi cửa sổ nhận TF, scan, map và gửi goal tới đúng robot. Dùng hai cửa sổ vì hai
-cây TF hiện được cô lập theo topic; chưa tổng hợp thành một cây TF fleet chung.
-Dừng teleop trước khi gửi Nav2 Goal. Mỗi Pi giữ Nav2 riêng; repo hiện chưa có
-phân công nhiệm vụ hoặc giữ quyền qua cửa/hành lang hẹp cho cả đội.
+Ba Pi phải dùng **cùng bản đồ, cùng gốc và hướng map**. Repo chưa có phân công
+nhiệm vụ hoặc điều phối giao thông. Launch `visualization.launch.py robot_id:=robotN`
+vẫn hỗ trợ xem riêng một robot khi debug.
 
 ## 7. Dừng và kiểm thử
 
-- Hủy goal trên RViz trước khi dừng Nav2.
+- Chọn lần lượt từng robot trong menu laptop, nhấn `c` để hủy goal trước khi dừng Nav2.
 - Teleop: `k`, rồi `Ctrl+C`.
 - Mapping/navigation: `Ctrl+C`; mapping helper dừng SLAM con cùng nó.
 - Hardware: `Ctrl+C` sau khi các ứng dụng đã dừng.
@@ -220,6 +233,7 @@ ctest --test-dir build/tb4_multi_tools --output-on-failure
 python3 tests/smoke_two_robots.py
 python3 tests/smoke_navigation.py
 python3 tests/smoke_navigation.py robot2
+python3 tests/smoke_navigation.py robot3
 ```
 
 Smoke test dùng domain **167**, localhost, cảm biến giả và hai SLAM C++ thật;
@@ -234,7 +248,7 @@ turtlebot4_ws/
 │   ├── turtlebot4/         # Repo upstream hiện có
 │   ├── tb4_tools/          # Công cụ robot đơn hiện có
 │   ├── tb4_multi_tools/    # Mapping origin + teleop C++ đa robot
-│   └── tb4_multi_bringup/  # Launch và cấu hình robot1/robot2
+│   └── tb4_multi_bringup/  # Launch và cấu hình robot1/robot2/robot3
 ├── scripts/               # Build, môi trường và chọn robot/chế độ
 ├── maps/                  # Map chung
 ├── tests/                 # Kiểm tra namespace bằng cảm biến giả

@@ -1,0 +1,416 @@
+Panels:
+- Class: rviz_common/Displays
+  Name: Displays
+- Class: rviz_common/Tool Properties
+  Name: Tool Properties
+- Class: rviz_common/Views
+  Name: Views
+Visualization Manager:
+  Class: ''
+  Name: root
+  Enabled: true
+  Global Options:
+    Fixed Frame: map
+    Background Color: 35; 35; 40
+    Frame Rate: 20
+  Displays:
+  - Class: rviz_default_plugins/Grid
+    Name: Grid
+    Enabled: true
+    Value: true
+  - Class: rviz_default_plugins/Map
+    Name: Shared map (robot1)
+    Enabled: true
+    Value: true
+    Alpha: 0.7
+    Topic:
+      Value: /tb4_view/robot1/map
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+    Draw Behind: true
+    Use Timestamp: false
+  - Class: rviz_common/Group
+    Name: robot1
+    Enabled: true
+    Displays:
+    - Class: rviz_default_plugins/RobotModel
+      Name: robot1 model
+      Enabled: true
+      Value: true
+      Description Source: Topic
+      Description Topic:
+        Value: /robot1/robot_description
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      TF Prefix: robot1
+      Visual Enabled: true
+      Collision Enabled: false
+      Alpha: 1.0
+    - Class: rviz_default_plugins/LaserScan
+      Name: robot1 scan
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot1/scan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color Transformer: FlatColor
+      Color: 51; 204; 255
+      Position Transformer: XYZ
+      Size (m): 0.025
+      Style: Points
+      Decay Time: 0
+    - Class: rviz_default_plugins/Path
+      Name: robot1 global plan
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot1/plan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 51; 204; 255
+      Line Style: Lines
+      Line Width: 0.04
+      Buffer Length: 1
+    - Class: rviz_default_plugins/Path
+      Name: robot1 local plan
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot1/local_plan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 51; 204; 255
+      Line Style: Lines
+      Line Width: 0.02
+      Buffer Length: 1
+    - Class: rviz_default_plugins/Polygon
+      Name: robot1 footprint
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot1/local_costmap/published_footprint
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 51; 204; 255
+    - Class: rviz_default_plugins/Map
+      Name: robot1 map
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot1/map
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: map
+      Use Timestamp: false
+    - Class: rviz_default_plugins/Map
+      Name: robot1 global_costmap/costmap
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot1/global_costmap/costmap
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: costmap
+      Use Timestamp: false
+    - Class: rviz_default_plugins/Map
+      Name: robot1 local_costmap/costmap
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot1/local_costmap/costmap
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: costmap
+      Use Timestamp: false
+  - Class: rviz_common/Group
+    Name: robot2
+    Enabled: true
+    Displays:
+    - Class: rviz_default_plugins/RobotModel
+      Name: robot2 model
+      Enabled: true
+      Value: true
+      Description Source: Topic
+      Description Topic:
+        Value: /robot2/robot_description
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      TF Prefix: robot2
+      Visual Enabled: true
+      Collision Enabled: false
+      Alpha: 1.0
+    - Class: rviz_default_plugins/LaserScan
+      Name: robot2 scan
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot2/scan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color Transformer: FlatColor
+      Color: 255; 140; 26
+      Position Transformer: XYZ
+      Size (m): 0.025
+      Style: Points
+      Decay Time: 0
+    - Class: rviz_default_plugins/Path
+      Name: robot2 global plan
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot2/plan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 255; 140; 26
+      Line Style: Lines
+      Line Width: 0.04
+      Buffer Length: 1
+    - Class: rviz_default_plugins/Path
+      Name: robot2 local plan
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot2/local_plan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 255; 140; 26
+      Line Style: Lines
+      Line Width: 0.02
+      Buffer Length: 1
+    - Class: rviz_default_plugins/Polygon
+      Name: robot2 footprint
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot2/local_costmap/published_footprint
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 255; 140; 26
+    - Class: rviz_default_plugins/Map
+      Name: robot2 map
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot2/map
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: map
+      Use Timestamp: false
+    - Class: rviz_default_plugins/Map
+      Name: robot2 global_costmap/costmap
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot2/global_costmap/costmap
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: costmap
+      Use Timestamp: false
+    - Class: rviz_default_plugins/Map
+      Name: robot2 local_costmap/costmap
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot2/local_costmap/costmap
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: costmap
+      Use Timestamp: false
+  - Class: rviz_common/Group
+    Name: robot3
+    Enabled: true
+    Displays:
+    - Class: rviz_default_plugins/RobotModel
+      Name: robot3 model
+      Enabled: true
+      Value: true
+      Description Source: Topic
+      Description Topic:
+        Value: /robot3/robot_description
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      TF Prefix: robot3
+      Visual Enabled: true
+      Collision Enabled: false
+      Alpha: 1.0
+    - Class: rviz_default_plugins/LaserScan
+      Name: robot3 scan
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot3/scan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color Transformer: FlatColor
+      Color: 77; 255; 77
+      Position Transformer: XYZ
+      Size (m): 0.025
+      Style: Points
+      Decay Time: 0
+    - Class: rviz_default_plugins/Path
+      Name: robot3 global plan
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot3/plan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 77; 255; 77
+      Line Style: Lines
+      Line Width: 0.04
+      Buffer Length: 1
+    - Class: rviz_default_plugins/Path
+      Name: robot3 local plan
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot3/local_plan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 77; 255; 77
+      Line Style: Lines
+      Line Width: 0.02
+      Buffer Length: 1
+    - Class: rviz_default_plugins/Polygon
+      Name: robot3 footprint
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot3/local_costmap/published_footprint
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 77; 255; 77
+    - Class: rviz_default_plugins/Map
+      Name: robot3 map
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot3/map
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: map
+      Use Timestamp: false
+    - Class: rviz_default_plugins/Map
+      Name: robot3 global_costmap/costmap
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot3/global_costmap/costmap
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: costmap
+      Use Timestamp: false
+    - Class: rviz_default_plugins/Map
+      Name: robot3 local_costmap/costmap
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot3/local_costmap/costmap
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: costmap
+      Use Timestamp: false
+  - Class: rviz_default_plugins/MarkerArray
+    Name: Robot labels and selected target
+    Enabled: true
+    Value: true
+    Topic:
+      Value: /tb4_view/labels
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+  Tools:
+  - Class: rviz_default_plugins/MoveCamera
+  - Class: rviz_default_plugins/Select
+  - Class: rviz_default_plugins/SetInitialPose
+    Topic:
+      Value: /tb4_view/initialpose
+      Depth: 10
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: rviz_default_plugins/SetGoal
+    Topic:
+      Value: /tb4_view/goal_pose
+      Depth: 10
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Name: Current View
+      Target Frame: <Fixed Frame>
+      Scale: 70
+      X: 0
+      Y: 0
+      Angle: -1.5708
+Window Geometry:
+  Width: 1400
+  Height: 900
+  Hide Left Dock: false
+  Hide Right Dock: true

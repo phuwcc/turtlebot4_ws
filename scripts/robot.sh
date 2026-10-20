@@ -2,12 +2,12 @@
 set -eo pipefail
 tb4_repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 usage() {
-  echo 'Usage: bash scripts/robot.sh robot1|robot2 hardware|mapping|navigation|teleop|rviz|check [launch arguments]'
+  echo 'Usage: bash scripts/robot.sh robot1|robot2|robot3 hardware|mapping|navigation|teleop|rviz|check [launch arguments]'
   echo 'Navigation requires map:=/absolute/path/map.yaml'
 }
 if [[ $# -lt 2 ]]; then usage; exit 2; fi
 tb4_id="$1"; tb4_mode="$2"; shift 2
-case "$tb4_id" in robot1|robot2) ;; *) usage; exit 2;; esac
+case "$tb4_id" in robot1|robot2|robot3) ;; *) usage; exit 2;; esac
 source "${tb4_repo}/scripts/env.sh"
 tb4_state="${XDG_STATE_HOME:-$HOME/.local/state}/tb4_multi_robot/${tb4_id}"
 mkdir -p "$tb4_state"
