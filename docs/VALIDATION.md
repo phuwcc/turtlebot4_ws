@@ -4,9 +4,14 @@
 
 - `bash scripts/build.sh`: build thành công hai package `tb4_multi_tools` và
   `tb4_multi_bringup`.
-- `src/tb4_multi_bringup/test/test_fleet_view.py`: kiểm thử tích hợp với ROS thật,
+- `tests/test_pc_config.py`: 5 test không cần ROS đã qua: lưu/đọc lại cấu hình
+  1/2/3 robot; từ chối IP trống, sai octet, trùng, loopback/multicast/broadcast;
+  hỏi lại giá trị sai; chọn 2 không hỏi IP robot3; ngắt giữa chừng giữ nguyên
+  file cũ; từ chối cấu hình `:11811;:11811;:11811;` từ lỗi `read`.
+- `src/tb4_multi_bringup/test/test_fleet_view.py`: 3 test đã qua, gồm cấu hình RViz và kiểm thử tích hợp với ROS thật,
   TF/map/scan và action server Nav2 giả, domain 173, localhost. Đã qua kiểm tra
-  prefix frame, giữ map chung, static TF của ba robot với subscriber mở muộn,
+  chỉ mở interface/nhóm RViz của 1/2/3 robot, từ chối chọn robot ngoài phiên,
+  khóa số robot sau khi node khởi động, prefix frame, giữ map chung, static TF của ba robot với subscriber mở muộn,
   map transient-local, scan robot3, pose/goal tới đúng từng namespace, ba goal
   hoạt động đồng thời, từ chối goal trùng/frame sai/robot ID sai và hủy riêng
   robot3 trong khi robot1/robot2 tiếp tục chạy.
@@ -15,6 +20,17 @@
   đều `active`; lập đường thành công (`status=4`, 8 pose), không phát map/TF ra
   topic gốc `/map` hoặc `/tf`. Không chạy hardware và không gửi goal điều khiển
   chuyển động.
+
+Đã chạy launch với danh sách discovery sai: launch thoát trước khi mở bất kỳ
+process RViz/fleet nào, kèm hướng dẫn chạy `bash scripts/laptop.sh configure`.
+Build và kiểm tra cú pháp các khối Bash README cũng đã qua.
+
+Chạy lại kiểm thử cấu hình laptop (không cần ROS):
+
+```bash
+cd "$HOME/turtlebot4_ws"
+python3 tests/test_pc_config.py -v
+```
 
 Chạy lại kiểm thử fleet trong một terminal:
 

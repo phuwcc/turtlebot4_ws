@@ -1,5 +1,6 @@
 """Run on an isolated ROS domain: synthetic TF, latched maps and fake Nav2 only."""
 import os
+from pathlib import Path as FilePath
 import threading
 import time
 import unittest
@@ -28,6 +29,8 @@ from tf2_msgs.msg import TFMessage
 from visualization_msgs.msg import MarkerArray
 
 from tb4_multi_bringup.fleet_view import FleetView, ROBOTS, adapt_message, display_frame
+from tb4_multi_bringup.fleet_settings import active_robots, rviz_for_count, validate_discovery
+import yaml
 
 
 class FleetViewTest(unittest.TestCase):
@@ -38,6 +41,47 @@ class FleetViewTest(unittest.TestCase):
                 return
             time.sleep(0.02)
         self.fail('Timed out waiting for ROS messages/action state')
+
+    def test_configuration_filters_and_rejects_broken_discovery(self):
+        template = yaml.safe_load((FilePath(__file__).resolve().parents[1] /
+                                   'config/fleet.rviz').read_text())
+        for count in (1, 2, 3):
+            view = rviz_for_count(template, count)
+            groups = [d['Name'] for d in view['Visualization Manager']['Displays'] if d['Name'] in ROBOTS]
+            self.assertEqual(groups, list(ROBOTS[:count]))
+            valid = ';'.join(f'10.11.63.{119 + index}:11811' for index in range(count)) + ';'
+            validate_discovery(valid, count)
+        self.assertEqual(len([d for d in template['Visualization Manager']['Displays']
+                              if d['Name'] in ROBOTS]), 3)
+        for value, count in ((':11811;:11811;:11811;', 3), ('', 1),
+                             ('10.11.63.119:11811;:11811;', 2),
+                             ('999.0.0.1:11811;', 1), ('10.11.63.119:11811;', 2)):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                validate_discovery(value, count)
+        for count in (0, 4, True):
+            with self.assertRaises(ValueError):
+                active_robots(count)
+
+    def test_only_active_robot_interfaces(self):
+        for count in (1, 2, 3):
+            with self.subTest(count=count):
+                rclpy.init()
+                bridge = FleetView(parameter_overrides=[Parameter('robot_count', value=count)])
+                try:
+                    self.assertEqual(tuple(bridge.action_clients), ROBOTS[:count])
+                    self.assertEqual(tuple(bridge.pose_pubs), ROBOTS[:count])
+                    topics = {subscription.topic_name for subscription in bridge.subscriptions}
+                    for index, robot in enumerate(ROBOTS):
+                        self.assertEqual('/' + robot + '/scan' in topics, index < count)
+                    if count < 3:
+                        rejected = bridge.set_parameters([
+                            Parameter('selected_robot', value=ROBOTS[count])])[0]
+                        self.assertFalse(rejected.successful)
+                    immutable = bridge.set_parameters([Parameter('robot_count', value=1)])[0]
+                    self.assertFalse(immutable.successful)
+                finally:
+                    bridge.destroy_node()
+                    rclpy.shutdown()
 
     def test_three_robots_and_controls(self):
         self.assertEqual(display_frame('robot3', '/base_link'), 'robot3/base_link')

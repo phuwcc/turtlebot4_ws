@@ -27,7 +27,10 @@ và namespace phải đúng từng robot. Repo không sửa các file đó khi b
 Laptop cần kết nối được tới IP Wi-Fi của cả ba Pi và đồng bộ đồng hồ. Tạo
 file `$HOME/.config/turtlebot4/pc_env.sh` bằng khối lệnh hỏi IP ở
 [README — cấu hình laptop](../README.md#laptop-network).
-Danh sách discovery phải có thứ tự server ID 0, ID 1 rồi ID 2.
+Chọn số robot từ 1 đến 3 trong D2. Danh sách discovery có thứ tự server ID
+0, ID 1 rồi ID 2; chỉ lưu IP của robot đang dùng. Ví dụ chọn 2 thì danh sách
+là `10.11.63.119:11811;10.11.52.137:11811;`, không thêm `:11811` trống cho robot3.
+`pc_config.py` kiểm tra IPv4 đầy đủ, không nhận IP trống/trùng/sai định dạng.
 
 Mỗi terminal laptop:
 
@@ -35,21 +38,26 @@ Mỗi terminal laptop:
 cd "$HOME/turtlebot4_ws"
 source /opt/ros/humble/setup.bash
 source "$HOME/turtlebot4_ws/install/setup.bash"
-source "$HOME/.config/turtlebot4/pc_env.sh"
-ros2 node list --no-daemon --spin-time 10
+bash "$HOME/turtlebot4_ws/scripts/laptop.sh" check
 ```
 
-Phải nhìn thấy cả `/robot1/...`, `/robot2/...` và `/robot3/...` trước khi mở RViz/gửi goal.
+Phải nhìn thấy namespace của tất cả robot đã chọn trước khi gửi goal.
 Nếu đã chạy ROS CLI daemon với cấu hình cũ, dừng nó bằng `ros2 daemon stop`,
 rồi chạy lại lệnh với môi trường mới. Kiểm tra `/robot1/scan`, `/robot2/scan` và `/robot3/scan`
 có nguồn riêng, không có publisher LiDAR hoặc lệnh vận tốc chung ở `/scan`, `/cmd_vel`.
 
 TF trên mỗi Pi vẫn dùng topic riêng `/robotN/tf`, `/robotN/tf_static` với frame
 `map`, `odom`, `base_link`... Node `fleet_view` chạy trên laptop chuyển bản sao
-của ba cây sang `/tb4_view/tf` và `/tb4_view/tf_static`, prefix mọi frame ngoài
-map bằng `robotN/`. Map là frame chung vì ba robot dùng cùng bản đồ đã lưu.
+của các cây đang dùng sang `/tb4_view/tf` và `/tb4_view/tf_static`, prefix mọi frame ngoài
+map bằng `robotN/`. Map là frame chung vì các robot dùng cùng bản đồ đã lưu.
 RViz chỉ nghe cây hiển thị này; không remap ngược dữ liệu đó vào Nav2 trên Pi.
 
 Chạy `fleet_visualization.launch.py` theo README để mở một RViz. Dùng menu
 laptop chọn `selected_robot` trước khi đặt pose/gửi goal. Không phát cả TF gốc
 và TF hiển thị vào cùng một RViz buffer. Chế độ `visualization.launch.py robot_id:=robotN` cũ vẫn có thể dùng riêng để debug từng robot.
+
+Số robot trong RViz lấy từ `TB4_ROBOT_COUNT`, truyền vào launch bằng
+`robot_count:=N`. Launch tạo cấu hình RViz chỉ chứa nhóm robot1 đến robotN,
+node chỉ tạo subscription/publisher/action client cho những robot đó. Đổi số
+robot cần dừng và mở lại launch. Launch cũng kiểm tra `ROS_DISCOVERY_SERVER`
+trước khi tạo tiến trình DDS, kể cả khi được gọi trực tiếp.

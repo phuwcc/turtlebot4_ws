@@ -193,16 +193,18 @@ cho phép chọn pose trên RViz. Các script khóa mapping/navigation trên t�
 ## 6. Một RViz cho ba robot trên laptop
 
 Các khối lệnh đầy đủ cho từng terminal nằm ở [README phần A](../README.md).
-Cài/build và lưu **ba IP** theo phần D trước khi mở RViz.
+Cài/build rồi chọn **số robot (1–3)** và nhập IP theo phần D2 trước khi mở RViz.
+Chọn 2 thì chỉ chạy robot1/robot2, không cần Pi 3.
 
-- Terminal 1 chạy `ros2 launch tb4_multi_bringup fleet_visualization.launch.py`.
-- Terminal 2 mở menu chọn robot `1/2/3`, hủy goal robot đang chọn bằng `c`.
-- Terminal 3 kiểm tra publisher scan/odom của cả ba robot.
+- Terminal 1 chạy `bash scripts/laptop.sh rviz` (kiểm tra cấu hình, hỏi lại nếu sai).
+- Terminal 2 chạy `bash scripts/laptop.sh menu`, chọn trong các robot đang dùng; hủy goal bằng `c`.
+- Terminal 3 chạy `bash scripts/laptop.sh check`, chỉ kiểm tra scan/odom các robot đang dùng.
 
 Cầu nối `fleet_view` tạo bản sao TF có prefix riêng (`robot1/odom`,
 `robot2/odom`, `robot3/odom`) và map chung trên `/tb4_view/tf`. Nó chuyển header
 scan, map, path, costmap và footprint tương ứng sang các topic hiển thị riêng.
-RobotModel lấy URDF gốc và dùng `TF Prefix` theo robot. Static TF được gom vào
+RobotModel lấy URDF gốc và dùng `TF Prefix` theo robot. RViz chỉ tạo nhóm
+hiển thị và cầu nối chỉ tạo kết nối cho số robot được cấu hình. Static TF được gom vào
 một mẫu transient-local đầy đủ để RViz mở muộn vẫn nhận cả ba cây.
 
 Dùng `2D Pose Estimate` và `2D Goal Pose` cho robot đang chọn. Nhãn trên map

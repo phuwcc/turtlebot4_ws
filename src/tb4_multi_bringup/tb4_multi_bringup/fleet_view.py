@@ -15,7 +15,7 @@ from std_srvs.srv import Trigger
 from tf2_msgs.msg import TFMessage
 from visualization_msgs.msg import Marker, MarkerArray
 
-ROBOTS = ('robot1', 'robot2', 'robot3')
+from tb4_multi_bringup.fleet_settings import ROBOTS, active_robots
 COLORS = ((0.2, 0.8, 1.0), (1.0, 0.55, 0.1), (0.3, 1.0, 0.3))
 
 
@@ -53,12 +53,14 @@ def valid_pose(pose):
 class FleetView(Node):
     def __init__(self, **kwargs):
         super().__init__('fleet_view', **kwargs)
+        count = self.declare_parameter('robot_count', 3).value
+        self.robots = active_robots(count)
         self.declare_parameter('selected_robot', 'robot1')
-        if self.get_parameter('selected_robot').value not in ROBOTS:
-            raise ValueError('selected_robot must be robot1, robot2 or robot3')
+        if self.get_parameter('selected_robot').value not in self.robots:
+            raise ValueError('selected_robot must be active in this session')
         self.maps = {}
         self.bases = {}
-        for robot in ROBOTS:
+        for robot in self.robots:
             self.maps[robot] = self.declare_parameter(robot + '.map_frame', 'map').value
             self.bases[robot] = self.declare_parameter(robot + '.base_frame', 'base_link').value
         self.add_on_set_parameters_callback(self.validate_parameters)
@@ -70,11 +72,11 @@ class FleetView(Node):
         self.subscriptions_owned = []
         self.publishers_owned = []
         self.action_clients = {}
-        self.goals = {robot: None for robot in ROBOTS}
-        self.busy = {robot: False for robot in ROBOTS}
-        self.cancel_requested = {robot: False for robot in ROBOTS}
+        self.goals = {robot: None for robot in self.robots}
+        self.busy = {robot: False for robot in self.robots}
+        self.cancel_requested = {robot: False for robot in self.robots}
         self.pose_pubs = {}
-        for robot in ROBOTS:
+        for robot in self.robots:
             self.subscriptions_owned.append(self.create_subscription(
                 TFMessage, '/' + robot + '/tf',
                 lambda msg, r=robot: self.tf_pub.publish(adapt_message(msg, r, self.maps[r])),
@@ -104,13 +106,13 @@ class FleetView(Node):
         self.cancel_service = self.create_service(Trigger, '/tb4_view/cancel', self.cancel_goal)
         self.marker_pub = self.create_publisher(MarkerArray, '/tb4_view/labels', self.latched)
         self.timer = self.create_timer(0.5, self.publish_labels)
-        self.get_logger().info('Fleet view ready. Select robot with selected_robot parameter; default robot1.')
+        self.get_logger().info('Fleet view ready: ' + ', '.join(self.robots) + '; selected robot1.')
 
     def validate_parameters(self, parameters):
         for parameter in parameters:
-            if parameter.name == 'selected_robot' and parameter.value not in ROBOTS:
-                return SetParametersResult(successful=False, reason='Choose robot1, robot2 or robot3')
-            if parameter.name.endswith(('.map_frame', '.base_frame')):
+            if parameter.name == 'selected_robot' and parameter.value not in self.robots:
+                return SetParametersResult(successful=False, reason='Active robots: ' + ', '.join(self.robots))
+            if parameter.name == 'robot_count' or parameter.name.endswith(('.map_frame', '.base_frame')):
                 return SetParametersResult(successful=False, reason='Frame settings require restarting the launch')
         return SetParametersResult(successful=True)
 
@@ -214,7 +216,7 @@ class FleetView(Node):
     def publish_labels(self):
         selected = self.get_parameter('selected_robot').value
         markers = []
-        for index, robot in enumerate(ROBOTS):
+        for index, robot in enumerate(self.robots):
             marker = Marker()
             marker.header.frame_id = display_frame(robot, self.bases[robot], self.maps[robot])
             marker.ns = 'robots'

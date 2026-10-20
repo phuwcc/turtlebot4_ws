@@ -1,4 +1,4 @@
-# TurtleBot 4 — 3 robot, 1 RViz, mỗi terminal một khối lệnh
+# TurtleBot 4 — chọn 1–3 robot, 1 RViz, mỗi terminal một khối lệnh
 
 **Mỗi ô lệnh dưới đây là toàn bộ lệnh cho một terminal mới. Copy cả ô và chạy.**
 Các dòng `cd` và `source` đã có sẵn trong từng ô. Dùng Bash trên Ubuntu 22.04,
@@ -6,15 +6,18 @@ ROS 2 Humble. `$HOME` tự lấy đúng tài khoản: `/home/phuc` trên laptop 
 bằng `phuc`, `/home/ubuntu` trên Pi nếu đăng nhập bằng `ubuntu`.
 
 **Máy đã cài và có map:** chạy các terminal Pi ở phần B, sau đó các terminal
-laptop ở phần A. **Máy mới:** làm phần D một lần trước. **Đã dùng bản hai robot:** build lại
-trên laptop và ba Pi, rồi chạy lại D2 để lưu đủ ba IP. **Chưa có map:** làm phần C.
+laptop ở phần A. **Máy mới:** làm phần D một lần trước. **Đã dùng bản trước:** build lại
+trên laptop và các Pi đang dùng, rồi chạy D2 để chọn số robot và lưu IP. **Chưa có map:** làm phần C.
 
 ## A. LAPTOP — lệnh chạy trực tiếp trên laptop
 
 Mở terminal trên laptop có màn hình. Terminal đã SSH vào Pi là terminal của Pi.
 Cấu hình mạng laptop được lưu ở `$HOME/.config/turtlebot4/pc_env.sh` bằng phần D2.
+Chọn **1, 2 hoặc 3 robot**; chọn 2 thì chỉ chạy robot1 và robot2, không cần IP Pi 3.
+`laptop.sh` kiểm tra cấu hình trước khi mở ROS. Nếu file cũ sai hoặc chưa có,
+script tự hỏi lại số robot và IP. Mỗi terminal tự source môi trường qua script.
 
-### LAPTOP — Terminal 1: một RViz cho cả robot1, robot2, robot3
+### LAPTOP — Terminal 1: một RViz cho các robot đã chọn
 
 ```bash
 (
@@ -22,20 +25,20 @@ Cấu hình mạng laptop được lưu ở `$HOME/.config/turtlebot4/pc_env.sh`
   cd "$HOME/turtlebot4_ws"
   source /opt/ros/humble/setup.bash
   source "$HOME/turtlebot4_ws/install/setup.bash"
-  source "$HOME/.config/turtlebot4/pc_env.sh"
-  ros2 launch tb4_multi_bringup fleet_visualization.launch.py
+  bash "$HOME/turtlebot4_ws/scripts/laptop.sh" rviz
 )
 ```
 
 Giữ terminal này chạy. Nhãn, scan và đường đi của robot1 màu xanh dương,
-robot2 màu cam, robot3 màu xanh lá; mỗi robot có model riêng. Cả ba robot phải dùng **cùng
+robot2 màu cam, robot3 màu xanh lá; mỗi robot có model riêng. Các robot đang dùng phải có **cùng
 bản đồ, cùng gốc và hướng map**. Map hiển thị mặc định lấy từ robot1.
 
 ### LAPTOP — Terminal 2: chọn robot nhận pose/goal và hủy goal
 
-Copy cả khối rồi nhập `1`, `2` hoặc `3` để chọn robot. Mặc định chọn robot1.
-Chọn robot **trước mỗi lần** đặt pose/gửi goal và xem nhãn `Pose / Goal -> robotN`
-trên RViz để xác nhận. Chọn robot khác không hủy goal đang chạy của robot trước.
+Copy cả khối rồi nhập số robot để chọn đích điều khiển. Menu chỉ chấp nhận
+robot có trong phiên. Mặc định chọn robot1. Chọn robot **trước mỗi lần** đặt
+pose/gửi goal và xem nhãn `Pose / Goal -> robotN` trên RViz để xác nhận.
+Chọn robot khác không hủy goal đang chạy của robot trước.
 
 ```bash
 (
@@ -43,15 +46,7 @@ trên RViz để xác nhận. Chọn robot khác không hủy goal đang chạy 
   cd "$HOME/turtlebot4_ws"
   source /opt/ros/humble/setup.bash
   source "$HOME/turtlebot4_ws/install/setup.bash"
-  source "$HOME/.config/turtlebot4/pc_env.sh"
-  while read -r -p 'Chọn robot [1/2/3], hủy goal robot đang chọn [c], thoát menu [q]: ' tb4_choice; do
-    case "$tb4_choice" in
-      1|2|3) ros2 param set /fleet_view selected_robot "robot${tb4_choice}" ;;
-      c) ros2 service call /tb4_view/cancel std_srvs/srv/Trigger '{}' ;;
-      q) break ;;
-      *) echo 'Nhập 1, 2, 3, c hoặc q.' ;;
-    esac
-  done
+  bash "$HOME/turtlebot4_ws/scripts/laptop.sh" menu
 )
 ```
 
@@ -65,7 +60,7 @@ Mỗi robot nhận một goal tại một thời điểm từ cửa sổ này. M
 Hủy goal chỉ tác động goal đã gửi qua cửa sổ fleet này. Thoát menu hoặc đóng
 RViz **không tự hủy các goal đang chạy**; hủy goal từng robot trước khi đóng.
 
-### LAPTOP — Terminal 3: kiểm tra cả ba robot
+### LAPTOP — Terminal 3: kiểm tra các robot đã chọn
 
 ```bash
 (
@@ -73,19 +68,11 @@ RViz **không tự hủy các goal đang chạy**; hủy goal từng robot trư�
   cd "$HOME/turtlebot4_ws"
   source /opt/ros/humble/setup.bash
   source "$HOME/turtlebot4_ws/install/setup.bash"
-  source "$HOME/.config/turtlebot4/pc_env.sh"
-  ros2 daemon stop
-  ros2 node list --no-daemon --spin-time 10
-  ros2 topic info /robot1/scan --verbose --no-daemon --spin-time 5
-  ros2 topic info /robot1/odom --verbose --no-daemon --spin-time 5
-  ros2 topic info /robot2/scan --verbose --no-daemon --spin-time 5
-  ros2 topic info /robot2/odom --verbose --no-daemon --spin-time 5
-  ros2 topic info /robot3/scan --verbose --no-daemon --spin-time 5
-  ros2 topic info /robot3/odom --verbose --no-daemon --spin-time 5
+  bash "$HOME/turtlebot4_ws/scripts/laptop.sh" check
 )
 ```
 
-Phải thấy node của cả `/robot1/...`, `/robot2/...` và `/robot3/...`, mỗi robot có
+Phải thấy node của từng robot đã chọn (`/robot1/...` đến `/robotN/...`), mỗi robot có
 publisher `scan` và `odom` riêng. Node `fleet_view` trên laptop ghép bản sao TF
 vào `/tb4_view/tf` và `/tb4_view/tf_static`, thêm prefix robot cho frame ngoài
 `map`; dữ liệu trên Pi giữ nguyên. RobotModel dùng TF Prefix tương ứng.
@@ -93,7 +80,8 @@ vào `/tb4_view/tf` và `/tb4_view/tf_static`, thêm prefix robot cho frame ngo�
 ## B. PI 1, PI 2 VÀ PI 3 — chạy navigation khi đã có map
 
 Cần có **cả `site.yaml` và `site.pgm`** trong `$HOME/turtlebot4_ws/maps/`
-trên cả ba Pi. Dừng mapping và teleop trước khi chạy navigation.
+trên các Pi đang dùng. Chọn 1 robot: chỉ chạy Pi 1; chọn 2: Pi 1 và Pi 2;
+chọn 3: chạy cả ba Pi. Dừng mapping và teleop trước khi chạy navigation.
 
 ### PI 1 — Terminal 1: bật hardware robot1
 
@@ -282,40 +270,42 @@ có workspace; nếu đã có thì dùng repo hiện tại.
 )
 ```
 
-### D2. LAPTOP — một terminal lưu IP ba Pi
-
-Copy cả khối, nhấn Enter rồi nhập IP khi được hỏi. Chỉ nhập IP lần đầu hoặc khi
-IP thay đổi; các terminal ở phần A tự source file đã lưu. Trên từng Pi, dùng
-`hostname -I` để xem IP, chọn địa chỉ Wi-Fi/LAN mà laptop truy cập được.
+### D2. LAPTOP — chọn số robot và nhập IP (làm một lần)
 
 <a id="laptop-network"></a>
+
+Copy cả khối dưới và chạy nguyên trạng. Khi script hỏi, **gõ câu trả lời rồi
+nhấn Enter**. Không thay dòng lệnh bằng IP, không cần sửa file bằng tay.
 
 ```bash
 (
   set -e
-  read -r -p 'IP Wi-Fi/LAN của Pi robot1 (server ID 0): ' tb4_pi1
-  read -r -p 'IP Wi-Fi/LAN của Pi robot2 (server ID 1): ' tb4_pi2
-  read -r -p 'IP Wi-Fi/LAN của Pi robot3 (server ID 2): ' tb4_pi3
-  if [[ ! "$tb4_pi1" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ||
-        ! "$tb4_pi2" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ||
-        ! "$tb4_pi3" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo 'Cần nhập đủ ba địa chỉ IPv4; cấu hình chưa được ghi.' >&2
-    exit 1
-  fi
-  mkdir -p "$HOME/.config/turtlebot4"
-  cat > "$HOME/.config/turtlebot4/pc_env.sh" <<EOF
-export ROS_DOMAIN_ID=0
-export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
-export ROS_DISCOVERY_SERVER='${tb4_pi1}:11811;${tb4_pi2}:11811;${tb4_pi3}:11811;'
-export ROS_SUPER_CLIENT=True
-export ROS_LOCALHOST_ONLY=0
-EOF
+  cd "$HOME/turtlebot4_ws"
+  python3 "$HOME/turtlebot4_ws/scripts/pc_config.py"
 )
 ```
 
+Ví dụ phiên dùng hai robot, nhập lần lượt:
+
+```text
+Số robot chạy trong phiên này [1/2/3]: 2
+IP Wi-Fi/LAN robot1 (server ID 0): 10.11.63.119
+IP Wi-Fi/LAN robot2 (server ID 1): 10.11.52.137
+```
+
+Hai IP trên lấy từ phiên bạn cung cấp; chỉ dùng nếu vẫn là IP hiện tại của hai Pi.
+Chọn 2 thì script không hỏi robot3. Địa chỉ trống, sai IPv4 hoặc trùng nhau sẽ
+bị từ chối và hỏi lại. File chỉ được lưu sau khi nhập đủ, đúng IP của các robot
+đã chọn; cấu hình cũ không bị ghi đè nếu bạn dừng nhập giữa chừng.
+
+Chạy lại D2 khi đổi số robot/IP, rồi **đóng RViz cũ và chạy lại Terminal 1, 2, 3**.
+Script lưu số robot cùng môi trường DDS tại `$HOME/.config/turtlebot4/pc_env.sh`.
+Frame, model, scan, nhãn và action client của robot không được chọn sẽ không
+được mở trong RViz/node fleet.
+
 ### D3. MỖI PI — một terminal cài và build
 
-Chạy nguyên khối trên từng Pi: Pi 1, Pi 2 và Pi 3:
+Chạy nguyên khối trên từng Pi bạn đang dùng (từ Pi 1 đến Pi N):
 
 ```bash
 (
@@ -361,8 +351,12 @@ và [robot3.yaml](src/tb4_multi_bringup/config/robots/robot3.yaml): mặc địn
 - Dừng: chọn lần lượt từng robot trong menu laptop và nhấn `c` để hủy goal; teleop nhấn `k` rồi `Ctrl+C`; dừng mapping/navigation
   bằng `Ctrl+C`, sau cùng mới dừng hardware.
 - `package 'rviz2' not found`: chạy phần D1 trên laptop sẽ mở RViz.
-- File môi trường không tồn tại: chạy phần D2 trên laptop, sau đó chạy lại cả
-  khối terminal ở phần A.
+- File môi trường không tồn tại hoặc `Wrong ipv4 address passed into the server's list`:
+  chạy D2, chọn số robot và nhập IP sau dấu nhắc; chạy lại Terminal 1. Không đặt
+  IP vào chuỗi lời nhắc của `read`: chuỗi đó chỉ là chữ hiển thị, không gán IP.
+  Các lệnh mới tự phát hiện file lỗi và yêu cầu cấu hình lại trước khi mở DDS.
+- `Stereo is NOT SUPPORTED`: thông báo khả năng hiển thị stereo của RViz,
+  không phải lỗi địa chỉ IPv4 và không cản trở xem bản đồ 2D.
 - `Invalid frame ID "odom"`: kiểm tra terminal hardware của Pi tương ứng và
   publisher odometry bằng LAPTOP — Terminal 3.
 - Scan báo timestamp sớm hơn TF: kiểm tra đồng hồ và dữ liệu TF của các máy.
