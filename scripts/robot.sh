@@ -2,8 +2,8 @@
 set -eo pipefail
 tb4_repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 usage() {
-  echo 'Usage: bash scripts/robot.sh robot1|robot2|robot3 hardware|mapping|navigation|teleop|rviz|check [launch arguments]'
-  echo 'Navigation requires map:=/absolute/path/map.yaml'
+  echo 'Usage: bash scripts/robot.sh robot1|robot2|robot3 hardware|teleop|check [launch arguments]'
+  echo 'Navigation/mapping chạy trên PC qua scripts/pc-*.sh.'
 }
 if [[ $# -lt 2 ]]; then usage; exit 2; fi
 tb4_id="$1"; tb4_mode="$2"; shift 2
@@ -21,20 +21,11 @@ case "$tb4_mode" in
     [[ -e /dev/RPLIDAR ]] || { echo '/dev/RPLIDAR is missing' >&2; exit 1; }
     exec flock -n "$(dirname "$tb4_state")/hardware.lock" \
       ros2 launch tb4_multi_bringup hardware.launch.py "robot_id:=$tb4_id" "$@";;
-  mapping)
-    exec flock -n "$tb4_state/localization.lock" ros2 launch tb4_multi_bringup mapping.launch.py \
-      "robot_id:=$tb4_id" "origin_file:=$tb4_state/mapping_origin.json" "$@";;
-  navigation)
-    tb4_has_map=false
-    for tb4_arg in "$@"; do [[ "$tb4_arg" == map:=* || "$tb4_arg" == --show-args ]] && tb4_has_map=true; done
-    if ! "$tb4_has_map"; then usage; exit 2; fi
-    exec flock -n "$tb4_state/localization.lock" ros2 launch tb4_multi_bringup navigation.launch.py \
-      "robot_id:=$tb4_id" "$@";;
+  mapping|navigation|rviz)
+    echo 'Chế độ này đã chuyển sang PC. Dùng scripts/pc-start.sh, pc-mapping.sh hoặc pc-rviz.sh.' >&2
+    exit 2;;
   teleop)
-    exec ros2 run tb4_multi_tools teleop_keyboard --ros-args -r "__ns:=/$tb4_id" "$@";;
-  rviz)
-    export ROS_SUPER_CLIENT=True
-    exec ros2 launch tb4_multi_bringup visualization.launch.py "robot_id:=$tb4_id" "$@";;
+    exec ros2 run tb4_multi_tools teleop_keyboard --ros-args -r "__ns:=/$tb4_id" -p remote:=true "$@";;
   check)
     export ROS_SUPER_CLIENT=True
     ros2 node list --no-daemon --spin-time 5

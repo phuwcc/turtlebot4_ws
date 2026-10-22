@@ -74,6 +74,7 @@ class FleetView(Node):
         self.action_clients = {}
         self.goals = {robot: None for robot in self.robots}
         self.busy = {robot: False for robot in self.robots}
+        self.last_result = {robot: None for robot in self.robots}
         self.cancel_requested = {robot: False for robot in self.robots}
         self.pose_pubs = {}
         for robot in self.robots:
@@ -128,8 +129,8 @@ class FleetView(Node):
             return None
         return self.get_parameter('selected_robot').value
 
-    def initial_pose(self, message):
-        robot = self.control_target(message)
+    def initial_pose(self, message, robot=None):
+        robot = robot or self.control_target(message)
         if robot is None:
             return
         if self.busy[robot]:
@@ -140,9 +141,10 @@ class FleetView(Node):
         result.header.stamp = self.get_clock().now().to_msg()
         self.pose_pubs[robot].publish(result)
         self.get_logger().info('Initial pose -> ' + robot)
+        return True
 
-    def goal_pose(self, message):
-        robot = self.control_target(message)
+    def goal_pose(self, message, robot=None):
+        robot = robot or self.control_target(message)
         if robot is None:
             return
         if self.busy[robot]:
@@ -157,10 +159,12 @@ class FleetView(Node):
         goal.pose.header.frame_id = self.maps[robot]
         goal.pose.header.stamp = self.get_clock().now().to_msg()
         self.busy[robot] = True
+        self.last_result[robot] = None
         self.cancel_requested[robot] = False
         try:
             future = client.send_goal_async(goal)
             future.add_done_callback(lambda f, r=robot: self.goal_response(f, r))
+            return True
         except Exception as error:
             self.busy[robot] = False
             self.get_logger().error(str(error))
@@ -169,6 +173,7 @@ class FleetView(Node):
         try:
             handle = future.result()
             if not handle.accepted:
+                self.last_result[robot] = "rejected"
                 self.busy[robot] = False
                 self.get_logger().error('Goal rejected by ' + robot)
                 return
@@ -186,7 +191,9 @@ class FleetView(Node):
         self.busy[robot] = False
         self.cancel_requested[robot] = False
         try:
-            self.get_logger().info(robot + ' goal finished, status=' + str(future.result().status))
+            status = future.result().status
+            self.last_result[robot] = {4: 'succeeded', 5: 'canceled', 6: 'aborted'}.get(status, str(status))
+            self.get_logger().info(robot + ' goal finished, status=' + str(status))
         except Exception as error:
             self.get_logger().error('Goal result failed: ' + str(error))
 
@@ -204,7 +211,9 @@ class FleetView(Node):
             self.get_logger().error('Cancellation failed: ' + str(error))
 
     def cancel_goal(self, request, response):
-        robot = self.get_parameter('selected_robot').value
+        return self.cancel_robot(self.get_parameter('selected_robot').value, response)
+
+    def cancel_robot(self, robot, response):
         response.success = self.busy[robot]
         response.message = ('Cancellation requested for ' if response.success else 'No owned goal for ') + robot
         if response.success:

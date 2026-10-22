@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+from tb4_multi_bringup.remote_velocity import main
+main()

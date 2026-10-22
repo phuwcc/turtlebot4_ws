@@ -4,7 +4,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription, OpaqueFunction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import PushRosNamespace, SetRemap
+from launch_ros.actions import Node, PushRosNamespace, SetRemap
 from nav2_common.launch import RewrittenYaml
 from tb4_multi_bringup.configuration import initial_pose, load_robot, robot_arguments, share
 
@@ -39,6 +39,9 @@ def setup(context):
     launch_dir = share('nav2_bringup') / 'launch'
     actions = [PushRosNamespace(ns), SetRemap('/tf', '/' + ns + '/tf'),
                SetRemap('/tf_static', '/' + ns + '/tf_static'),
+               # Node-specific rules preserve controller -> velocity smoother wiring.
+               SetRemap('velocity_smoother:cmd_vel_smoothed', 'pc_cmd_vel'),
+               SetRemap('behavior_server:cmd_vel', 'pc_cmd_vel'),
                SetRemap('/' + ns + '/global_costmap/scan', '/' + ns + '/scan'),
                SetRemap('/' + ns + '/local_costmap/scan', '/' + ns + '/scan'),
                SetRemap('/' + ns + '/global_costmap/map', '/' + ns + '/map'),
@@ -46,6 +49,8 @@ def setup(context):
     if initialize:
         actions.append(SetRemap('initialpose', 'amcl/manual_initialpose'))
     actions += [
+        Node(package='tb4_multi_bringup', executable='remote_velocity',
+             name='remote_velocity_stamp', parameters=[{'mode': 'stamp'}], output='screen'),
         IncludeLaunchDescription(PythonLaunchDescriptionSource(str(launch_dir / 'localization_launch.py')),
             launch_arguments={'namespace': ns, 'map': str(map_file), 'use_sim_time': 'false',
                               'params_file': amcl, 'use_composition': 'False'}.items()),

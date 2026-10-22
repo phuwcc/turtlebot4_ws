@@ -1,5 +1,5 @@
 # Derived from turtlebot/turtlebot4 (Apache-2.0); see NOTICE.
-# Pi profile copied from turtlebot4_navigation/config/nav2.yaml.
+# Conservative PC profile copied from turtlebot4_navigation/config/nav2.yaml.
 # Changes: controller 10 Hz, fewer DWB velocity samples, no trajectory debug/voxel cloud.
 # Speed limits, obstacle layers, robot radius and goal tolerances stay upstream.
 bt_navigator:

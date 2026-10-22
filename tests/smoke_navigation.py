@@ -11,12 +11,16 @@ import time
 
 parser=argparse.ArgumentParser()
 parser.add_argument('robot_id', nargs='?', choices=['robot1','robot2','robot3'], default='robot1')
-identity=parser.parse_args().robot_id
+parser.add_argument('--pc', action='store_true', help='Test combined PC launch, headless socket and command routing')
+args=parser.parse_args()
+identity=args.robot_id
+if args.pc and identity != 'robot1':
+    parser.error('--pc uses robot1 (one-robot PC session)')
 prefix='/'+identity
-domain={'robot1':168, 'robot2':169, 'robot3':170}[identity]
+domain=172 if args.pc else {'robot1':168, 'robot2':169, 'robot3':170}[identity]
 os.environ.update(ROS_DOMAIN_ID=str(domain), ROS_LOCALHOST_ONLY='1',
                   RMW_IMPLEMENTATION='rmw_fastrtps_cpp', ROS_SUPER_CLIENT='False')
-for key in ('ROS_DISCOVERY_SERVER', 'FASTRTPS_DEFAULT_PROFILES_FILE', 'ROS_NAMESPACE'):
+for key in ('ROS_DISCOVERY_SERVER', 'FASTRTPS_DEFAULT_PROFILES_FILE', 'FASTDDS_DEFAULT_PROFILES_FILE', 'CYCLONEDDS_URI', 'ROS_NAMESPACE'):
     os.environ.pop(key, None)
 
 import rclpy
@@ -30,7 +34,7 @@ from sensor_msgs.msg import LaserScan
 from tf2_msgs.msg import TFMessage
 
 root = Path(__file__).resolve().parents[1]
-logs = root / 'log/navigation_smoke' / identity
+logs = root / 'log/navigation_smoke' / ('pc' if args.pc else identity)
 logs.mkdir(parents=True, exist_ok=True)
 (logs/'result.json').unlink(missing_ok=True)
 os.environ['ROS_LOG_DIR'] = str(logs)
@@ -73,16 +77,30 @@ names=['amcl','map_server','controller_server','planner_server','bt_navigator']
 clients={name:n.create_client(GetState,prefix+'/'+name+'/get_state') for name in names}
 planner=ActionClient(n,ComputePathToPose,prefix+'/compute_path_to_pose')
 stream=(logs/'navigation.log').open('w')
-p=subprocess.Popen(['ros2','launch','tb4_multi_bringup','navigation.launch.py','robot_id:='+identity,
-    'map:='+str(logs/'room.yaml'),'initialize_pose:=true','initial_x:=0.0','initial_y:=0.0','initial_yaw:=0.0'],
+command = (['ros2','launch','tb4_multi_bringup','pc_navigation.launch.py', 'robot_count:=1',
+    'rviz:=false', 'socket_port:=18765', 'map:='+str(logs/'room.yaml')] if args.pc else
+    ['ros2','launch','tb4_multi_bringup','navigation.launch.py','robot_id:='+identity,
+    'map:='+str(logs/'room.yaml'),'initialize_pose:=true','initial_x:=0.0','initial_y:=0.0','initial_yaw:=0.0'])
+p=subprocess.Popen(command,
     stdout=stream,stderr=subprocess.STDOUT,start_new_session=True)
 result={'test_domain':domain,'robot_id':identity}
 try:
+    if args.pc:
+        import socket
+        def task(request):
+            with socket.create_connection(('127.0.0.1',18765),timeout=4) as connection:
+                connection.sendall((json.dumps(request)+'\n').encode())
+                return json.loads(connection.makefile('rb').readline())
     deadline=time.monotonic()+65
     states={}
     while time.monotonic()<deadline:
         assert p.poll() is None,'Navigation launch exited'
         pump(2)
+        if args.pc:
+            try:
+                task({'command':'pose','robot':'robot1','x':0.,'y':0.,'yaw':0.})
+            except OSError:
+                pass
         if not all(c.service_is_ready() for c in clients.values()):continue
         futures={k:c.call_async(GetState.Request()) for k,c in clients.items()}
         end=time.monotonic()+4
@@ -90,8 +108,21 @@ try:
         states={k:f.result().current_state.label if f.done() and f.result() else 'TIMEOUT' for k,f in futures.items()}
         if all(s=='active' for s in states.values()):break
     result['lifecycle']=states
-    assert states and all(s=='active' for s in states.values()),'Not all lifecycle nodes active'
+    assert states and all(s=='active' for s in states.values()),'Not all lifecycle nodes active: '+str(states)
     assert planner.server_is_ready(),'Namespaced planner unavailable'
+    if args.pc:
+        assert task({'command':'status'})['robots']['robot1']['nav_ready']
+        assert task({'command':'pose','robot':'robot1','x':0.,'y':0.,'yaw':0.})['ok']
+        pump(4)
+        result['pc_socket']=True
+    publishers={e.node_name for e in n.get_publishers_info_by_topic(prefix+'/pc_cmd_vel')}
+    assert {'velocity_smoother','behavior_server'} <= publishers, publishers
+    assert not n.get_publishers_info_by_topic(prefix+'/cmd_vel'), 'PC bypassed Pi guard'
+    nav_publishers = {e.node_name for e in n.get_publishers_info_by_topic(prefix+'/cmd_vel_nav')}
+    assert nav_publishers == {'controller_server'}, nav_publishers
+    assert 'velocity_smoother' in {e.node_name for e in n.get_subscriptions_info_by_topic(prefix+'/cmd_vel_nav')}
+    assert n.get_publishers_info_by_topic(prefix+'/remote_cmd_vel'), 'Missing stamped command relay'
+    result['command_routing']=True
     goal=ComputePathToPose.Goal();goal.goal.header.frame_id='map'
     goal.goal.pose.position.x=.5;goal.goal.pose.orientation.w=1.;goal.planner_id='GridBased'
     f=planner.send_goal_async(goal)

@@ -1,5 +1,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/twist.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
 #include "tb4_multi_tools/controls.hpp"
 #include <termios.h>
 #include <poll.h>
@@ -31,7 +32,18 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<rclcpp::Node>("teleop_keyboard_cpp");
-  auto publisher = node->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
+  const bool remote = node->declare_parameter("remote", false);
+  auto publisher = remote ? nullptr : node->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 1);
+  auto stamped = remote ? node->create_publisher<geometry_msgs::msg::TwistStamped>(
+    "remote_cmd_vel", rclcpp::QoS(1).best_effort()) : nullptr;
+  auto publish = [&](const geometry_msgs::msg::Twist & command) {
+      if (remote) {
+        geometry_msgs::msg::TwistStamped message;
+        message.header.stamp = node->now();
+        message.twist = command;
+        stamped->publish(message);
+      } else {publisher->publish(command);}
+    };
   try {
     double speed = node->declare_parameter("speed", 0.08);
     double turn = node->declare_parameter("turn", 0.3);
@@ -76,13 +88,13 @@ int main(int argc, char ** argv)
       geometry_msgs::msg::Twist command;
       command.linear.x = active.linear * speed;
       command.angular.z = active.angular * turn;
-      publisher->publish(command);
+      publish(command);
       rclcpp::spin_some(node);
       if (rclcpp::ok()) {rate.sleep();}
     }
-    if (rclcpp::ok()) {publisher->publish(geometry_msgs::msg::Twist{});}
+    if (rclcpp::ok()) {publish(geometry_msgs::msg::Twist{});}
   } catch (const std::exception & e) {
-    if (rclcpp::ok()) {publisher->publish(geometry_msgs::msg::Twist{});}
+    if (rclcpp::ok()) {publish(geometry_msgs::msg::Twist{});}
     RCLCPP_ERROR(node->get_logger(), "%s", e.what());
     if (rclcpp::ok()) {rclcpp::shutdown();}
     return 1;

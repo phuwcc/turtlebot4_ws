@@ -1,263 +1,69 @@
-# TurtleBot 4 — repo chung cho ba robot, một RViz
-
-ROS 2 Humble / Ubuntu 22.04. **Cùng code trên ba Pi**, chọn `robot1`,
-`robot2` hoặc `robot3` khi chạy. Mapping và teleop là C++; AMCL/Nav2 dùng các node C++ có sẵn.
-Python dùng cho launch/cấu hình, cầu nối hiển thị trên laptop và kiểm thử.
-
-| | Pi robot 1 | Pi robot 2 | Pi robot 3 |
-| --- | --- | --- | --- |
-| Namespace ứng dụng | `/robot1` | `/robot2` | `/robot3` |
-| Namespace Create 3 | `/robot1/_do_not_use` | `/robot2/_do_not_use` | `/robot3/_do_not_use` |
-| ROS domain | `0` | `0` | `0` |
-| Discovery server ID | `0` | `1` | `2` |
-| Port trên mỗi Pi | `11811` | `11811` | `11811` |
-
-Repo chưa tự thay cấu hình mạng/Create 3 hoặc dịch vụ hệ thống. Bản robot đơn
-đang chạy vẫn giữ nguyên. Cần thực hiện bước cấu hình mỗi Pi dưới đây trước khi
-dùng phần cứng thật với namespace mới.
-
-## 1. Cài và build trên cả ba Pi
-
-Code dùng chung nằm trực tiếp trong `src/tb4_multi_tools` và
-`src/tb4_multi_bringup` của repository
-[`phuwcc/turtlebot4_ws`](https://github.com/phuwcc/turtlebot4_ws).
-Trên Pi thứ hai, thứ ba hoặc máy chưa có code:
-
-```bash
-git clone https://github.com/phuwcc/turtlebot4_ws.git ~/turtlebot4_ws
-cd ~/turtlebot4_ws
-```
-
-Nếu đã clone repository, cập nhật từ thư mục gốc bằng `git pull --ff-only`,
-rồi build ngay tại `~/turtlebot4_ws`. Đây là **một workspace duy nhất** cho cả
-robot đơn và ba robot; các package đa robot dùng các dependency TurtleBot/Nav2
-đã cài trên Pi.
-
-Pi cần ROS 2 Humble và các gói TurtleBot 4 đã được cấu hình cho robot thật:
-
-```bash
-sudo apt install python3-colcon-common-extensions python3-yaml \
-  ros-humble-turtlebot4-bringup ros-humble-turtlebot4-description \
-  ros-humble-create3-republisher ros-humble-navigation2 \
-  ros-humble-nav2-bringup ros-humble-slam-toolbox
-```
-
-Tại thư mục repo:
-
-```bash
-bash scripts/build.sh
-source scripts/env.sh
-```
-
-Script build một luồng, chọn hai package đa robot trong `src/`, dùng chung
-`~/turtlebot4_ws/build`, `install`, `log`. Lệnh colcon tương đương:
-
-```bash
-source /opt/ros/humble/setup.bash
-cd ~/turtlebot4_ws
-CMAKE_BUILD_PARALLEL_LEVEL=1 MAKEFLAGS=-j1 colcon build \
-  --packages-select tb4_multi_tools tb4_multi_bringup --symlink-install \
-  --executor sequential --cmake-args -DCMAKE_BUILD_TYPE=Release \
-  '-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG'
-source install/setup.bash
-```
-
-Không có workspace con `tb4_multi_robot/`; các file build không được commit.
-
-## 2. Cấu hình mạng và định danh — một lần trên mỗi robot
-
-Xem [NETWORK.md](NETWORK.md). Dùng `turtlebot4-setup` để đặt namespace,
-domain và discovery server ID theo bảng đầu trang, đồng bộ với Create 3.
-Sau khi Apply, xác minh namespace Create 3 đúng; `export` ở terminal không đủ
-để thay cấu hình firmware hoặc dịch vụ đang chạy.
-
-Các thông số model/frame nằm trong:
-
-```text
-src/tb4_multi_bringup/config/robots/robot1.yaml
-src/tb4_multi_bringup/config/robots/robot2.yaml
-src/tb4_multi_bringup/config/robots/robot3.yaml
-```
-
-Mặc định model `standard`. Sửa thành `lite` nếu đúng phần cứng của bạn và build lại.
-Không đổi frame chỉ để các trục nhìn cùng hướng trên RViz.
-
-## 3. Chạy phần cứng — Terminal A trên từng Pi
-
-Repo cung cấp bringup LiDAR 2D gồm robot node, base node (Standard), một
-republisher, một LiDAR và robot description. Không mở camera/joystick.
-
-**Chọn một bringup:** nếu dùng bringup của repo, dừng dịch vụ cũ trước:
-
-```bash
-sudo systemctl stop turtlebot4
-pgrep -af '[/]rplidar_ros/rplidar_composition'
-pgrep -af '[/]create3_republisher/create3_republisher'
-```
-
-Hai lệnh `pgrep` phải không còn tiến trình cũ. Nếu có dịch vụ độc lập tự mở lại
-driver, dừng dịch vụ đó; không để hai tiến trình cùng giữ USB.
-
-Trên Pi 1:
-
-```bash
-bash scripts/robot.sh robot1 hardware
-```
-
-Trên Pi 2:
-
-```bash
-bash scripts/robot.sh robot2 hardware
-```
-
-Trên Pi 3:
-
-```bash
-bash scripts/robot.sh robot3 hardware
-```
-
-Giữ Terminal A chạy. Nếu đã có bringup chuẩn chạy đúng namespace và đủ dữ liệu,
-tiếp tục dùng nó, bỏ qua bước mở hardware của repo. Wrapper từ chối mở thêm khi
-phát hiện driver đang chạy trên cùng Pi. Script không tự disable dịch vụ cũ.
-
-Terminal khác, chọn đúng ID của Pi:
-
-```bash
-bash scripts/robot.sh robot1 check
-```
-
-Phải có đúng một publisher `/robot1/scan`, một `/robot1/odom`; Pi 2 và Pi 3 tương tự.
-LiDAR dùng `/dev/RPLIDAR`, không dùng cứng `ttyUSB0`.
-
-## 4. Quét map — dùng một robot trước
-
-Terminal B trên Pi 1:
-
-```bash
-bash scripts/robot.sh robot1 mapping
-```
-
-Giữ robot đứng yên đến khi thấy `Start origin captured` và SLAM đăng ký LiDAR.
-Gốc map là vị trí/hướng thân robot tại thời điểm bắt đầu.
-
-Terminal C có TTY trên Pi 1:
-
-```bash
-bash scripts/robot.sh robot1 teleop
-```
-
-Phím `i/,` tiến/lùi, `j/l` quay, `u/o/m/.` đi vòng cung, `k` hoặc Space dừng,
-`Ctrl+C` thoát. Tốc độ mặc định 0,08 m/s và 0,3 rad/s. Tự dừng sau 0,6 giây
-không nhận phím di chuyển. Giữ phím để lặp lệnh.
-
-Lưu map khi robot đứng yên, SLAM vẫn chạy:
-
-```bash
-source scripts/env.sh
-mkdir -p maps
-ros2 run nav2_map_server map_saver_cli -f "$PWD/maps/site" --ros-args \
-  -r __ns:=/robot1 -r map:=/robot1/map -p save_map_timeout:=15.0
-```
-
-Copy **cả YAML và ảnh PGM** sang repo trên Pi 2 và Pi 3, giữ cùng nội dung bản đồ.
-`maps/my_room.*` đi kèm là bản đồ từ workspace cũ, chỉ phù hợp đúng môi trường đó.
-Repo không hợp nhất map nếu hai robot SLAM cùng lúc.
-
-## 5. Navigation — trên mỗi Pi
-
-Dừng teleop bằng `k`, `Ctrl+C`, rồi dừng mapping bằng `Ctrl+C`. Giữ hardware.
-
-Ví dụ Pi 1, robot thực sự ở gốc bắt đầu quét:
-
-```bash
-bash scripts/robot.sh robot1 navigation map:="$PWD/maps/site.yaml" \
-  initialize_pose:=true initial_x:=0.0 initial_y:=0.0 initial_yaw:=0.0
-```
-
-Pi 2 nếu chưa biết pose chính xác (Pi 3 dùng `robot3`):
-
-```bash
-bash scripts/robot.sh robot2 navigation map:="$PWD/maps/site.yaml"
-```
-
-Chọn robot2 trong menu laptop rồi dùng **2D Pose Estimate** trên RViz, đặt đúng vị trí và hướng thân
-robot trong cùng map. Sau đó kiểm tra scan khớp tường rồi mới gửi 2D Goal Pose.
-Có thể dùng `initialize_pose:=true` cho Pi 2 nếu cung cấp đủ x/y/yaw đúng thực tế.
-**Không đặt ba robot về `(0,0,0)` khi chúng đứng khác chỗ.**
-
-Một launch navigation mở cả map server, AMCL và Nav2 cho robot đó. Chế độ tự
-khởi tạo pose bỏ qua click `/initialpose` để tránh ghi đè nhầm; chế độ mặc định
-cho phép chọn pose trên RViz. Các script khóa mapping/navigation trên từng robot
-để tránh cùng phát TF định vị; chạy trực tiếp launch không có khóa shell này.
-
-## 6. Một RViz cho ba robot trên laptop
-
-Các khối lệnh đầy đủ cho từng terminal nằm ở [README phần A](../README.md).
-Cài/build rồi chọn **số robot (1–3)** và nhập IP theo phần D2 trước khi mở RViz.
-Chọn 2 thì chỉ chạy robot1/robot2, không cần Pi 3.
-
-- Terminal 1 chạy `bash scripts/laptop.sh rviz` (kiểm tra cấu hình, hỏi lại nếu sai).
-- Terminal 2 chạy `bash scripts/laptop.sh menu`, chọn trong các robot đang dùng; hủy goal bằng `c`.
-- Terminal 3 chạy `bash scripts/laptop.sh check`, chỉ kiểm tra scan/odom các robot đang dùng.
-
-Cầu nối `fleet_view` tạo bản sao TF có prefix riêng (`robot1/odom`,
-`robot2/odom`, `robot3/odom`) và map chung trên `/tb4_view/tf`. Nó chuyển header
-scan, map, path, costmap và footprint tương ứng sang các topic hiển thị riêng.
-RobotModel lấy URDF gốc và dùng `TF Prefix` theo robot. RViz chỉ tạo nhóm
-hiển thị và cầu nối chỉ tạo kết nối cho số robot được cấu hình. Static TF được gom vào
-một mẫu transient-local đầy đủ để RViz mở muộn vẫn nhận cả ba cây.
-
-Dùng `2D Pose Estimate` và `2D Goal Pose` cho robot đang chọn. Nhãn trên map
-cho biết đích điều khiển hiện tại. Goal được gửi bằng action
-`/robotN/navigate_to_pose`; initial pose đi vào `/robotN/initialpose`.
-Không gửi goal mới khi goal cũ của cùng robot chưa kết thúc; dùng menu hủy trước.
-Chọn robot khác không hủy goal của robot trước, cho phép ba goal cùng chạy.
-Đóng RViz không tự hủy goal; hủy từng robot trước khi đóng.
-
-Ba Pi phải dùng **cùng bản đồ, cùng gốc và hướng map**. Repo chưa có phân công
-nhiệm vụ hoặc điều phối giao thông. Launch `visualization.launch.py robot_id:=robotN`
-vẫn hỗ trợ xem riêng một robot khi debug.
-
-## 7. Dừng và kiểm thử
-
-- Chọn lần lượt từng robot trong menu laptop, nhấn `c` để hủy goal trước khi dừng Nav2.
-- Teleop: `k`, rồi `Ctrl+C`.
-- Mapping/navigation: `Ctrl+C`; mapping helper dừng SLAM con cùng nó.
-- Hardware: `Ctrl+C` sau khi các ứng dụng đã dừng.
-- Khi trở về cấu hình một robot cũ, cần khôi phục namespace/network tương ứng;
-  chỉ khởi động dịch vụ cũ là chưa đủ nếu đã đổi namespace Create 3.
-
-Kiểm thử không điều khiển robot thật:
-
-```bash
-source install/setup.bash
-ctest --test-dir build/tb4_multi_tools --output-on-failure
-python3 tests/smoke_two_robots.py
-python3 tests/smoke_navigation.py
-python3 tests/smoke_navigation.py robot2
-python3 tests/smoke_navigation.py robot3
-```
-
-Smoke test dùng domain **167**, localhost, cảm biến giả và hai SLAM C++ thật;
-kiểm tra hai map/TF tách biệt và gốc riêng. Xem [VALIDATION.md](VALIDATION.md)
-để biết phạm vi đã kiểm chứng. Không xem test này là đã chạy hai robot vật lý.
-
-## Tổ chức source
-
-```text
-turtlebot4_ws/
-├── src/
-│   ├── turtlebot4/         # Repo upstream hiện có
-│   ├── tb4_tools/          # Công cụ robot đơn hiện có
-│   ├── tb4_multi_tools/    # Mapping origin + teleop C++ đa robot
-│   └── tb4_multi_bringup/  # Launch và cấu hình robot1/robot2/robot3
-├── scripts/               # Build, môi trường và chọn robot/chế độ
-├── maps/                  # Map chung
-├── tests/                 # Kiểm tra namespace bằng cảm biến giả
-├── build/
-├── install/
-└── log/
-```
-
-Hướng dẫn upstream: [multi-robot TurtleBot 4](https://turtlebot.github.io/turtlebot4-user-manual/tutorials/multiple_robots.html),
-[Discovery Server](https://turtlebot.github.io/turtlebot4-user-manual/setup/discovery_server.html).
+# Kiến trúc đa robot: PC navigation, Pi hardware
+
+ROS 2 Humble / Ubuntu 22.04. Cùng repo trên PC và các Pi; giữ 1–3 robot,
+namespace riêng và một RViz. [README](../README.md) là hướng dẫn chạy chính.
+
+## Phân chia tiến trình
+
+| Máy | Thành phần / script |
+| --- | --- |
+| PC | `pc-start.sh`: map server, AMCL, controller/planner/BT/behavior/velocity smoother riêng cho từng namespace, gateway socket và RViz |
+| PC | `pc-mapping.sh`: SLAM + một RViz, thay cho phiên navigation |
+| Pi N | `robot-start.sh robotN`: hardware, TF/description và watchdog |
+| PC hoặc Pi | Teleop khi navigation đã dừng; khi mapping, dùng teleop trên Pi |
+
+PC chỉ cần một bản đồ YAML/ảnh. Mỗi AMCL vẫn cần pose ban đầu đúng cho robot
+của nó. Chưa có phối hợp tránh va chạm hoặc phân công nhiệm vụ giữa các robot.
+
+## Đường dữ liệu
+
+- Pi → PC: `/robotN/scan`, `/robotN/odom`, `/robotN/tf`, `/robotN/tf_static` và trạng thái Create 3 qua DDS.
+- Trên PC: controller → `cmd_vel_nav` → velocity smoother → `pc_cmd_vel`.
+  Behavior server cũng phát vào `pc_cmd_vel`.
+- PC: `remote_velocity` đóng dấu thời gian, phát `/robotN/remote_cmd_vel` (`TwistStamped`).
+- Pi: `remote_velocity` chế độ guard kiểm tra timestamp và số nguồn, phát `/robotN/cmd_vel` (`Twist`) cho republisher/Create 3.
+- Teleop C++ với `remote:=true` phát thẳng `remote_cmd_vel` có timestamp.
+
+Watchdog dùng QoS best effort, depth 1 cho remote command. Hết hạn 0,5 giây,
+lệnh timestamp cũ/đảo thứ tự/không hữu hạn bị bỏ qua; hơn một publisher làm
+đầu ra bằng 0. Đồng bộ giờ giữa PC và Pi là bắt buộc. Khi mạng phục hồi,
+Nav2 có thể tiếp tục goal còn hoạt động; không có cơ chế bắt buộc re-arm.
+E‑Stop và các bảo vệ Create 3 vẫn giữ nguyên, không tự bị mở bởi script.
+
+Không phát trực tiếp vào `cmd_vel`, không chạy stock joystick song song.
+Profile stock `turtlebot4` không có watchdog này; `robot-start.sh` dừng service
+stock rồi chạy profile repo. Bringup/republisher chạy tay khác phải dừng riêng.
+
+## Một chủ sở hữu goal cho RViz và socket
+
+`SocketControl` kế thừa `FleetView`: các goal RViz/TCP dùng chung `busy`, goal
+handle và cancel pending. TCP handler chỉ parse request rồi đưa vào hàng đợi;
+callback trên ROS executor thực hiện thao tác, không chờ action đồng bộ trong
+callback ROS. Tối đa 32 yêu cầu chờ, deadline 2 giây; request còn trong hàng
+đợi đã hết hạn bị hủy, không được thực thi muộn.
+
+Mỗi robot nhận một goal từ gateway. `goal` xác nhận gửi bất đồng bộ;
+`status` phân biệt pending/accepted/kết quả cuối. `cancel` chỉ hủy goal do
+cầu nối sở hữu, không hủy goal từ một client ROS ngoài hệ thống này.
+`select` đổi đích nhận pose/goal RViz, không hủy goal robot đang chạy.
+Mất kết nối TCP hoặc đóng menu không hủy goal đã gửi.
+
+TCP JSON-lines trên loopback `127.0.0.1:8765`; truy cập từ máy khác qua SSH
+tunnel. Xem protocol và client `.sh` trong README.
+
+## TF và hiển thị
+
+Frame thật trên từng robot vẫn là `map`, `odom`, `base_link`... trên topic TF
+riêng namespace. Nav2 trên PC đọc cây gốc của đúng robot. Fleet view chỉ tạo
+bản sao hiển thị trên `/tb4_view/tf`, `/tb4_view/tf_static`: prefix frame ngoài
+`map` bằng `robotN/`, giúp một RViz hiển thị nhiều robot. Không đưa cây hiển
+thị ngược vào buffer của Nav2.
+
+## Khóa phiên và kiểm thử
+
+`pc.sh` dùng `flock` để tránh các phiên nav/mapping/teleop/RViz chồng nhau trên
+cùng PC/tài khoản. Khóa không điều phối nhiều PC hoặc terminal ROS chạy tay.
+Pi kiểm tra số publisher remote command để dừng khi nhiều nguồn.
+
+Kiểm thử phần mềm: [VALIDATION.md](VALIDATION.md). Chưa xác nhận navigation
+đồng thời trên ba robot thật hoặc chất lượng Wi-Fi của môi trường triển khai.
