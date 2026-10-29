@@ -2,6 +2,7 @@
 import os
 from pathlib import Path as FilePath
 import threading
+import tempfile
 import time
 import unittest
 
@@ -29,11 +30,29 @@ from tf2_msgs.msg import TFMessage
 from visualization_msgs.msg import MarkerArray
 
 from tb4_multi_bringup.fleet_view import FleetView, ROBOTS, adapt_message, display_frame
-from tb4_multi_bringup.fleet_settings import active_robots, rviz_for_count, validate_discovery
+from tb4_multi_bringup.fleet_settings import active_robots, rviz_for_count, startup_poses, validate_discovery
 import yaml
 
 
 class FleetViewTest(unittest.TestCase):
+    def test_startup_poses(self):
+        self.assertEqual(startup_poses('', 2), {})
+        with tempfile.TemporaryDirectory() as directory:
+            path = FilePath(directory) / 'poses.yaml'
+            path.write_text('robot1: {x: 1, y: 2, yaw: 0.5}\n'
+                            'robot2: {x: -3, y: 4, yaw: -1}\n')
+            poses = startup_poses(str(path), 2)
+            self.assertEqual(poses['robot1']['initial_x'], '1')
+            self.assertEqual(poses['robot2']['initial_x'], '-3')
+            for text in ('[]', 'robot1: {x: 1, y: 2}',
+                         'robot1: {x: .nan, y: 2, yaw: 0}',
+                         'robot1: {x: true, y: 2, yaw: 0}',
+                         'robot1: {x: 1, y: 2, yaw: 0}',
+                         'robot4: {x: 1, y: 2, yaw: 0}'):
+                path.write_text(text)
+                with self.subTest(text=text), self.assertRaises(ValueError):
+                    startup_poses(str(path), 2)
+
     def wait_for(self, predicate, timeout=8):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
@@ -141,6 +160,9 @@ class FleetViewTest(unittest.TestCase):
 
             tf_pub = fake.create_publisher(TFMessage, '/robot3/tf', 10)
             scan_pub = fake.create_publisher(LaserScan, '/robot3/scan', 10)
+            amcl_pub = fake.create_publisher(PoseWithCovarianceStamped, '/robot3/amcl_pose', 10)
+            subs.append(observer.create_subscription(PoseWithCovarianceStamped, '/tb4_view/robot3/amcl_pose',
+                lambda m: received.__setitem__('amcl', m), bridge.live))
             subs.append(observer.create_subscription(TFMessage, '/tb4_view/tf',
                 lambda m: received.__setitem__('tf', m), 10))
             subs.append(observer.create_subscription(LaserScan, '/tb4_view/robot3/scan',
@@ -158,6 +180,13 @@ class FleetViewTest(unittest.TestCase):
             self.assertEqual(received['tf'].transforms[0].header.frame_id, 'map')
             self.assertEqual(received['tf'].transforms[0].child_frame_id, 'robot3/odom')
             self.assertEqual(received['scan'].header.frame_id, 'robot3/rplidar_link')
+            self.wait_for(lambda: amcl_pub.get_subscription_count() > 0)
+            amcl = PoseWithCovarianceStamped()
+            amcl.header.frame_id = 'map'
+            amcl.pose.pose.orientation.w = 1.0
+            amcl_pub.publish(amcl)
+            self.wait_for(lambda: 'amcl' in received)
+            self.assertEqual(received['amcl'].header.frame_id, 'map')
 
             # Publish separate static batches; a late RViz must receive the complete tree.
             static_pubs = []

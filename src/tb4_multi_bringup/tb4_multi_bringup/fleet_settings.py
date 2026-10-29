@@ -1,9 +1,34 @@
 """Pure configuration helpers shared by the fleet launch and its tests."""
 from copy import deepcopy
 import ipaddress
+import math
+from pathlib import Path
+
+import yaml
 
 
 ROBOTS = ('robot1', 'robot2', 'robot3')
+
+
+def startup_poses(filename, count):
+    """Require an explicit map pose for every active robot when auto-init is used."""
+    robots = active_robots(count)
+    if not filename:
+        return {}
+    with Path(filename).expanduser().open() as stream:
+        poses = yaml.safe_load(stream)
+    if not isinstance(poses, dict) or set(poses) - set(ROBOTS):
+        raise ValueError('Initial poses YAML must contain robot1/robot2/robot3 keys')
+    result = {}
+    for robot in robots:
+        pose = poses.get(robot)
+        if not isinstance(pose, dict) or set(pose) != {'x', 'y', 'yaw'}:
+            raise ValueError(robot + ' requires x, y and yaw in initial poses YAML')
+        values = [pose[key] for key in ('x', 'y', 'yaw')]
+        if any(type(v) not in (int, float) or not math.isfinite(v) for v in values):
+            raise ValueError(robot + ' initial pose must contain finite numbers')
+        result[robot] = dict(zip(('initial_x', 'initial_y', 'initial_yaw'), map(str, values)))
+    return result
 
 
 def active_robots(count):

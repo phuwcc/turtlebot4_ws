@@ -124,6 +124,25 @@ Chỉ dùng map phù hợp với môi trường thực tế. Cả robot1…robot
 cùng gốc và hướng. Chạy không có màn hình bằng
 `bash scripts/pc-start.sh maps/site.yaml rviz:=false`.
 
+AMCL của từng robot được khởi động/activate cùng phiên PC. Để AMCL tự nhận
+pose riêng ngay khi khởi động, chép `src/tb4_multi_bringup/config/initial_poses.example.yaml`
+thành `config/initial_poses.yaml`, sửa tọa độ đúng vị trí thực tế trên map rồi chạy:
+
+```bash
+bash scripts/pc-start.sh maps/my_room.yaml initial_poses:="$PWD/config/initial_poses.yaml"
+```
+
+File phải có `x`, `y`, `yaw` cho mỗi robot đang dùng; góc yaw tính bằng radian.
+Nếu không truyền file, AMCL chờ **2D Pose Estimate** hoặc lệnh socket `pose`.
+Có thể sửa pose trong RViz cả sau khi đã tự khởi tạo từ file.
+
+RViz bật **Robot TF trees**, mô hình và **AMCL pose** của từng robot.
+Trong view chung, chuỗi TF là `map -> robotN/odom -> robotN/base_link -> ...`;
+TF gốc trên `/robotN/tf` vẫn dùng các frame riêng trong namespace robot.
+Mô hình đọc `/robotN/robot_description` từ hardware trên Pi. Nếu thiếu
+`odom -> base_link`, kiểm tra dữ liệu odom/TF từ Create 3 và republisher trước;
+đặt pose AMCL không tạo được TF odometry bị thiếu.
+
 ### PC — Terminal 2: chọn robot và hủy goal
 
 ```bash

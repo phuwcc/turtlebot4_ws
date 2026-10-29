@@ -91,8 +91,26 @@ Bài test fleet tự đặt domain 173/localhost, gỡ discovery/profile/namespa
 robot khỏi môi trường trước khi tạo node. Không dùng domain này cho robot thật
 trong lúc kiểm thử. Test Nav2 cũng tự đặt domain riêng theo robot: 168/169/170.
 
-Chưa có màn hình/X server trong môi trường kiểm tra để xác nhận hình ảnh RViz.
-Cấu hình RViz đã được đối chiếu plugin cài sẵn; cần mở trên laptop để kiểm tra
-model, scan, đường đi và nhãn robot trong thực tế. Chưa kiểm thử kết nối DDS
+Ngày 2026-10-29 đã mở RViz với hai robot giả và xác nhận hình ảnh mô hình,
+TF, scan, AMCL pose, bản đồ và nhãn robot. Cần kiểm tra lại với robot thật.
+Chưa kiểm thử kết nối DDS
 qua ba Pi hoặc navigation đồng thời trên ba robot thật. Không có bộ điều phối
 tránh xung đột giữa các robot.
+
+## AMCL và mô hình đa robot — 2026-10-29
+
+- Build hai package thành công; 5 test cấu hình PC, 4 test fleet và 3 test
+  remote control đều qua.
+- Smoke navigation PC: AMCL/map server/controller/planner/BT navigator đều
+  active, planner trả đường 8 pose, kiểm tra routing lệnh và namespace qua.
+- `tests/smoke_fleet_localization.py`: hai AMCL/Nav2 thật, robot state publisher
+  với URDF TurtleBot4 thật, cảm biến giả trong domain 176/localhost. Hai robot
+  nhận pose khởi động riêng x=0 và x=1 từ YAML. Mỗi robot có đầy đủ TF từ `map`
+  tới 18 link có visual. Đặt lại pose robot2 về x=2 sau auto-init thành công,
+  robot1 giữ nguyên pose. Không gửi goal chuyển động.
+- Chạy thêm `python3 tests/smoke_fleet_localization.py --rviz` để xem cửa sổ
+  kiểm thử trong 15 giây. [Ảnh RViz](fleet-localization.png) chụp từ lần chạy này.
+
+Log hardware ngày 2026-10-29 cho thấy AMCL đã active nhưng costmap robot1
+thiếu `odom -> base_link`. Kiểm thử giả không chứng nhận dữ liệu TF trên Pi;
+cần kiểm tra Create 3/republisher nếu còn lỗi này trên phần cứng.

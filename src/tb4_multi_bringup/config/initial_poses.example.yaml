@@ -1,0 +1,5 @@
+# Example only: replace with the actual robot positions in the chosen map.
+# x/y in meters; yaw in radians. Include every active robot.
+robot1: {x: 1.0, y: 2.0, yaw: 0.0}
+robot2: {x: 2.0, y: 2.0, yaw: 1.5708}
+robot3: {x: 3.0, y: 2.0, yaw: 3.1416}

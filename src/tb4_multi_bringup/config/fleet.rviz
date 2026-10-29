@@ -14,6 +14,18 @@ Visualization Manager:
     Background Color: 35; 35; 40
     Frame Rate: 20
   Displays:
+  - Class: rviz_default_plugins/TF
+    Name: Robot TF trees
+    Enabled: true
+    Value: true
+    Frame Timeout: 15
+    Frames:
+      All Enabled: true
+    Marker Scale: 0.25
+    Show Arrows: true
+    Show Axes: true
+    Show Names: true
+    Update Interval: 0
   - Class: rviz_default_plugins/Grid
     Name: Grid
     Enabled: true
@@ -35,6 +47,19 @@ Visualization Manager:
     Name: robot1
     Enabled: true
     Displays:
+    - Class: rviz_default_plugins/PoseWithCovariance
+      Name: robot1 AMCL pose
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot1/amcl_pose
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Shape: Arrow
+      Color: 51; 204; 255
+      Alpha: 1.0
     - Class: rviz_default_plugins/RobotModel
       Name: robot1 model
       Enabled: true
@@ -148,6 +173,19 @@ Visualization Manager:
     Name: robot2
     Enabled: true
     Displays:
+    - Class: rviz_default_plugins/PoseWithCovariance
+      Name: robot2 AMCL pose
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot2/amcl_pose
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Shape: Arrow
+      Color: 255; 140; 26
+      Alpha: 1.0
     - Class: rviz_default_plugins/RobotModel
       Name: robot2 model
       Enabled: true
@@ -261,6 +299,19 @@ Visualization Manager:
     Name: robot3
     Enabled: true
     Displays:
+    - Class: rviz_default_plugins/PoseWithCovariance
+      Name: robot3 AMCL pose
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot3/amcl_pose
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Shape: Arrow
+      Color: 77; 255; 77
+      Alpha: 1.0
     - Class: rviz_default_plugins/RobotModel
       Name: robot3 model
       Enabled: true

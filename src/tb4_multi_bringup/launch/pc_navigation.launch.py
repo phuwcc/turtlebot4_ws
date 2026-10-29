@@ -7,12 +7,13 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, Opaq
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from tb4_multi_bringup.configuration import share
-from tb4_multi_bringup.fleet_settings import active_robots, validate_discovery
+from tb4_multi_bringup.fleet_settings import active_robots, startup_poses, validate_discovery
 
 
 def setup(context):
     count = int(LaunchConfiguration('robot_count').perform(context))
     robots = active_robots(count)
+    poses = startup_poses(LaunchConfiguration('initial_poses').perform(context), count)
     validate_discovery(os.environ.get('ROS_DISCOVERY_SERVER'), count)
     map_path = Path(LaunchConfiguration('map').perform(context)).expanduser().resolve()
     if not map_path.is_file():
@@ -20,9 +21,12 @@ def setup(context):
     directory = share() / 'launch'
     actions = []
     for robot in robots:
+        arguments = {'robot_id': robot, 'map': str(map_path),
+                     'initialize_pose': 'true' if robot in poses else 'false'}
+        arguments.update(poses.get(robot, {}))
         actions.append(IncludeLaunchDescription(
             PythonLaunchDescriptionSource(str(directory / 'navigation.launch.py')),
-            launch_arguments={'robot_id': robot, 'map': str(map_path)}.items()))
+            launch_arguments=arguments.items()))
     actions.append(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(directory / 'fleet_visualization.launch.py')),
         launch_arguments={'robot_count': str(count), 'socket': 'true',
@@ -36,6 +40,9 @@ def generate_launch_description():
         DeclareLaunchArgument('robot_count', default_value=os.environ.get('TB4_ROBOT_COUNT', '1'),
                               choices=['1', '2', '3']),
         DeclareLaunchArgument('map'),
+        DeclareLaunchArgument('initial_poses', default_value='',
+                              description='YAML with x, y, yaw (map, radians) per active robot; '
+                                          'empty waits for RViz 2D Pose Estimate'),
         DeclareLaunchArgument('rviz', default_value='true', choices=['true', 'false']),
         DeclareLaunchArgument('socket_port', default_value='8765'),
         OpaqueFunction(function=setup),

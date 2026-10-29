@@ -87,6 +87,7 @@ class FleetView(Node):
                 lambda msg, r=robot: self.static_transform(msg, r), self.latched))
             for topic, kind, qos in (
                 ('scan', LaserScan, self.live), ('map', OccupancyGrid, self.latched),
+                ('amcl_pose', PoseWithCovarianceStamped, self.live),
                 ('plan', Path, self.live), ('local_plan', Path, self.live),
                 ('global_costmap/costmap', OccupancyGrid, self.latched),
                 ('local_costmap/costmap', OccupancyGrid, self.latched),

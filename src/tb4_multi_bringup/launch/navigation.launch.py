@@ -46,8 +46,6 @@ def setup(context):
                SetRemap('/' + ns + '/local_costmap/scan', '/' + ns + '/scan'),
                SetRemap('/' + ns + '/global_costmap/map', '/' + ns + '/map'),
                SetRemap('/' + ns + '/local_costmap/map', '/' + ns + '/map')]
-    if initialize:
-        actions.append(SetRemap('initialpose', 'amcl/manual_initialpose'))
     actions += [
         Node(package='tb4_multi_bringup', executable='remote_velocity',
              name='remote_velocity_stamp', parameters=[{'mode': 'stamp'}], output='screen'),
