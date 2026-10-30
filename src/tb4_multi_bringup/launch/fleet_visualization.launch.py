@@ -5,13 +5,13 @@ import tempfile
 import yaml
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, EmitEvent, OpaqueFunction, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, EmitEvent, OpaqueFunction, RegisterEventHandler, SetEnvironmentVariable
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit, OnShutdown
 from launch.events import Shutdown
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from tb4_multi_bringup.configuration import share
+from tb4_multi_bringup.configuration import share, pc_service_profile
 from tb4_multi_bringup.fleet_settings import active_robots, rviz_for_count, validate_discovery
 
 
@@ -45,7 +45,8 @@ def setup(context):
                 arguments=['-d', str(rviz_path)], condition=IfCondition(LaunchConfiguration('rviz')),
                 remappings=[('/tf', '/tb4_view/tf'), ('/tf_static', '/tb4_view/tf_static')],
                 output='screen')
-    return [
+    return pc_service_profile(context) + [
+        SetEnvironmentVariable('ROS_SUPER_CLIENT', 'False'),
         RegisterEventHandler(OnShutdown(on_shutdown=[OpaqueFunction(function=cleanup)])),
         RegisterEventHandler(OnProcessExit(target_action=bridge,
             on_exit=[EmitEvent(event=Shutdown(reason='Fleet display bridge exited'))])),

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <!-- Humble's service reply waits for the response reader to be discovered.
+       The Fast DDS default 100ms can expire over Wi-Fi during Nav2 startup.
+       This named profile affects service replies, not velocity topics. -->
+  <publisher profile_name="service">
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+        <max_blocking_time><sec>5</sec><nanosec>0</nanosec></max_blocking_time>
+      </reliability>
+    </qos>
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+  </publisher>
+</profiles>

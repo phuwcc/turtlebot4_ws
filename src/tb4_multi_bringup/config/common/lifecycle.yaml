@@ -1,0 +1,8 @@
+# Bond endpoints are created during activation and need discovery time over Wi-Fi.
+# Keep bonding enabled. The independent velocity watchdog still expires at 0.5s.
+lifecycle_manager_localization:
+  ros__parameters:
+    bond_timeout: 15.0
+lifecycle_manager_navigation:
+  ros__parameters:
+    bond_timeout: 15.0

@@ -52,3 +52,13 @@ def initial_pose(context):
     if not all(math.isfinite(v) for v in pose):
         raise ValueError('Initial pose must be finite')
     return enabled, pose
+
+
+def pc_service_profile(context):
+    """Respect custom transports; otherwise allow Wi-Fi service reply discovery."""
+    from launch.actions import SetEnvironmentVariable
+    if any(context.environment.get(key) for key in
+           ('FASTRTPS_DEFAULT_PROFILES_FILE', 'FASTDDS_DEFAULT_PROFILES_FILE')):
+        return []
+    return [SetEnvironmentVariable('FASTRTPS_DEFAULT_PROFILES_FILE',
+                                   str(share() / 'config/common/fastdds_pc.xml'))]

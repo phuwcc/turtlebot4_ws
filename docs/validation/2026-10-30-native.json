@@ -1,0 +1,280 @@
+{
+  "date": "2026-10-30",
+  "hardware": [
+    "robot1",
+    "robot2"
+  ],
+  "native_runtime": [
+    "fleet_view",
+    "socket_control",
+    "remote_velocity"
+  ],
+  "build": {
+    "pc": "pass",
+    "robot1": "pass",
+    "robot2": "pass"
+  },
+  "ctest": {
+    "pc": "4/4",
+    "robot1": "4/4",
+    "robot2": "4/4"
+  },
+  "native_blackbox_tests": {
+    "pc": "5/5",
+    "robot1": "5/5",
+    "robot2": "5/5"
+  },
+  "pc_full_software_suite": "pass",
+  "localization_only_smoke": "pass",
+  "navigation_smoke_after_launch_change": "pass",
+  "performance": {
+    "units": "100% CPU = one logical CPU; summed RSS of ROS process tree; stationary short samples, other desktop apps excluded",
+    "full_navigation_with_rviz": {
+      "samples": [
+        {
+          "cpu_percent_one_core": 152.15,
+          "rss_mib": 1190.2,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 170.56,
+          "rss_mib": 1190.2,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 142.76,
+          "rss_mib": 1190.2,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 170.54,
+          "rss_mib": 1190.2,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 126.72,
+          "rss_mib": 1190.32,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 161.57,
+          "rss_mib": 1190.32,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 182.33,
+          "rss_mib": 1190.32,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 237.07,
+          "rss_mib": 1190.32,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 235.26,
+          "rss_mib": 1190.32,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 235.88,
+          "rss_mib": 1190.32,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 262.57,
+          "rss_mib": 1190.32,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 247.18,
+          "rss_mib": 1190.32,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 196.5,
+          "rss_mib": 1190.32,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 121.76,
+          "rss_mib": 1190.32,
+          "processes": 27
+        },
+        {
+          "cpu_percent_one_core": 139.03,
+          "rss_mib": 1190.32,
+          "processes": 27
+        }
+      ],
+      "mean_cpu_percent_one_core": 185.46,
+      "peak_cpu_percent_one_core": 262.57,
+      "peak_rss_mib": 1190.32
+    },
+    "localization_only_with_rviz": {
+      "samples": [
+        {
+          "cpu_percent_one_core": 34.4,
+          "rss_mib": 515.41,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 36.74,
+          "rss_mib": 515.41,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 45.22,
+          "rss_mib": 515.41,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 31.35,
+          "rss_mib": 515.41,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 31.32,
+          "rss_mib": 515.41,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 32.16,
+          "rss_mib": 515.41,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 30.27,
+          "rss_mib": 515.41,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 28.44,
+          "rss_mib": 515.41,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 26.46,
+          "rss_mib": 515.41,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 22.29,
+          "rss_mib": 515.41,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 25.06,
+          "rss_mib": 519.03,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 23.34,
+          "rss_mib": 519.03,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 30.42,
+          "rss_mib": 519.03,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 41.45,
+          "rss_mib": 519.03,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 28.34,
+          "rss_mib": 519.03,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 31.43,
+          "rss_mib": 519.03,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 33.47,
+          "rss_mib": 519.03,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 36.21,
+          "rss_mib": 519.03,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 40.04,
+          "rss_mib": 519.03,
+          "processes": 9
+        },
+        {
+          "cpu_percent_one_core": 28.45,
+          "rss_mib": 519.03,
+          "processes": 9
+        }
+      ],
+      "mean_cpu_percent_one_core": 31.84,
+      "peak_cpu_percent_one_core": 45.22,
+      "peak_rss_mib": 519.03
+    }
+  },
+  "real_localization": {
+    "robot1": {
+      "map_received": true,
+      "scan_received": true,
+      "map_to_base": 1,
+      "pose": {
+        "x": -3.6643861587118756e-05,
+        "y": 4.1859743001478045e-05,
+        "yaw": -0.0004149760342748037
+      },
+      "map_cells": [
+        93,
+        150
+      ],
+      "scan_points_in_map": 841,
+      "scan_points_outside": 6,
+      "endpoint_median_grid_distance_m": 0.05000000074505806,
+      "endpoint_within_20cm_fraction": 0.8620689655172413
+    },
+    "robot2": {
+      "map_received": true,
+      "scan_received": true,
+      "map_to_base": 1,
+      "pose": {
+        "x": -0.00019353561246791828,
+        "y": 0.5002249795915552,
+        "yaw": -0.0022142573909699355
+      },
+      "map_cells": [
+        93,
+        150
+      ],
+      "scan_points_in_map": 853,
+      "scan_points_outside": 0,
+      "endpoint_median_grid_distance_m": 0.0,
+      "endpoint_within_20cm_fraction": 0.7866354044548651
+    }
+  },
+  "initial_pose_assumption": {
+    "robot1": [
+      0,
+      0,
+      0
+    ],
+    "robot2": [
+      0,
+      0.5,
+      0
+    ],
+    "yaw_units": "radians; same heading assumed"
+  },
+  "limits": [
+    "No real NavigateToPose goal sent during migration",
+    "No repeated real motion test after migration; watchdog tested with fake commands on isolated domains",
+    "Short idle samples do not establish worst-case motion load or eliminate all crash causes",
+    "Transient TF warnings occurred during discovery/startup",
+    "Nav2 lifecycle bond timeout now 15s; independent velocity guard remains 0.5s"
+  ]
+}

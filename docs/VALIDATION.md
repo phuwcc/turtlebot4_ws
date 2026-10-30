@@ -1,19 +1,19 @@
 # Kiểm chứng trên PC, robot1 và robot2 — 2026-10-30
 
-**Kết quả: phần mềm và chạy ngắn qua watchdog đạt; navigation thật chưa đạt.**
-Không coi kết quả cảm biến giả là chứng nhận Nav2 trên mạng thật.
+**Cập nhật: map và localization thật của cả robot1/robot2 đã hoạt động; chưa thử goal điều hướng thật.**
+Không coi kết quả cảm biến giả hoặc localization đứng yên là chứng nhận tự điều hướng.
 [Kết quả có cấu trúc](validation/2026-10-30.json).
 
 | Kiểm tra | PC | Pi robot1 | Pi robot2 |
 | --- | --- | --- | --- |
 | Build toàn bộ repo (3 package) | Đạt | Đạt | Đạt |
-| CTest C++ (controls x2, DDS graph wire) | 3/3 | 3/3 | 3/3 |
+| CTest C++ (controls x2, DDS graph wire, service QoS) | 4/4 | 4/4 | 4/4 |
 | Python config/fleet/gateway/watchdog | Đạt | Đạt | Đạt |
 | AMCL/Nav2/planner/socket/TF/SLAM với cảm biến giả | Đạt | Chạy trên PC | Chạy trên PC |
 | Scan, odom, TF từ phần cứng | Nhận cả hai robot | Đạt | Đạt |
 | Tiến chậm qua PC → DDS → watchdog → Create 3 | — | 0,0703 m | 0,0952 m |
 | Watchdog về lệnh dừng khi ngắt luồng | — | 0,496 s | 0,519 s |
-| Navigation với map và cảm biến thật | Chưa đạt: timeout lifecycle | Hardware hoạt động | Hardware hoạt động |
+| Map/AMCL/Nav2 startup với cảm biến thật | Lifecycle active, map và TF đạt | Hardware C++ hoạt động | Hardware C++ hoạt động |
 
 Các lần chạy thật được người dùng cho phép và giám sát, lần lượt từng robot,
 ở 0,04 m/s trong tối đa 2 giây. Odometry xác nhận có dịch chuyển và đã dừng;
@@ -30,15 +30,46 @@ sao, bỏ override và restart ứng dụng ROS. Cả hai đế báo H.2.6/Humbl
 Cấu hình đế và ~/.config/turtlebot4/pc_env.sh là cấu hình máy riêng, không nằm
 trong bản source đồng bộ.
 
-## Lỗi còn mở
+## Sửa lỗi map và giảm tải PC
 
-Launch production trên PC vẫn tái hiện `failed to send response ... change_state`
-và timeout bond của lifecycle manager khi dùng các discovery server qua Wi-Fi.
-AMCL/map server có thể không active. Một thử nghiệm XML kéo dài thời gian chờ
-phản hồi service cũng chưa loại bỏ lỗi và **không được cài làm mặc định**.
-Triệu chứng tương tự [báo cáo upstream rmw_fastrtps #842](https://github.com/ros2/rmw_fastrtps/issues/842),
-nhưng chưa xác nhận cùng nguyên nhân. Cần xử lý trước khi chứng nhận tự điều hướng.
-Không thêm static TF giả, không vô hiệu watchdog/bond hoặc giảm kiểm tra timestamp.
+Đã chuyển gateway socket, adapter frame RViz và watchdog/relay vận tốc sang C++.
+Bài test black box kiểm tra namespace 1–3 robot, cache static TF cho RViz mở muộn,
+đổi frame Path/map, giới hạn scan hiển thị, goal/cancel độc lập, đầu vào lỗi,
+timeout/timestamp/out-of-order/nhiều publisher và lệnh zero khi shutdown.
+Bộ test phần mềm đầy đủ trên PC đạt; native binary build thành công trên cả hai Pi. Cả hai Pi cũng đạt 5/5 bài test
+black box native và 4/4 CTest, trong ROS domain cô lập.
+
+Profile Fast DDS mới chỉ tăng `max_blocking_time` của publisher profile `service`
+lên 5 giây. Nó giải quyết timeout phản hồi lifecycle gặp trên mạng thực tế này;
+CTest kiểm tra XML hợp lệ, service QoS và QoS topic mặc định không đổi.
+Nếu đã đặt `FASTRTPS_DEFAULT_PROFILES_FILE` hoặc `FASTDDS_DEFAULT_PROFILES_FILE`,
+launch giữ nguyên profile tùy chỉnh đó; cần tự ghép cấu hình service nếu cần.
+Xem [cơ chế gửi response của rmw_fastrtps](https://github.com/ros2/rmw_fastrtps/blob/humble/rmw_fastrtps_shared_cpp/src/rmw_response.cpp).
+Bond vẫn bật; timeout manager tăng từ 4 lên 15 giây để chờ discovery Wi-Fi,
+vì thế phát hiện mất node Nav2 chậm hơn. Watchdog vận tốc độc lập vẫn 0,5 giây.
+Không thêm static TF thay thế localization hoặc odometry.
+
+Đã kiểm tra trên map `my_room.yaml`: robot1 gần `(0,0)`, robot2 gần `(0,0.5)` m,
+yaw khởi tạo 0 theo giả định cùng hướng. Median khoảng cách endpoint scan tới ô
+vật cản bằng 0; khoảng 83–88% endpoint nằm trong 20 cm của ô vật cản.
+Đây là phép đối chiếu scan/map khi đứng yên, không đo độ chính xác tuyệt đối.
+Chưa gửi NavigateToPose thật trong đợt migration này.
+
+RViz mặc định 10 FPS, tắt vẽ toàn bộ cây TF/local plan/footprint; giữ map và mô hình.
+Adapter giới hạn scan hiển thị 5 Hz, không giảm dữ liệu AMCL/obstacle layer.
+Chế độ `localization_only:=true` bỏ các node điều hướng và relay vận tốc khi chỉ
+cần xem map/localization. Build tuần tự với nice/ionice và cgroup giới hạn tài nguyên.
+Không có bằng chứng journal đủ để kết luận OOM hoặc lỗi GPU là nguyên nhân đóng app.
+Các số đo tải là cửa sổ lấy mẫu ngắn khi đứng yên, không đảm bảo tải khi chạy goal.
+
+Kết quả mới: [JSON native/performance](validation/2026-10-30-native.json),
+[ảnh RViz hai robot và map](fleet-localization-light.png).
+Trên PC này, cửa sổ lấy mẫu 20 giây sau khi ổn định: chế độ localization/RViz
+trung bình **31,84% CPU**, peak **45,22%**, tổng RSS **519 MiB**;
+Nav2 đầy đủ/RViz trong mẫu 15 giây trung bình **185,46%**, peak **262,57%**,
+tổng RSS **1190 MiB**. 100% tương đương một CPU logic; máy có 12 CPU logic.
+RSS cộng theo tiến trình có thể đếm lặp các trang chia sẻ. Không có số đo
+before/after có kiểm soát cho bản cũ, nên không suy ra phần trăm tăng tốc C++.
 
 ## Chạy lại
 

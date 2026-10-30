@@ -24,6 +24,7 @@ def setup(context):
     actions = []
     for robot in robots:
         arguments = {'robot_id': robot, 'map': str(map_path),
+                     'localization_only': LaunchConfiguration('localization_only'),
                      'initialize_pose': 'true' if robot in poses else 'false'}
         arguments.update(poses.get(robot, {}))
         actions.append(IncludeLaunchDescription(
@@ -47,6 +48,8 @@ def generate_launch_description():
                                           'empty waits for RViz 2D Pose Estimate'),
         DeclareLaunchArgument('robot_ids', default_value=os.environ.get('TB4_ROBOT_IDS', '')),
         DeclareLaunchArgument('rviz', default_value='true', choices=['true', 'false']),
+        DeclareLaunchArgument('localization_only', default_value='false', choices=['true', 'false'],
+                              description='Only map/localization/RViz; navigation goals unavailable'),
         DeclareLaunchArgument('socket_port', default_value='8765'),
         OpaqueFunction(function=setup),
     ])

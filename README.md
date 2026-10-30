@@ -170,6 +170,23 @@ Chỉ dùng map phù hợp với môi trường thực tế. Cả robot1…robot
 cùng gốc và hướng. Chạy không có màn hình bằng
 `bash scripts/pc-start.sh maps/site.yaml rviz:=false`.
 
+Khi chỉ cần xem map, hai robot và kiểm tra localization, dùng chế độ nhẹ:
+
+```bash
+bash scripts/pc-start.sh maps/my_room.yaml localization_only:=true
+```
+
+Chế độ này chạy AMCL/map server và RViz; chưa chạy planner/controller hoặc
+relay vận tốc, nên chưa nhận goal điều hướng. Dừng bằng **Ctrl+C**, rồi chạy
+lại không có `localization_only:=true` khi cần Nav2 đầy đủ. Có thể kết hợp
+`initial_poses:=...` với cả hai chế độ.
+
+Các node chạy liên tục `fleet_view`, `socket_control`, `remote_velocity` dùng C++.
+Launch và công cụ cấu hình vẫn dùng Python. Build mặc định tuần tự, ưu tiên thấp,
+giới hạn 75% một lõi CPU và 2,5 GiB RAM nếu có systemd user manager. Có thể chỉnh
+`TB4_BUILD_CPU_QUOTA`, `TB4_BUILD_MEMORY_HIGH`, `TB4_BUILD_MEMORY_MAX`; không nên
+build nhiều phiên cùng lúc. Xem [kết quả kiểm chứng](docs/VALIDATION.md).
+
 AMCL của từng robot được khởi động/activate cùng phiên PC. Để AMCL tự nhận
 pose riêng ngay khi khởi động, chép `src/tb4_multi_bringup/config/initial_poses.example.yaml`
 thành `config/initial_poses.yaml`, sửa tọa độ đúng vị trí thực tế trên map rồi chạy:
@@ -182,7 +199,9 @@ File phải có `x`, `y`, `yaw` cho mỗi robot đang dùng; góc yaw tính bằ
 Nếu không truyền file, AMCL chờ **2D Pose Estimate** hoặc lệnh socket `pose`.
 Có thể sửa pose trong RViz cả sau khi đã tự khởi tạo từ file.
 
-RViz bật **Robot TF trees**, mô hình và **AMCL pose** của từng robot.
+RViz bật map, mô hình và **AMCL pose** của từng robot, giới hạn 10 FPS.
+**Robot TF trees** mặc định tắt để giảm tải; có thể bật trong Displays khi cần debug.
+Scan dành cho hiển thị được giới hạn 5 Hz; AMCL và costmap vẫn nhận scan gốc.
 Trong view chung, chuỗi TF là `map -> robotN/odom -> robotN/base_link -> ...`;
 TF gốc trên `/robotN/tf` vẫn dùng các frame riêng trong namespace robot.
 Mô hình đọc `/robotN/robot_description` từ hardware trên Pi. Nếu thiếu

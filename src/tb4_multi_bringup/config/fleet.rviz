@@ -12,12 +12,12 @@ Visualization Manager:
   Global Options:
     Fixed Frame: map
     Background Color: 35; 35; 40
-    Frame Rate: 20
+    Frame Rate: 10
   Displays:
   - Class: rviz_default_plugins/TF
     Name: Robot TF trees
-    Enabled: true
-    Value: true
+    Enabled: false
+    Value: false
     Frame Timeout: 15
     Frames:
       All Enabled: true
@@ -25,7 +25,7 @@ Visualization Manager:
     Show Arrows: true
     Show Axes: true
     Show Names: true
-    Update Interval: 0
+    Update Interval: 0.2
   - Class: rviz_default_plugins/Grid
     Name: Grid
     Enabled: true
@@ -107,8 +107,8 @@ Visualization Manager:
       Buffer Length: 1
     - Class: rviz_default_plugins/Path
       Name: robot1 local plan
-      Enabled: true
-      Value: true
+      Enabled: false
+      Value: false
       Topic:
         Value: /tb4_view/robot1/local_plan
         Depth: 10
@@ -121,8 +121,8 @@ Visualization Manager:
       Buffer Length: 1
     - Class: rviz_default_plugins/Polygon
       Name: robot1 footprint
-      Enabled: true
-      Value: true
+      Enabled: false
+      Value: false
       Topic:
         Value: /tb4_view/robot1/local_costmap/published_footprint
         Depth: 10
@@ -233,8 +233,8 @@ Visualization Manager:
       Buffer Length: 1
     - Class: rviz_default_plugins/Path
       Name: robot2 local plan
-      Enabled: true
-      Value: true
+      Enabled: false
+      Value: false
       Topic:
         Value: /tb4_view/robot2/local_plan
         Depth: 10
@@ -247,8 +247,8 @@ Visualization Manager:
       Buffer Length: 1
     - Class: rviz_default_plugins/Polygon
       Name: robot2 footprint
-      Enabled: true
-      Value: true
+      Enabled: false
+      Value: false
       Topic:
         Value: /tb4_view/robot2/local_costmap/published_footprint
         Depth: 10
@@ -359,8 +359,8 @@ Visualization Manager:
       Buffer Length: 1
     - Class: rviz_default_plugins/Path
       Name: robot3 local plan
-      Enabled: true
-      Value: true
+      Enabled: false
+      Value: false
       Topic:
         Value: /tb4_view/robot3/local_plan
         Depth: 10
@@ -373,8 +373,8 @@ Visualization Manager:
       Buffer Length: 1
     - Class: rviz_default_plugins/Polygon
       Name: robot3 footprint
-      Enabled: true
-      Value: true
+      Enabled: false
+      Value: false
       Topic:
         Value: /tb4_view/robot3/local_costmap/published_footprint
         Depth: 10

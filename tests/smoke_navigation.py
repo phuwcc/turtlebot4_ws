@@ -7,15 +7,20 @@ import os
 from pathlib import Path
 import signal
 import subprocess
+import sys
 import time
 
 parser=argparse.ArgumentParser()
 parser.add_argument('robot_id', nargs='?', choices=['robot1','robot2','robot3'], default='robot1')
 parser.add_argument('--pc', action='store_true', help='Test combined PC launch, headless socket and command routing')
+parser.add_argument('--localization-only', action='store_true', help='Verify the low-load PC mode has no navigation/velocity publishers')
 args=parser.parse_args()
+if args.localization_only and not args.pc:
+    parser.error('--localization-only requires --pc')
 identity=args.robot_id
 prefix='/'+identity
 domain=(172 if identity == 'robot1' else 175) if args.pc else {'robot1':168, 'robot2':169, 'robot3':170}[identity]
+if args.localization_only:domain=176
 os.environ.update(ROS_DOMAIN_ID=str(domain), ROS_LOCALHOST_ONLY='1',
                   RMW_IMPLEMENTATION='rmw_fastrtps_cpp', ROS_SUPER_CLIENT='False')
 for key in ('TB4_ROBOT_IDS', 'TB4_DISCOVERY_IDS', 'ROS_DISCOVERY_SERVER', 'FASTRTPS_DEFAULT_PROFILES_FILE', 'FASTDDS_DEFAULT_PROFILES_FILE', 'CYCLONEDDS_URI', 'ROS_NAMESPACE'):
@@ -33,6 +38,7 @@ from tf2_msgs.msg import TFMessage
 
 root = Path(__file__).resolve().parents[1]
 logs = root / 'log/navigation_smoke' / (('pc' if identity == 'robot1' else 'pc_robot2') if args.pc else identity)
+if args.localization_only:logs=logs/'localization_only'
 logs.mkdir(parents=True, exist_ok=True)
 (logs/'result.json').unlink(missing_ok=True)
 os.environ['ROS_LOG_DIR'] = str(logs)
@@ -71,7 +77,9 @@ def pump(seconds):
 
 
 timer=n.create_timer(.1,sensors)
-names=['amcl','map_server','controller_server','planner_server','bt_navigator']
+names=['amcl','map_server','controller_server','smoother_server','planner_server',
+       'behavior_server','bt_navigator','waypoint_follower','velocity_smoother']
+if args.localization_only:names=['amcl','map_server']
 clients={name:n.create_client(GetState,prefix+'/'+name+'/get_state') for name in names}
 planner=ActionClient(n,ComputePathToPose,prefix+'/compute_path_to_pose')
 stream=(logs/'navigation.log').open('w')
@@ -79,6 +87,7 @@ command = (['ros2','launch','tb4_multi_bringup','pc_navigation.launch.py', 'robo
     'robot_ids:='+identity, 'rviz:=false', 'socket_port:=18765', 'map:='+str(logs/'room.yaml')] if args.pc else
     ['ros2','launch','tb4_multi_bringup','navigation.launch.py','robot_id:='+identity,
     'map:='+str(logs/'room.yaml'),'initialize_pose:=true','initial_x:=0.0','initial_y:=0.0','initial_yaw:=0.0'])
+if args.localization_only:command.append('localization_only:=true')
 p=subprocess.Popen(command,
     stdout=stream,stderr=subprocess.STDOUT,start_new_session=True)
 result={'test_domain':domain,'robot_id':identity}
@@ -107,6 +116,19 @@ try:
         if all(s=='active' for s in states.values()):break
     result['lifecycle']=states
     assert states and all(s=='active' for s in states.values()),'Not all lifecycle nodes active: '+str(states)
+    pump(1)  # Let the final lifecycle bond complete before testing and stopping the stack.
+    if args.localization_only:
+        pump(2)
+        assert not planner.server_is_ready(), 'Planner started in localization-only mode'
+        assert not task({'command':'status'})['robots'][identity]['nav_ready']
+        for topic in ('pc_cmd_vel','cmd_vel_nav','remote_cmd_vel','cmd_vel'):
+            assert not n.get_publishers_info_by_topic(prefix+'/'+topic), topic
+        assert n.get_publishers_info_by_topic('/tb4_view/'+identity+'/map'), 'Display map missing'
+        assert n.get_publishers_info_by_topic('/tb4_view/tf'), 'Display TF missing'
+        result['localization_only']=True
+        print(json.dumps(result,indent=2),flush=True)
+        (logs/'result.json').write_text(json.dumps(result,indent=2))
+        sys.exit(0)
     assert planner.server_is_ready(),'Namespaced planner unavailable'
     if args.pc:
         assert task({'command':'status'})['robots'][identity]['nav_ready']

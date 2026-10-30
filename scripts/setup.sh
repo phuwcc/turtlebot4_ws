@@ -13,7 +13,7 @@ if (( $# > 2 )) || [[ -n "${2:-}" && "${2:-}" != --refresh ]]; then
   echo 'Usage: bash scripts/setup.sh pc|robot [--refresh]' >&2
   exit 2
 fi
-tb4_packages+=(python3-colcon-common-extensions python3-yaml
+tb4_packages+=(python3-colcon-common-extensions python3-yaml nlohmann-json3-dev
                ros-humble-rmw-fastrtps-cpp ros-humble-nav2-common)
 echo "[1/3] Kiểm tra dependency cho $tb4_role..."
 tb4_missing=()
