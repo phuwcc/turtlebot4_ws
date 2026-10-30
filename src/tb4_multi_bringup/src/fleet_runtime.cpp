@@ -138,6 +138,7 @@ public:
       relay<nav_msgs::msg::OccupancyGrid>(r,"map",latched);
       relay<InitialPose>(r,"amcl_pose",live);
       relay<nav_msgs::msg::Path>(r,"plan",live);
+      relay<nav_msgs::msg::Path>(r,"local_plan",live);
       relay<nav_msgs::msg::OccupancyGrid>(r,"global_costmap/costmap",latched);
       relay<nav_msgs::msg::OccupancyGrid>(r,"local_costmap/costmap",latched);
       relay<geometry_msgs::msg::PolygonStamped>(r,"local_costmap/published_footprint",live);
