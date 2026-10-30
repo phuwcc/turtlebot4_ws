@@ -27,7 +27,7 @@ for key in ('TB4_ROBOT_IDS', 'TB4_DISCOVERY_IDS', 'ROS_DISCOVERY_SERVER', 'FASTR
     os.environ.pop(key, None)
 
 import rclpy
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, TwistStamped
 from lifecycle_msgs.srv import GetState
 from nav2_msgs.action import ComputePathToPose
 from nav_msgs.msg import Odometry
@@ -154,6 +154,23 @@ try:
     assert f.done() and f.result(),'Planning result timeout'
     result['path_status']=f.result().status;result['path_poses']=len(f.result().result.path.poses)
     assert result['path_status']==4 and result['path_poses']>1,'Planning failed'
+    if args.pc:
+        commands=[]
+        command_sub=n.create_subscription(TwistStamped,prefix+'/remote_cmd_vel',commands.append,qos_profile_sensor_data)
+        assert task({'command':'goal','robot':identity,'x':.5,'y':0.,'yaw':0.})['ok']
+        deadline=time.monotonic()+12
+        while time.monotonic()<deadline:
+            pump(.1)
+            if any(abs(m.twist.linear.x)>1e-4 or abs(m.twist.angular.z)>1e-4 for m in commands):break
+        assert any(abs(m.twist.linear.x)>1e-4 or abs(m.twist.angular.z)>1e-4 for m in commands), 'Socket goal produced no stamped control command'
+        assert task({'command':'cancel','robot':identity})['ok']
+        deadline=time.monotonic()+10
+        while time.monotonic()<deadline:
+            pump(.1)
+            state=task({'command':'status'})['robots'][identity]
+            if not state['busy']:break
+        assert not state['busy'] and state['last_result']=='canceled', state
+        result['socket_navigation_goal_command_cancel']=True
     assert not n.get_publishers_info_by_topic('/map'),'Global map leaked'
     assert not n.get_publishers_info_by_topic('/tf'),'Global TF leaked'
     result['namespaced_only']=True

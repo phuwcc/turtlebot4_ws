@@ -36,6 +36,9 @@ trong bản source đồng bộ.
 Bài test black box kiểm tra namespace 1–3 robot, cache static TF cho RViz mở muộn,
 đổi frame Path/map, giới hạn scan hiển thị, goal/cancel độc lập, đầu vào lỗi,
 timeout/timestamp/out-of-order/nhiều publisher và lệnh zero khi shutdown.
+Socket đã được kiểm tra cả chuỗi với Nav2 thật và cảm biến giả: goal tạo lệnh
+vận tốc có timestamp, sau đó cancel trả trạng thái canceled. Domain test tách
+khỏi robot thật; bài này không chứng nhận chuyển động vật lý.
 Bộ test phần mềm đầy đủ trên PC đạt; native binary build thành công trên cả hai Pi. Cả hai Pi cũng đạt 5/5 bài test
 black box native và 4/4 CTest, trong ROS domain cô lập.
 

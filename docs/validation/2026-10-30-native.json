@@ -276,5 +276,49 @@
     "Short idle samples do not establish worst-case motion load or eliminate all crash causes",
     "Transient TF warnings occurred during discovery/startup",
     "Nav2 lifecycle bond timeout now 15s; independent velocity guard remains 0.5s"
-  ]
+  ],
+  "socket_nav2_end_to_end": {
+    "robot1": {
+      "test_domain": 172,
+      "robot_id": "robot1",
+      "lifecycle": {
+        "amcl": "active",
+        "map_server": "active",
+        "controller_server": "active",
+        "smoother_server": "active",
+        "planner_server": "active",
+        "behavior_server": "active",
+        "bt_navigator": "active",
+        "waypoint_follower": "active",
+        "velocity_smoother": "active"
+      },
+      "pc_socket": true,
+      "command_routing": true,
+      "path_status": 4,
+      "path_poses": 8,
+      "socket_navigation_goal_command_cancel": true,
+      "namespaced_only": true
+    },
+    "robot2": {
+      "test_domain": 175,
+      "robot_id": "robot2",
+      "lifecycle": {
+        "amcl": "active",
+        "map_server": "active",
+        "controller_server": "active",
+        "smoother_server": "active",
+        "planner_server": "active",
+        "behavior_server": "active",
+        "bt_navigator": "active",
+        "waypoint_follower": "active",
+        "velocity_smoother": "active"
+      },
+      "pc_socket": true,
+      "command_routing": true,
+      "path_status": 4,
+      "path_poses": 8,
+      "socket_navigation_goal_command_cancel": true,
+      "namespaced_only": true
+    }
+  }
 }

@@ -14,6 +14,7 @@ python3 src/tb4_multi_bringup/test/test_fleet_view.py -v
 python3 src/tb4_multi_bringup/test/test_remote_control.py -v
 python3 src/tb4_multi_bringup/test/test_native_runtime.py -v
 python3 tests/smoke_navigation.py --pc robot1
+python3 tests/smoke_navigation.py --pc robot2
 python3 tests/smoke_navigation.py --pc --localization-only robot1
 python3 tests/smoke_fleet_localization.py
 python3 tests/smoke_navigation.py robot2
