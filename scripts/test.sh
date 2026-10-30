@@ -9,6 +9,7 @@ colcon test --packages-select tb4_tools tb4_multi_tools tb4_multi_bringup --even
 colcon test-result --verbose
 python3 tests/test_pc_config.py -v
 python3 tests/test_diagnostics.py -v
+python3 tests/test_hardware_stop.py -v
 python3 src/tb4_multi_bringup/test/test_fleet_view.py -v
 python3 src/tb4_multi_bringup/test/test_remote_control.py -v
 python3 tests/smoke_navigation.py --pc robot1

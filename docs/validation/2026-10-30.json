@@ -20,7 +20,9 @@
       "two-robot SLAM"
     ],
     "hardware_session_lock": "passed",
-    "python_tests_per_pi": 16
+    "python_tests_per_pi": 16,
+    "hardware_stop_regression_tests": 4,
+    "hardware_stop_note": "SIGINT-ignored child terminates with SIGTERM; exact robot namespace and known driver matching verified."
   },
   "motion": {
     "motion_requested": true,

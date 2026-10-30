@@ -15,7 +15,7 @@ export ROS_LOG_DIR="${tb4_repo}/log/${tb4_id}/${tb4_mode}"
 case "$tb4_mode" in
   hardware)
     if pgrep -f '^/[^ ]*/lib/(rplidar_ros/rplidar_composition|create3_republisher/create3_republisher|turtlebot4_node/turtlebot4_node)([[:space:]]|$)' >/dev/null; then
-      echo 'Hardware is already running on this Pi. Stop its old bringup before starting this profile.' >&2
+      echo "Hardware is already running on this Pi. Run: bash scripts/robot-stop.sh $tb4_id" >&2
       exit 1
     fi
     [[ -e /dev/RPLIDAR ]] || { echo '/dev/RPLIDAR is missing' >&2; exit 1; }

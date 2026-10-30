@@ -120,29 +120,36 @@ bringup/republisher tự mở ở terminal khác trước; không mở hai drive
 Không chạy AMCL, map server, SLAM hoặc Nav2 trên Pi.
 
 `robot-start.sh` tự dừng service cũ và mở watchdog; không cần chạy watchdog riêng.
-Nếu gặp thông báo **Hardware is already running**, trên đúng Pi đó:
+Nếu gặp thông báo **Hardware is already running**, dừng hardware cũ rồi chạy lại.
+Trên **Pi robot1**:
 
 ```bash
-# Kiểm tra service cũ và các tiến trình hardware đang chạy.
+cd ~/turtlebot4_ws
+bash scripts/robot-stop.sh robot1
+bash scripts/robot-start.sh robot1
+```
+
+Trên **Pi robot2**:
+
+```bash
+cd ~/turtlebot4_ws
+bash scripts/robot-stop.sh robot2
+bash scripts/robot-start.sh robot2
+```
+
+`robot-stop.sh` dừng service cũ, launch và các driver còn sót của đúng namespace,
+đợi tiến trình thoát rồi mới báo thành công. Nếu chưa dừng được, script trả lỗi;
+không mở phiên hardware mới. Script dùng SIGTERM vì phiên mở ngầm bằng `nohup`
+có thể bỏ qua SIGINT; chỉ dừng PID của launch cũng có thể để lại driver con.
+Không cần tìm/thay PID thủ công và không dùng lệnh `kill -INT PID_LAUNCH`.
+Với hardware chạy ở terminal trước mặt, vẫn có thể nhấn **Ctrl+C** để dừng.
+
+Kiểm tra khi cần:
+
+```bash
 systemctl status turtlebot4 --no-pager
 pgrep -af 'ros2 launch|create3_republisher|rplidar_composition|remote_velocity_guard'
-
-# Dừng service cũ nếu còn hoạt động.
-sudo systemctl stop turtlebot4
 ```
-
-Với hardware mở trong terminal khác, nhấn **Ctrl+C** ở terminal đó.
-Nếu hardware đang chạy ngầm, tìm PID của tiến trình **ros2 launch** tương ứng
-trong kết quả trên, rồi thay `PID_LAUNCH` bằng số PID thực tế:
-
-```bash
-kill -INT PID_LAUNCH
-```
-
-Đợi các driver thoát, rồi chạy lại `bash scripts/robot-start.sh robot1` trên Pi 1
-hoặc `bash scripts/robot-start.sh robot2` trên Pi 2. Không mở phiên mới khi
-bringup cũ chưa dừng. Sau đợt kiểm thử, hardware có thể vẫn đang chạy ngầm;
-không cần khởi chạy thêm nếu phiên hiện tại vẫn hoạt động.
 
 ### PC — Terminal 1: toàn bộ Nav2 + socket + một RViz
 
