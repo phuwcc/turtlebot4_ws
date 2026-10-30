@@ -27,10 +27,17 @@ source "$tb4_repo/install/setup.bash"
 source "$tb4_config"
 case "$tb4_mode" in
   check)
+    ros2 run tb4_multi_bringup dds_graph_check
     ros2 daemon stop
     ros2 node list --no-daemon --spin-time 10
-    for ((tb4_index=1; tb4_index<=TB4_ROBOT_COUNT; tb4_index++)); do
-      ros2 topic info "/robot${tb4_index}/scan" --verbose --no-daemon --spin-time 5
-      ros2 topic info "/robot${tb4_index}/odom" --verbose --no-daemon --spin-time 5
+    if [[ -n "${TB4_ROBOT_IDS:-}" ]]; then
+      IFS=, read -r -a tb4_robots <<< "$TB4_ROBOT_IDS"
+    else
+      tb4_robots=()
+      for ((tb4_index=1; tb4_index<=TB4_ROBOT_COUNT; tb4_index++)); do tb4_robots+=("robot$tb4_index"); done
+    fi
+    for tb4_robot in "${tb4_robots[@]}"; do
+      ros2 topic info "/${tb4_robot}/scan" --verbose --no-daemon --spin-time 5
+      ros2 topic info "/${tb4_robot}/odom" --verbose --no-daemon --spin-time 5
     done ;;
 esac

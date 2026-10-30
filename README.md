@@ -25,7 +25,11 @@ nhiều robot: mỗi robot vẫn tự điều hướng như concept cũ.
 ## 1. Cài đặt một lần
 
 Yêu cầu Ubuntu 22.04, ROS 2 Humble tại `/opt/ros/humble`, repo ở
-`~/turtlebot4_ws` trên PC và các Pi. Script cài dependency rồi build; không bật robot.
+`~/turtlebot4_ws` trên PC và các Pi. Script kiểm tra gói đã cài, chỉ chạy apt nếu còn thiếu rồi build;
+không bật robot. Khi đã đủ gói, script bỏ qua apt để tránh chờ cập nhật hệ thống.
+Muốn cập nhật gói, thêm `--refresh`, ví dụ `bash scripts/setup.sh robot --refresh`.
+Bước cài gói chờ khóa APT tối đa 300 giây; nếu cập nhật tự động đang chạy,
+đợi hoàn tất rồi chạy lại, không xóa file khóa APT.
 
 **Trên PC:**
 
@@ -59,6 +63,10 @@ Nhập số robot 1/2/3 và IP của từng Pi. Chọn 2 thì chỉ nhập robot
 Cấu hình lưu ở `~/.config/turtlebot4/pc_env.sh`. Chạy lại khi đổi IP/số robot,
 rồi dừng và mở lại phiên PC. PC phải kết nối được tới các Pi và đồng bộ giờ.
 
+Nếu chỉ chạy robot2, có thể giữ đúng ID discovery bằng
+`bash scripts/pc-configure.sh --robots robot2` (server ID 1), thay vì đổi tên robot2
+thành robot1. Mặc định vẫn chọn robot1 đến robotN.
+
 ### Cấu hình từng robot
 
 Dùng `turtlebot4-setup` cấu hình **Pi và Create 3**, theo [NETWORK.md](docs/NETWORK.md).
@@ -76,6 +84,10 @@ Model trong `src/tb4_multi_bringup/config/robots/robotN.yaml` mặc định là
 `standard`; đổi thành `lite` rồi build lại nếu robot là Lite. PC và Pi dùng
 cùng cấu hình robot. Profile hardware của repo phục vụ LiDAR navigation,
 không mở camera và joystick.
+
+Profile này đặt `power_saver: false` cho `turtlebot4_node` để không gọi
+`oakd/start_camera` hoặc `oakd/stop_camera` khi vào/ra dock vì camera không
+được chạy. LiDAR vẫn dùng `auto_standby` của driver.
 
 ## 2. Chạy navigation hằng ngày
 
@@ -275,13 +287,28 @@ nhấn `k` rồi `Ctrl+C`; `Ctrl+C` terminal PC; cuối cùng `Ctrl+C` hardware 
 Đóng RViz sẽ kết thúc phiên PC/navigation. Service hardware cũ đã dừng và không
 được tự bật lại khi thoát script; muốn dùng lại profile cũ, tự start lại service.
 
+Kiểm thử phần cứng trên PC (dừng Nav2/teleop, giữ hardware Pi chạy):
+
+```bash
+bash scripts/pc-test-hardware.sh
+# Chỉ thêm cờ này khi robot đã ra khỏi dock, vùng thử trống và có người giám sát:
+bash scripts/pc-test-hardware.sh --allow-motion
+```
+
+Mặc định không di chuyển. Chế độ motion thử lần lượt từng robot ở 0,04 m/s,
+tối đa 2 giây, đo odometry và dừng watchdog. Không tự undock/mở E-Stop.
+Kết quả lưu ở `log/pc/hardware-test/result.json`.
+Chẩn đoán sensor, map và lifecycle bằng `bash scripts/pc-diagnose.sh --map maps/my_room.yaml`.
+
 ## 6. Giới hạn và tài liệu
 
 Các kiểm thử phần mềm chạy trong ROS domain riêng với cảm biến/Nav2 giả;
 không coi đó là xác nhận navigation đồng thời trên ba robot thật.
 Chạy lại kiểm thử phần mềm bằng `bash scripts/test.sh` sau khi build.
 Cần kiểm tra thực tế Wi-Fi, đồng hồ, pose/map, E‑Stop và phản hồi dừng sau
-khi triển khai PC + Pi. Chưa triển khai phiên mới lên máy PC thật trong workspace này.
+khi triển khai PC + Pi. Ngày 2026-10-30 đã build trên PC và hai Pi, thử tiến ngắn và watchdog thành công trên robot1/robot2.
+Navigation thật vẫn có lỗi timeout lifecycle qua DDS; chưa chứng nhận tự điều hướng.
+Xem [kết quả và lỗi còn mở](docs/VALIDATION.md).
 
 - [Kiến trúc và kiểm thử](docs/MULTI_ROBOT.md)
 - [Mạng Pi / Create 3 / PC](docs/NETWORK.md)

@@ -70,6 +70,7 @@ class RemoteControlTest(unittest.TestCase):
         try:
             self.wait_for(lambda: control.action_clients['robot2'].server_is_ready())
             self.wait_for(lambda: control.pose_pubs['robot2'].get_subscription_count() > 0)
+            self.assertEqual(send({'command': 'goal', 'robot': 'robot1', 'x': 1, 'y': 2})['reason'], 'nav_unavailable')
             self.assertFalse(send({'command': 'goal', 'robot': 'robot3', 'x': 1, 'y': 2})['ok'])
             self.assertFalse(send({'command': 'goal', 'robot': 'robot2', 'x': float('nan'), 'y': 2})['ok'])
             self.assertFalse(send({'command': 'goal', 'robot': 'robot2', 'x': True, 'y': 2})['ok'])

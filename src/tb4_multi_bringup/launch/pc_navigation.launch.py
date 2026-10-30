@@ -12,9 +12,11 @@ from tb4_multi_bringup.fleet_settings import active_robots, startup_poses, valid
 
 def setup(context):
     count = int(LaunchConfiguration('robot_count').perform(context))
-    robots = active_robots(count)
-    poses = startup_poses(LaunchConfiguration('initial_poses').perform(context), count)
-    validate_discovery(os.environ.get('ROS_DISCOVERY_SERVER'), count)
+    ids = LaunchConfiguration('robot_ids').perform(context)
+    robots = active_robots(count, ids)
+    poses = startup_poses(LaunchConfiguration('initial_poses').perform(context), count, ids)
+    validate_discovery(os.environ.get('ROS_DISCOVERY_SERVER'), count, ids,
+                       os.environ.get('TB4_DISCOVERY_IDS'))
     map_path = Path(LaunchConfiguration('map').perform(context)).expanduser().resolve()
     if not map_path.is_file():
         raise ValueError('Map missing on PC: ' + str(map_path))
@@ -29,7 +31,7 @@ def setup(context):
             launch_arguments=arguments.items()))
     actions.append(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(directory / 'fleet_visualization.launch.py')),
-        launch_arguments={'robot_count': str(count), 'socket': 'true',
+        launch_arguments={'robot_count': str(count), 'robot_ids': ','.join(robots), 'socket': 'true',
                           'rviz': LaunchConfiguration('rviz'),
                           'socket_port': LaunchConfiguration('socket_port')}.items()))
     return actions
@@ -43,6 +45,7 @@ def generate_launch_description():
         DeclareLaunchArgument('initial_poses', default_value='',
                               description='YAML with x, y, yaw (map, radians) per active robot; '
                                           'empty waits for RViz 2D Pose Estimate'),
+        DeclareLaunchArgument('robot_ids', default_value=os.environ.get('TB4_ROBOT_IDS', '')),
         DeclareLaunchArgument('rviz', default_value='true', choices=['true', 'false']),
         DeclareLaunchArgument('socket_port', default_value='8765'),
         OpaqueFunction(function=setup),

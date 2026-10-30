@@ -1,0 +1,118 @@
+{
+  "date": "2026-10-30",
+  "real_robots": [
+    "robot1",
+    "robot2"
+  ],
+  "build": {
+    "pc": "3 packages passed",
+    "robot1": "3 packages passed",
+    "robot2": "3 packages passed"
+  },
+  "software": {
+    "cpp_tests_per_host": 3,
+    "python_tests_pc": 16,
+    "smokes_pc": [
+      "combined PC navigation and TCP",
+      "robot2 navigation",
+      "robot3 simulated namespace navigation",
+      "two-robot AMCL/URDF TF and pose reset",
+      "two-robot SLAM"
+    ],
+    "hardware_session_lock": "passed",
+    "python_tests_per_pi": 16
+  },
+  "motion": {
+    "motion_requested": true,
+    "robots": {
+      "robot1": {
+        "counts": {
+          "cmd_vel": 84,
+          "dock_status": 4,
+          "scan": 20,
+          "odom": 2
+        },
+        "docked": false,
+        "odom_age_seconds": 0.137,
+        "command_publishers": [
+          {
+            "node": "//tb4_hardware_acceptance",
+            "gid": "010f39bf2d3d9f3900000000000017030000000000000000"
+          }
+        ],
+        "front_clearance_m": 0.504,
+        "commands_sent": 37,
+        "guard_forwarded": true,
+        "distance_m": 0.0703,
+        "watchdog_stop_seconds": 0.496,
+        "other_robot_displacement_m": {
+          "robot2": 0.0
+        },
+        "passed": true
+      },
+      "robot2": {
+        "counts": {
+          "cmd_vel": 356,
+          "odom": 338,
+          "dock_status": 17,
+          "scan": 126
+        },
+        "docked": false,
+        "odom_age_seconds": 0.126,
+        "command_publishers": [
+          {
+            "node": "//tb4_hardware_acceptance",
+            "gid": "010f39bf2d3d9f390000000000001e030000000000000000"
+          }
+        ],
+        "front_clearance_m": 0.475,
+        "commands_sent": 37,
+        "guard_forwarded": true,
+        "distance_m": 0.0952,
+        "watchdog_stop_seconds": 0.519,
+        "other_robot_displacement_m": {
+          "robot1": 0.0
+        },
+        "passed": true
+      }
+    },
+    "passed": true
+  },
+  "real_nav2": {
+    "passed": false,
+    "reason": "Lifecycle service response timeouts reproduced on the real discovery-server network; full real-map navigation not certified."
+  },
+  "limits": [
+    "Only robot1 and robot2 were present physically. Robot3 was simulated on an isolated localhost ROS domain.",
+    "No NavigateToPose goal was sent to real robots. No automatic undock or E-Stop changes.",
+    "The PC service-timeout XML experiment was not installed."
+  ],
+  "hardware_readonly": {
+    "motion_requested": false,
+    "robots": {
+      "robot1": {
+        "counts": {
+          "cmd_vel": 64,
+          "odom": 63,
+          "dock_status": 4,
+          "scan": 1
+        },
+        "docked": false,
+        "odom_age_seconds": 0.13,
+        "passed": true
+      },
+      "robot2": {
+        "counts": {
+          "odom": 63,
+          "cmd_vel": 54,
+          "dock_status": 2,
+          "scan": 1
+        },
+        "docked": false,
+        "odom_age_seconds": 0.079,
+        "passed": true
+      }
+    },
+    "passed": true
+  }
+}

@@ -17,10 +17,11 @@ from tb4_multi_bringup.fleet_settings import active_robots, rviz_for_count, vali
 
 def setup(context):
     count = int(LaunchConfiguration('robot_count').perform(context))
-    robots = active_robots(count)
-    validate_discovery(os.environ.get('ROS_DISCOVERY_SERVER'), count)
+    ids = LaunchConfiguration('robot_ids').perform(context)
+    robots = active_robots(count, ids)
+    validate_discovery(os.environ.get('ROS_DISCOVERY_SERVER'), count, ids, os.environ.get('TB4_DISCOVERY_IDS'))
     socket_enabled = LaunchConfiguration('socket').perform(context) == 'true'
-    parameters = {'robot_count': count}
+    parameters = {'robot_count': count, 'robot_ids': ','.join(robots)}
     if socket_enabled:
         parameters['socket_port'] = int(LaunchConfiguration('socket_port').perform(context))
     for robot in robots:
@@ -29,7 +30,7 @@ def setup(context):
         parameters[robot + '.map_frame'] = frames['map']
         parameters[robot + '.base_frame'] = frames['base']
     with (share() / 'config/fleet.rviz').open() as stream:
-        view = rviz_for_count(yaml.safe_load(stream), count)
+        view = rviz_for_count(yaml.safe_load(stream), count, ids)
     with tempfile.NamedTemporaryFile(mode='w', prefix='tb4_fleet_', suffix='.rviz', delete=False) as stream:
         yaml.safe_dump(view, stream, sort_keys=False)
         rviz_path = Path(stream.name)
@@ -58,6 +59,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('robot_count', default_value=os.environ.get('TB4_ROBOT_COUNT', '3'),
                               choices=['1', '2', '3'], description='Number of active robots (robot1..robotN)'),
+        DeclareLaunchArgument('robot_ids', default_value=os.environ.get('TB4_ROBOT_IDS', '')),
         DeclareLaunchArgument('rviz', default_value='true', choices=['true', 'false']),
         DeclareLaunchArgument('socket', default_value='false', choices=['true', 'false']),
         DeclareLaunchArgument('socket_port', default_value='8765'),

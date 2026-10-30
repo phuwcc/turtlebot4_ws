@@ -24,6 +24,24 @@ class LaptopConfigTest(unittest.TestCase):
                 self.assertEqual(values['ROS_DISCOVERY_SERVER'].count(':11811'), count)
                 self.assertNotIn(';:', values['ROS_DISCOVERY_SERVER'])
 
+    def test_sparse_robot_and_actual_server_ids(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'pc_env.sh'
+            values = pc.save_environment(path, ['10.11.52.137'], 'robot2')
+            self.assertEqual(values['TB4_ROBOT_IDS'], 'robot2')
+            self.assertEqual(values['ROS_DISCOVERY_SERVER'], ';10.11.52.137:11811;')
+            self.assertEqual(pc.load_environment(path), values)
+            values = pc.save_environment(path, ['10.11.52.137'], 'robot2', '0')
+            self.assertEqual(values['ROS_DISCOVERY_SERVER'], '10.11.52.137:11811;')
+            self.assertEqual(values['TB4_DISCOVERY_IDS'], '0')
+            self.assertEqual(pc.load_environment(path), values)
+            values = pc.save_environment(path, ['10.0.0.1', '10.0.0.3'], 'robot1,robot3')
+            self.assertEqual(values['ROS_DISCOVERY_SERVER'], '10.0.0.1:11811;;10.0.0.3:11811;')
+            self.assertEqual(pc.load_environment(path), values)
+            for ids, servers in [('robot2,robot2', '0,1'), ('robot2', '3'), ('robot2', '0,1')]:
+                with self.assertRaises(ValueError):
+                    pc.make_environment(['10.11.52.137'], ids, servers)
+
     def test_invalid_addresses_do_not_overwrite(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'pc_env.sh'

@@ -72,7 +72,7 @@ class SocketControl(FleetView):
     def dispatch(self, request):
         command = request.get('command')
         if command == 'status':
-            return {'ok': True, 'robots': {r: {
+            return {'ok': True, 'selected_robot': self.get_parameter('selected_robot').value, 'robots': {r: {
                 'nav_ready': self.action_clients[r].server_is_ready(),
                 'busy': self.busy[r], 'accepted': self.goals[r] is not None,
                 'cancel_requested': self.cancel_requested[r], 'last_result': self.last_result[r],
@@ -99,12 +99,17 @@ class SocketControl(FleetView):
         pose = message.pose if command == 'goal' else message.pose.pose
         pose.position.x, pose.position.y = float(x), float(y)
         pose.orientation.z, pose.orientation.w = math.sin(yaw / 2), math.cos(yaw / 2)
+        if self.busy[robot]:
+            return {'ok': False, 'reason': 'robot_busy', 'message': 'Robot has an active/pending goal; cancel it first'}
+        if command == 'goal' and not self.action_clients[robot].server_is_ready():
+            return {'ok': False, 'reason': 'nav_unavailable',
+                    'message': 'Nav2 action server is unavailable. Run bash scripts/pc-diagnose.sh on PC.'}
         if command == 'pose':
             message.pose.covariance[0] = message.pose.covariance[7] = 0.25
             message.pose.covariance[35] = 0.06854
         ok = bool(self.goal_pose(message, robot) if command == 'goal' else self.initial_pose(message, robot))
         return {'ok': ok, 'message': ('Goal submitted; poll status for acceptance/result' if command == 'goal'
-                else 'Initial pose published') if ok else 'Rejected: robot busy or Nav2 unavailable'}
+                else 'Initial pose published') if ok else 'Request was not submitted; inspect fleet_view logs'}
 
     def destroy_node(self):
         self.server.shutdown()

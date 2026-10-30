@@ -14,7 +14,9 @@ def setup(context):
     actions = [PushRosNamespace(ns), SetRemap('/tf', '/' + ns + '/tf'),
                SetRemap('/tf_static', '/' + ns + '/tf_static'),
         Node(package='turtlebot4_node', executable='turtlebot4_node', name='turtlebot4_node',
-             parameters=[params, {'model': cfg['model']}], output='screen'),
+             # The stock power saver calls OAKD services on dock transitions.
+             # This profile has no camera; LiDAR handles standby in its driver.
+             parameters=[params, {'model': cfg['model'], 'power_saver': False}], output='screen'),
         Node(package='tb4_multi_bringup', executable='remote_velocity',
              name='remote_velocity_guard', parameters=[{'mode': 'guard'}], output='screen'),
         Node(package='create3_republisher', executable='create3_republisher', name='create3_repub',

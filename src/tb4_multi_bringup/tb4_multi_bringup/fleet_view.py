@@ -54,8 +54,9 @@ class FleetView(Node):
     def __init__(self, **kwargs):
         super().__init__('fleet_view', **kwargs)
         count = self.declare_parameter('robot_count', 3).value
-        self.robots = active_robots(count)
-        self.declare_parameter('selected_robot', 'robot1')
+        ids = self.declare_parameter('robot_ids', '').value
+        self.robots = active_robots(count, ids)
+        self.declare_parameter('selected_robot', self.robots[0])
         if self.get_parameter('selected_robot').value not in self.robots:
             raise ValueError('selected_robot must be active in this session')
         self.maps = {}
@@ -108,13 +109,13 @@ class FleetView(Node):
         self.cancel_service = self.create_service(Trigger, '/tb4_view/cancel', self.cancel_goal)
         self.marker_pub = self.create_publisher(MarkerArray, '/tb4_view/labels', self.latched)
         self.timer = self.create_timer(0.5, self.publish_labels)
-        self.get_logger().info('Fleet view ready: ' + ', '.join(self.robots) + '; selected robot1.')
+        self.get_logger().info('Fleet view ready: ' + ', '.join(self.robots) + '; selected ' + self.robots[0] + '.')
 
     def validate_parameters(self, parameters):
         for parameter in parameters:
             if parameter.name == 'selected_robot' and parameter.value not in self.robots:
                 return SetParametersResult(successful=False, reason='Active robots: ' + ', '.join(self.robots))
-            if parameter.name == 'robot_count' or parameter.name.endswith(('.map_frame', '.base_frame')):
+            if parameter.name in ('robot_count', 'robot_ids') or parameter.name.endswith(('.map_frame', '.base_frame')):
                 return SetParametersResult(successful=False, reason='Frame settings require restarting the launch')
         return SetParametersResult(successful=True)
 
@@ -235,7 +236,7 @@ class FleetView(Node):
             marker.pose.orientation.w = 1.0
             marker.pose.position.z = 0.65
             marker.scale.z = 0.22
-            marker.color.r, marker.color.g, marker.color.b = COLORS[index]
+            marker.color.r, marker.color.g, marker.color.b = COLORS[ROBOTS.index(robot)]
             marker.color.a = 1.0
             marker.text = robot + (' [SELECTED]' if robot == selected else '')
             markers.append(marker)

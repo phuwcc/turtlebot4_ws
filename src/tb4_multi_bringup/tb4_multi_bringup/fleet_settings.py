@@ -10,9 +10,9 @@ import yaml
 ROBOTS = ('robot1', 'robot2', 'robot3')
 
 
-def startup_poses(filename, count):
+def startup_poses(filename, count, selected=None):
     """Require an explicit map pose for every active robot when auto-init is used."""
-    robots = active_robots(count)
+    robots = active_robots(count, selected)
     if not filename:
         return {}
     with Path(filename).expanduser().open() as stream:
@@ -31,25 +31,39 @@ def startup_poses(filename, count):
     return result
 
 
-def active_robots(count):
+def active_robots(count, selected=None):
     if type(count) is not int or not 1 <= count <= len(ROBOTS):
         raise ValueError('robot_count must be 1, 2 or 3')
-    return ROBOTS[:count]
+    if not selected:
+        return ROBOTS[:count]
+    robots = tuple(selected.split(',')) if isinstance(selected, str) else tuple(selected)
+    if (len(robots) != count or len(set(robots)) != count
+            or any(robot not in ROBOTS for robot in robots)
+            or robots != tuple(sorted(robots))):
+        raise ValueError('robot_ids must list robot_count unique, ordered IDs: robot1,robot2,robot3')
+    return robots
 
 
-def validate_discovery(value, count):
-    """Fail before starting DDS if a saved list contains empty/invalid addresses."""
-    active_robots(count)
+def validate_discovery(value, count, selected=None, server_ids=None):
+    """Preserve discovery server ID slots, including deliberate gaps for inactive robots."""
+    robots = active_robots(count, selected)
     if value is None:
-        return  # Allow explicitly configured local/multicast discovery.
+        return
+    indices = [int(v) for v in server_ids.split(',')] if server_ids else [int(r[-1]) - 1 for r in robots]
+    if len(indices) != count or len(set(indices)) != count or any(not 0 <= i <= 2 for i in indices):
+        raise ValueError('Invalid TB4_DISCOVERY_IDS')
     servers = value.split(';')
     if servers[-1] == '':
         servers.pop()
     try:
-        if len(servers) != count:
-            raise ValueError('server count does not match robot_count')
+        if len(servers) != max(indices) + 1:
+            raise ValueError('server ID slots do not match active robots')
         addresses = []
-        for server in servers:
+        for index, server in enumerate(servers):
+            if index not in indices:
+                if server:
+                    raise ValueError('inactive discovery server slot must be empty')
+                continue
             address, port = server.rsplit(':', 1)
             parsed = ipaddress.IPv4Address(address)
             if parsed.is_unspecified or parsed.is_multicast or parsed.is_loopback or str(parsed) == '255.255.255.255':
@@ -61,14 +75,18 @@ def validate_discovery(value, count):
             raise ValueError('duplicate Pi addresses')
     except ValueError as error:
         raise ValueError('Invalid ROS_DISCOVERY_SERVER: ' + str(error) +
-                         '. Run: bash scripts/laptop.sh configure') from error
+                         '. Run: bash scripts/pc-configure.sh') from error
 
 
-def rviz_for_count(template, count):
-    robots = active_robots(count)
+def rviz_for_count(template, count, selected=None):
+    robots = active_robots(count, selected)
     result = deepcopy(template)
     result['Visualization Manager']['Displays'] = [
         display for display in result['Visualization Manager']['Displays']
         if display.get('Name') not in ROBOTS or display['Name'] in robots
     ]
+    for display in result['Visualization Manager']['Displays']:
+        if display.get('Name', '').startswith('Shared map ('):
+            display['Name'] = 'Shared map (' + robots[0] + ')'
+            display['Topic']['Value'] = '/tb4_view/' + robots[0] + '/map'
     return result

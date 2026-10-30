@@ -14,13 +14,11 @@ parser.add_argument('robot_id', nargs='?', choices=['robot1','robot2','robot3'],
 parser.add_argument('--pc', action='store_true', help='Test combined PC launch, headless socket and command routing')
 args=parser.parse_args()
 identity=args.robot_id
-if args.pc and identity != 'robot1':
-    parser.error('--pc uses robot1 (one-robot PC session)')
 prefix='/'+identity
-domain=172 if args.pc else {'robot1':168, 'robot2':169, 'robot3':170}[identity]
+domain=(172 if identity == 'robot1' else 175) if args.pc else {'robot1':168, 'robot2':169, 'robot3':170}[identity]
 os.environ.update(ROS_DOMAIN_ID=str(domain), ROS_LOCALHOST_ONLY='1',
                   RMW_IMPLEMENTATION='rmw_fastrtps_cpp', ROS_SUPER_CLIENT='False')
-for key in ('ROS_DISCOVERY_SERVER', 'FASTRTPS_DEFAULT_PROFILES_FILE', 'FASTDDS_DEFAULT_PROFILES_FILE', 'CYCLONEDDS_URI', 'ROS_NAMESPACE'):
+for key in ('TB4_ROBOT_IDS', 'TB4_DISCOVERY_IDS', 'ROS_DISCOVERY_SERVER', 'FASTRTPS_DEFAULT_PROFILES_FILE', 'FASTDDS_DEFAULT_PROFILES_FILE', 'CYCLONEDDS_URI', 'ROS_NAMESPACE'):
     os.environ.pop(key, None)
 
 import rclpy
@@ -34,7 +32,7 @@ from sensor_msgs.msg import LaserScan
 from tf2_msgs.msg import TFMessage
 
 root = Path(__file__).resolve().parents[1]
-logs = root / 'log/navigation_smoke' / ('pc' if args.pc else identity)
+logs = root / 'log/navigation_smoke' / (('pc' if identity == 'robot1' else 'pc_robot2') if args.pc else identity)
 logs.mkdir(parents=True, exist_ok=True)
 (logs/'result.json').unlink(missing_ok=True)
 os.environ['ROS_LOG_DIR'] = str(logs)
@@ -78,7 +76,7 @@ clients={name:n.create_client(GetState,prefix+'/'+name+'/get_state') for name in
 planner=ActionClient(n,ComputePathToPose,prefix+'/compute_path_to_pose')
 stream=(logs/'navigation.log').open('w')
 command = (['ros2','launch','tb4_multi_bringup','pc_navigation.launch.py', 'robot_count:=1',
-    'rviz:=false', 'socket_port:=18765', 'map:='+str(logs/'room.yaml')] if args.pc else
+    'robot_ids:='+identity, 'rviz:=false', 'socket_port:=18765', 'map:='+str(logs/'room.yaml')] if args.pc else
     ['ros2','launch','tb4_multi_bringup','navigation.launch.py','robot_id:='+identity,
     'map:='+str(logs/'room.yaml'),'initialize_pose:=true','initial_x:=0.0','initial_y:=0.0','initial_yaw:=0.0'])
 p=subprocess.Popen(command,
@@ -98,7 +96,7 @@ try:
         pump(2)
         if args.pc:
             try:
-                task({'command':'pose','robot':'robot1','x':0.,'y':0.,'yaw':0.})
+                task({'command':'pose','robot':identity,'x':0.,'y':0.,'yaw':0.})
             except OSError:
                 pass
         if not all(c.service_is_ready() for c in clients.values()):continue
@@ -111,8 +109,8 @@ try:
     assert states and all(s=='active' for s in states.values()),'Not all lifecycle nodes active: '+str(states)
     assert planner.server_is_ready(),'Namespaced planner unavailable'
     if args.pc:
-        assert task({'command':'status'})['robots']['robot1']['nav_ready']
-        assert task({'command':'pose','robot':'robot1','x':0.,'y':0.,'yaw':0.})['ok']
+        assert task({'command':'status'})['robots'][identity]['nav_ready']
+        assert task({'command':'pose','robot':identity,'x':0.,'y':0.,'yaw':0.})['ok']
         pump(4)
         result['pc_socket']=True
     publishers={e.node_name for e in n.get_publishers_info_by_topic(prefix+'/pc_cmd_vel')}

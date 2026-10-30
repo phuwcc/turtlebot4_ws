@@ -44,6 +44,9 @@ class FleetViewTest(unittest.TestCase):
             poses = startup_poses(str(path), 2)
             self.assertEqual(poses['robot1']['initial_x'], '1')
             self.assertEqual(poses['robot2']['initial_x'], '-3')
+            selected = startup_poses(str(path), 1, 'robot2')
+            self.assertEqual(set(selected), {'robot2'})
+            self.assertEqual(selected['robot2']['initial_x'], '-3')
             for text in ('[]', 'robot1: {x: 1, y: 2}',
                          'robot1: {x: .nan, y: 2, yaw: 0}',
                          'robot1: {x: true, y: 2, yaw: 0}',
@@ -80,6 +83,27 @@ class FleetViewTest(unittest.TestCase):
         for count in (0, 4, True):
             with self.assertRaises(ValueError):
                 active_robots(count)
+
+    def test_robot2_only_keeps_namespace_map_and_discovery_slot(self):
+        self.assertEqual(active_robots(1, 'robot2'), ('robot2',))
+        validate_discovery(';10.11.52.137:11811;', 1, 'robot2')
+        validate_discovery('10.11.52.137:11811;', 1, 'robot2', '0')
+        with self.assertRaises(ValueError):
+            validate_discovery('10.11.52.137:11811;', 1, 'robot2')
+        template = yaml.safe_load((FilePath(__file__).resolve().parents[1] / 'config/fleet.rviz').read_text())
+        view = rviz_for_count(template, 1, 'robot2')
+        displays = view['Visualization Manager']['Displays']
+        self.assertEqual([d['Name'] for d in displays if d['Name'] in ROBOTS], ['robot2'])
+        self.assertEqual(next(d for d in displays if d['Name'].startswith('Shared map'))['Topic']['Value'],
+                         '/tb4_view/robot2/map')
+        rclpy.init()
+        bridge = FleetView(parameter_overrides=[Parameter('robot_count', value=1),
+                                               Parameter('robot_ids', value='robot2')])
+        try:
+            self.assertEqual(tuple(bridge.action_clients), ('robot2',))
+            self.assertEqual(bridge.get_parameter('selected_robot').value, 'robot2')
+        finally:
+            bridge.destroy_node(); rclpy.shutdown()
 
     def test_only_active_robot_interfaces(self):
         for count in (1, 2, 3):

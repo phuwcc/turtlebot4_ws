@@ -70,3 +70,42 @@ PC/Pi vì `remote_cmd_vel` là TwistStamped, watchdog trên Pi bỏ lệnh quá 
 TCP nhiệm vụ chỉ nghe `127.0.0.1:8765` trên PC; dùng SSH tunnel nếu client ở
 máy khác. Cổng này không truyền scan hoặc lệnh motor trực tiếp. Chi tiết protocol
 và các script: [README](../README.md).
+
+## Lỗi sequence size exceeds remaining buffer
+
+`bash scripts/pc-check.sh` đọc DDS discovery dưới dạng byte trước khi chạy ROS CLI.
+Nếu phát hiện GID 16 byte từ node `/robotN/_do_not_use/...`, trong khi Humble
+dùng GID 24 byte, script báo đúng namespace và kết thúc với mã lỗi. Đây là
+lệch định dạng ROS graph; tăng buffer hoặc đổi Fixed Frame không sửa được lỗi này.
+
+Trên webserver **đế Create 3** của robot được báo, mở trang Update và kiểm tra
+phiên bản firmware/ROS. PC và Pi của repo dùng Humble; đế cần firmware **H.x**,
+ví dụ [H.2.6 chính thức](https://iroboteducation.github.io/create3_docs/releases/h_2_6/).
+[Hướng dẫn cập nhật](https://iroboteducation.github.io/create3_docs/webserver/update/)
+cho phép chọn bản ROS hoặc tải file firmware cụ thể lên. Không chọn mặc định
+latest khi đang cần chuyển từ Iron sang Humble. Sau cập nhật, kiểm tra lại
+namespace `/robotN/_do_not_use`, Fast DDS, domain 0 và discovery server của đế.
+Khởi động lại bringup Pi và phiên PC rồi chạy lại `pc-check.sh`.
+
+Nếu map server chưa active, RViz chưa có bản đồ để hiển thị. Khi map đã hiện,
+chọn từng robot và đặt **2D Pose Estimate** đúng vị trí/hướng thực tế để AMCL
+phát `map -> odom`. Không thêm static TF giả để làm mất cảnh báo `map`.
+
+Ngày 2026-10-23, kiểm tra trực tiếp thấy `/robot2/_do_not_use` gửi GID 16 byte,
+còn phần cứng `/robot1`, `/robot2` trên Pi gửi GID 24 byte. Chẩn đoán này
+không xác nhận số phiên bản firmware cụ thể; cần đọc trên webserver của đế.
+
+
+## Kiểm tra thực tế ngày 2026-10-30
+
+Cả hai Create 3 của robot1/robot2 đã báo H.2.6/Humble; kiểm tra DDS không còn
+phát hiện GID 16 byte trong các mẫu quan sát. Chẩn đoán ngày 23/10 ở trên là
+kết quả lịch sử, không phải trạng thái firmware hiện tại.
+
+Robot1 có RMW Profile Override thay thế profile mặc định nhưng không cấu hình
+client discovery. Sau khi lưu bản sao, xóa override và restart ứng dụng ROS
+trên đế, odom và TF đã hoạt động. Namespace/domain/discovery đúng trên trang
+Configuration chưa đủ nếu một override riêng đang thay middleware profile.
+
+Đã thử tiến ngắn và watchdog trên cả robot1/robot2, nhưng lifecycle Nav2 trên PC
+vẫn có timeout qua mạng thật. Xem [VALIDATION.md](VALIDATION.md) trước khi gửi goal.

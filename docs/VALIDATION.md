@@ -1,3 +1,78 @@
+# Kiểm chứng trên PC, robot1 và robot2 — 2026-10-30
+
+**Kết quả: phần mềm và chạy ngắn qua watchdog đạt; navigation thật chưa đạt.**
+Không coi kết quả cảm biến giả là chứng nhận Nav2 trên mạng thật.
+[Kết quả có cấu trúc](validation/2026-10-30.json).
+
+| Kiểm tra | PC | Pi robot1 | Pi robot2 |
+| --- | --- | --- | --- |
+| Build toàn bộ repo (3 package) | Đạt | Đạt | Đạt |
+| CTest C++ (controls x2, DDS graph wire) | 3/3 | 3/3 | 3/3 |
+| Python config/fleet/gateway/watchdog | Đạt | Đạt | Đạt |
+| AMCL/Nav2/planner/socket/TF/SLAM với cảm biến giả | Đạt | Chạy trên PC | Chạy trên PC |
+| Scan, odom, TF từ phần cứng | Nhận cả hai robot | Đạt | Đạt |
+| Tiến chậm qua PC → DDS → watchdog → Create 3 | — | 0,0703 m | 0,0952 m |
+| Watchdog về lệnh dừng khi ngắt luồng | — | 0,496 s | 0,519 s |
+| Navigation với map và cảm biến thật | Chưa đạt: timeout lifecycle | Hardware hoạt động | Hardware hoạt động |
+
+Các lần chạy thật được người dùng cho phép và giám sát, lần lượt từng robot,
+ở 0,04 m/s trong tối đa 2 giây. Odometry xác nhận có dịch chuyển và đã dừng;
+robot còn lại không dịch chuyển trong mỗi lượt. Không gửi goal Nav2 thật,
+không tự undock hoặc thay E-Stop. Khi cả hai còn trên dock, bài thử đã từ chối chạy.
+
+Đã gặp publisher DDS tồn dư và trường hợp watchdog không chuyển tiếp dù một
+node quan sát mới nhận lệnh. Không bỏ điều kiện bảo vệ: làm sạch discovery,
+build/khởi động lại hardware đồng bộ rồi thử lại; cả hai đã qua. Điều này không
+chứng minh hệ thống tự phục hồi mọi lỗi mạng hoặc mọi trường hợp mất tiến trình.
+
+Robot1 có RMW XML override trên Create 3 làm mất kết nối discovery; đã lưu bản
+sao, bỏ override và restart ứng dụng ROS. Cả hai đế báo H.2.6/Humble.
+Cấu hình đế và ~/.config/turtlebot4/pc_env.sh là cấu hình máy riêng, không nằm
+trong bản source đồng bộ.
+
+## Lỗi còn mở
+
+Launch production trên PC vẫn tái hiện `failed to send response ... change_state`
+và timeout bond của lifecycle manager khi dùng các discovery server qua Wi-Fi.
+AMCL/map server có thể không active. Một thử nghiệm XML kéo dài thời gian chờ
+phản hồi service cũng chưa loại bỏ lỗi và **không được cài làm mặc định**.
+Triệu chứng tương tự [báo cáo upstream rmw_fastrtps #842](https://github.com/ros2/rmw_fastrtps/issues/842),
+nhưng chưa xác nhận cùng nguyên nhân. Cần xử lý trước khi chứng nhận tự điều hướng.
+Không thêm static TF giả, không vô hiệu watchdog/bond hoặc giảm kiểm tra timestamp.
+
+## Chạy lại
+
+```bash
+bash scripts/build.sh
+bash scripts/test.sh
+```
+
+Test phần mềm dùng ROS domain riêng, localhost và cảm biến/action server giả.
+Robot3 trong test chỉ là namespace mô phỏng trên PC; phần cứng đợt này chỉ có
+robot1 và robot2. Các test thật không nằm trong scripts/test.sh.
+
+Giữ hardware trên hai Pi chạy, dừng Nav2/teleop trước khi kiểm tra từ PC:
+
+```bash
+bash scripts/pc-test-hardware.sh
+# Chỉ khi đã đưa robot khỏi dock, có vùng trống và người giám sát:
+bash scripts/pc-test-hardware.sh --allow-motion
+```
+
+Mặc định chỉ đọc cảm biến/TF/trạng thái. Cờ --allow-motion mới tạo publisher
+lệnh, kiểm tra từng robot và kiểm tra dừng khi ngắt luồng; không vượt qua E-Stop,
+không tự undock. Script dùng robot đã chọn trong pc_env.sh, khóa phiên để tránh
+chạy chồng Nav2/teleop, xuất log/pc/hardware-test/result.json. Lệnh dừng và timeout
+vẫn được áp dụng khi bài thử thất bại.
+
+Log đầy đủ đợt này lưu dưới log/repo_validation/ (không commit). Mã cũ trên Pi
+được giữ trong Git stash trước khi đồng bộ. Các bản sao source ban đầu nằm ở
+log/repo_validation/backups/ trên PC.
+
+---
+
+# Ghi chép lịch sử (giữ nguyên kết quả và giới hạn tại thời điểm kiểm tra)
+
 # Kiểm chứng kiến trúc PC navigation + socket
 
 Ngày 22/10/2026, trong workspace ROS 2 Humble:

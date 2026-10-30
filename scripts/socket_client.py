@@ -36,7 +36,9 @@ def main():
             response = send(args, host, port)
             print(json.dumps(response, indent=2, ensure_ascii=False))
             return 0 if response.get('ok') else 1
-        selected = 'robot1'
+        status = send({'command': 'status'}, host, port)
+        selected = status.get('selected_robot', 'robot1')
+        print('Robot đang dùng: ' + ', '.join(status.get('robots', {})) + '; đang chọn ' + selected)
         while True:
             choice = input('Chọn robot [1/2/3], hủy goal [c], trạng thái [s], thoát [q]: ').strip()
             if choice == 'q':
@@ -47,6 +49,8 @@ def main():
                 if response.get('ok'):
                     selected = candidate
             elif choice == 'c':
+                status = send({'command': 'status'}, host, port)
+                selected = status.get('selected_robot', selected)
                 response = send({'command': 'cancel', 'robot': selected}, host, port)
             elif choice == 's':
                 response = send({'command': 'status'}, host, port)
