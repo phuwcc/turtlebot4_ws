@@ -19,8 +19,9 @@ PC ── DDS: remote_cmd_vel có timestamp ──> Pi: watchdog ──> Create 
 ```
 
 Socket dùng để gửi `pose`, `goal`, `cancel`, `status`, `select`; không thay DDS
-bằng một giao thức tự truyền scan/TF. Không có bộ điều phối tránh xung đột giữa
-nhiều robot: mỗi robot vẫn tự điều hướng như concept cũ.
+bằng một giao thức tự truyền scan/TF. Chế độ navigation thông thường điều hướng
+từng robot độc lập. Chế độ [MARCO](#marco-trên-hai-turtlebot-thật) thêm phân công
+nhiệm vụ, dependency và điều phối đường đi giữa các robot trên PC.
 
 ## 1. Cài đặt một lần
 
@@ -30,6 +31,32 @@ không bật robot. Khi đã đủ gói, script bỏ qua apt để tránh chờ 
 Muốn cập nhật gói, thêm `--refresh`, ví dụ `bash scripts/setup.sh robot --refresh`.
 Bước cài gói chờ khóa APT tối đa 300 giây; nếu cập nhật tự động đang chạy,
 đợi hoàn tất rồi chạy lại, không xóa file khóa APT.
+
+### Clone repo và MARCO submodule
+
+**Trên PC, clone kèm submodule:**
+
+```bash
+git clone --recurse-submodules https://github.com/phuwcc/turtlebot4_ws.git ~/turtlebot4_ws
+cd ~/turtlebot4_ws
+```
+
+**Nếu đã có repo trên PC:**
+
+```bash
+cd ~/turtlebot4_ws
+git pull --ff-only
+git submodule update --init --recursive MARCO
+```
+
+`MARCO/` là submodule từ [TranThang27/MARCO](https://github.com/TranThang27/MARCO),
+được ghim tại revision `bef1ac7d3161fb6ce009a507beac86a06fe92371` đã kiểm tra.
+Adapter nằm trong `src/tb4_marco_bridge/`; giữ source upstream MARCO nguyên bản.
+Lệnh update lấy revision được repo cha ghim, không tự chuyển sang bản upstream mới.
+Nếu có thay đổi riêng trong MARCO, giữ lại chúng trước khi cập nhật submodule.
+
+**Trên Pi**, clone repo cha bằng `git clone` thông thường; không cần khởi tạo
+submodule vì MARCO và toàn bộ navigation chạy trên PC.
 
 **Trên PC:**
 
@@ -44,11 +71,15 @@ bash scripts/setup.sh robot
 ```
 
 Khi chuyển từ bản cũ, dừng các terminal mapping/navigation/teleop cũ trên Pi
-và PC trước khi chạy phiên mới. Sau khi cập nhật code, build lại **cả PC và
-các Pi** bằng:
+và PC trước khi chạy phiên mới. Sau khi cập nhật code, build lại:
 
 ```bash
+# PC: cập nhật submodule rồi build 4 package
+git submodule update --init --recursive MARCO
 bash scripts/build.sh
+
+# Mỗi Pi: chỉ build 3 package hardware
+TB4_BUILD_PROFILE=hardware bash scripts/build.sh
 ```
 
 ### Cấu hình PC
@@ -210,19 +241,60 @@ Mô hình đọc `/robotN/robot_description` từ hardware trên Pi. Nếu thi�
 
 ### MARCO trên hai TurtleBot thật
 
-Với bố trí robot1 ở gốc map, robot2 bên trái khoảng 0,5 m, cùng hướng:
+Giữ hardware/watchdog trên hai Pi chạy theo phần trên. Với robot1 đứng đúng
+gốc map đã quét `(0,0)`, quay theo +X (`yaw=0`), robot2 bên trái khoảng 0,5 m,
+cùng hướng, mở trên **PC**:
 
 ```bash
+git submodule update --init --recursive MARCO
 bash scripts/pc-marco.sh maps/my_room.yaml
-# Terminal khác: xem localization và lập kế hoạch, chưa điều khiển robot
-bash scripts/marco.sh status
-bash scripts/marco.sh plan config/marco/mission.example.json
 ```
 
-`pc-marco.sh` tự khởi tạo robot1, dùng gợi ý trong `config/marco/localization.yaml`
-cho robot2 và chờ AMCL hội tụ trước khi bật điều hướng. Sửa gợi ý khi đổi vị trí.
-Đường đi chỉ được thực thi qua Nav2 khi chạy lệnh `run ... --execute` riêng.
-MARCO nguyên bản không bị chỉnh sửa. Xem [luồng, giới hạn và cách chạy](docs/MARCO.md).
+Script tự khởi tạo robot1, gửi gợi ý từ `config/marco/localization.yaml` cho
+robot2 và chờ AMCL hội tụ trước khi bật Nav2. Tọa độ robot2 do AMCL ước lượng;
+gợi ý không khóa TF hoặc vị trí. Sửa gợi ý khi đổi bố trí. Nếu khởi động lại
+sau khi robot đã đi khỏi gốc, truyền tọa độ thực tế bằng file `x/y/yaw`:
+
+```bash
+bash scripts/pc-marco.sh maps/my_room.yaml initial_poses:="$PWD/config/initial_poses.yaml"
+```
+
+Phiên MARCO mặc định có ngân sách **200% CPU, tối đa 2 GiB RAM** khi có user
+systemd; script thông báo nếu chỉ áp dụng nice. Chỉ cần xem map và hai robot:
+
+```bash
+bash scripts/pc-marco.sh maps/my_room.yaml localization_only:=true
+```
+
+Chỉ chạy một phiên PC tại một thời điểm. Ở **terminal PC khác**, kiểm tra trạng
+thái và chọn goal trong vùng trống thực tế trước khi xem kế hoạch:
+
+```bash
+bash scripts/marco.sh status
+cp config/marco/mission.example.json config/marco/mission.json
+# Sửa goal (x,y,yaw), candidates và depends_on trong mission.json theo map thực tế
+bash scripts/marco.sh plan config/marco/mission.json --out log/marco/preview.json
+```
+
+`status` phải báo `localized=true` cho cả hai robot. `plan` hiển thị đường
+MARCO trong RViz và không điều khiển robot. Các goal mẫu không phải vị trí đã
+được xác nhận an toàn. Khi preview phù hợp, robot đã khỏi dock, vùng chạy trống
+và có người giám sát, thực thi riêng bằng:
+
+```bash
+bash scripts/marco.sh run config/marco/mission.json --execute --out log/marco/execution.json
+```
+
+Đường đi được kiểm tra trên costmap rồi thực thi bằng Nav2 `FollowPath`, giới
+hạn 0,05 m/s và 0,2 rad/s. Lease và permission hết hạn hoặc mất localization sẽ
+hủy path; watchdog trên Pi vẫn giám sát luồng lệnh. Nhấn **Ctrl+C** ở terminal
+mission để hủy các path còn hoạt động.
+
+**Kiểm chứng 31/10/2026:** goal riêng của cả robot1 và robot2 đã hoàn thành qua
+MARCO/socket/Nav2 trên phần cứng thật, nhưng phải hủy và chạy tiếp; chưa đạt một
+lượt hai goal liên tục không lỗi. Mẫu PC đứng yên với đầy đủ Nav2/RViz đạt trung
+bình khoảng 153% CPU, peak 170%; không suy ra tải khi chạy goal. Xem
+[báo cáo và ảnh RViz](docs/VALIDATION.md), [luồng và giới hạn MARCO](docs/MARCO.md).
 
 ### PC — Terminal 2: chọn robot và hủy goal
 

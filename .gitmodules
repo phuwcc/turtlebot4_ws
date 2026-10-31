@@ -1,0 +1,3 @@
+[submodule "MARCO"]
+	path = MARCO
+	url = https://github.com/TranThang27/MARCO.git

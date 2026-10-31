@@ -8,10 +8,17 @@ của workspace. Worker chạy Python `-B`, không tạo `__pycache__` trong MAR
 
 ## Khởi động
 
-PC cần checkout MARCO riêng (không copy sang Pi). Adapter đã kiểm tra với
-revision `bef1ac7d3161fb6ce009a507beac86a06fe92371` của
-[TranThang27/MARCO](https://github.com/TranThang27/MARCO). Nếu chưa có checkout,
-clone repo đó vào `MARCO/`; không chạy lệnh clone đè lên thư mục đã có.
+PC dùng submodule `MARCO/` (không cần khởi tạo trên Pi), ghim revision
+`bef1ac7d3161fb6ce009a507beac86a06fe92371` của
+[TranThang27/MARCO](https://github.com/TranThang27/MARCO):
+
+```bash
+git submodule update --init --recursive MARCO
+```
+
+Khi clone repo cha lần đầu trên PC, dùng `git clone --recurse-submodules`.
+Không dùng `git submodule update --remote` để tự nâng revision chưa kiểm tra.
+Adapter vẫn hỗ trợ `MARCO_ROOT` trỏ đến checkout khác nếu chủ động cấu hình.
 
 Build workspace (4 package), giữ hardware/watchdog trên hai Pi chạy theo README:
 
