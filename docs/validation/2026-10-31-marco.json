@@ -179,8 +179,39 @@
   "software": {
     "pc_build": "4 packages passed",
     "full_suite_before_final_changes": "passed",
-    "final_targeted_tests": "Planner 6/6, fleet config 5/5, hardware stop 4/4 passed; native path suite final numerical-roundoff case running.",
-    "pi_hardware_builds": "pending"
+    "final_targeted_tests": {
+      "native_path_runtime": {
+        "passed": 7,
+        "elapsed_s": 65.197
+      },
+      "marco_planner": {
+        "passed": 6
+      },
+      "fleet_configuration": {
+        "passed": 5
+      },
+      "hardware_stop": {
+        "passed": 4
+      }
+    },
+    "pi_hardware_builds": {
+      "robot1": {
+        "packages_built": 3,
+        "ctest_passed": 5,
+        "guard_relay_native_passed": 2,
+        "profile": "hardware",
+        "running_hardware_preserved": true,
+        "stock_turtlebot4_autostart": "disabled"
+      },
+      "robot2": {
+        "packages_built": 3,
+        "ctest_passed": 5,
+        "guard_relay_native_passed": 2,
+        "profile": "hardware",
+        "running_hardware_preserved": true,
+        "stock_turtlebot4_autostart": "disabled"
+      }
+    }
   },
   "performance_unbounded": {
     "mode": "managed_full_nav2_rviz_idle",
@@ -255,5 +286,153 @@
   "composition_experiment": {
     "deployed": false,
     "reason": "Nav2 composed controller segfaulted in isolated fake-sensor goal tests. Kept process-per-node profile."
-  }
+  },
+  "performance_budgeted": {
+    "mode": "managed_full_nav2_rviz_idle_budgeted",
+    "sample_seconds": 15.063129174001006,
+    "logical_cpus": 12,
+    "mean_cpu_percent": 152.83333333333334,
+    "peak_cpu_percent": 170.0,
+    "peak_rss_mib": 1321.234375,
+    "cgroup": {
+      "MemoryCurrent": "579575808",
+      "CPUUsageNSec": "274167995000",
+      "CPUQuotaPerSecUSec": "2s",
+      "MemoryMax": "2147483648"
+    },
+    "cgroup_cpu_mean_percent": 152.4691366229564,
+    "samples": [
+      {
+        "cpu_percent": 141.0,
+        "rss_mib": 1321.2109375
+      },
+      {
+        "cpu_percent": 170.0,
+        "rss_mib": 1321.21484375
+      },
+      {
+        "cpu_percent": 161.0,
+        "rss_mib": 1321.21484375
+      },
+      {
+        "cpu_percent": 142.9,
+        "rss_mib": 1321.21484375
+      },
+      {
+        "cpu_percent": 162.0,
+        "rss_mib": 1321.21484375
+      },
+      {
+        "cpu_percent": 156.9,
+        "rss_mib": 1321.21484375
+      },
+      {
+        "cpu_percent": 151.0,
+        "rss_mib": 1321.21484375
+      },
+      {
+        "cpu_percent": 161.0,
+        "rss_mib": 1321.21484375
+      },
+      {
+        "cpu_percent": 145.9,
+        "rss_mib": 1321.21484375
+      },
+      {
+        "cpu_percent": 146.9,
+        "rss_mib": 1321.21875
+      },
+      {
+        "cpu_percent": 157.0,
+        "rss_mib": 1321.21875
+      },
+      {
+        "cpu_percent": 137.0,
+        "rss_mib": 1321.21875
+      },
+      {
+        "cpu_percent": 149.9,
+        "rss_mib": 1321.21875
+      },
+      {
+        "cpu_percent": 163.0,
+        "rss_mib": 1321.23046875
+      },
+      {
+        "cpu_percent": 147.0,
+        "rss_mib": 1321.234375
+      }
+    ]
+  },
+  "final_budgeted_status": {
+    "map_revision": 3,
+    "ok": true,
+    "robots": {
+      "robot1": {
+        "busy": false,
+        "localization": {
+          "anchor": false,
+          "covariance_xyyaw": [
+            0.0021832462587121973,
+            0.009216884261263651,
+            0.0028449468784095336
+          ],
+          "phase": "running",
+          "pose": [
+            0.19440935641888646,
+            -0.00030666066576576613,
+            0.15176904854879064
+          ],
+          "pose_ready": true,
+          "ready": true,
+          "reason": "stable_localization",
+          "scan_match_fraction": 0.8531468531468531,
+          "tf_age_s": 0.042880055417846674
+        },
+        "localized": true,
+        "odom_fresh": true,
+        "pose": [
+          0.19440935641888646,
+          -0.00030666066576576613,
+          0.15165983340704495
+        ]
+      },
+      "robot2": {
+        "busy": false,
+        "localization": {
+          "anchor": false,
+          "covariance_xyyaw": [
+            0.0038905719894787635,
+            0.005285624891914142,
+            0.0043940269198372295
+          ],
+          "phase": "running",
+          "pose": [
+            0.1087144835056211,
+            0.5268267913892651,
+            -0.03494616873532488
+          ],
+          "pose_ready": true,
+          "ready": true,
+          "reason": "stable_localization",
+          "scan_match_fraction": 0.8405797101449275,
+          "tf_age_s": 0.024368199528320256
+        },
+        "localized": true,
+        "odom_fresh": true,
+        "pose": [
+          0.1087144835056211,
+          0.5268267913892651,
+          -0.03494616873532488
+        ]
+      }
+    }
+  },
+  "resource_limit_validation": "Startup, standing localization, ready Nav2, fresh sensors and idle load measured with CPU quota 200%, memory max 2GiB. Physical goals were completed before enabling the final resource cap.",
+  "startup_observations": [
+    "A map_server bond failure during budgeted startup recovered via Nav2 automatic respawn reconnection.",
+    "Robot2 AMCL variance had -1.4e-14 roundoff; a current-pose reseed restored readiness. Final supervisor accepts only numerical negative variance >= -1e-10; materially negative variance is rejected.",
+    "Occasional RViz future extrapolation of a few tens of milliseconds remains in startup/runtime logs; screenshot shows Global Status OK and both robot models. No queue-is-full messages in final budgeted session."
+  ],
+  "implementation_revision": "de8d553"
 }

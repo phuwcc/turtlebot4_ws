@@ -29,6 +29,26 @@ mất localization, gợi ý khởi tạo robot2 và giải phóng giới hạn 
 hội tụ. Đã sửa race khi goal hoàn thành giữa lúc đọc status và gia hạn lease.
 Xem [cách chạy và giới hạn](MARCO.md).
 
+Mẫu 15 giây với hai Nav2/RViz sau khi ổn định: trung bình **152,8% CPU**,
+peak **170%**, tổng RSS **1321 MiB** (cộng RSS có thể đếm lặp trang chia sẻ).
+User cgroup xác nhận CPU quota **200%**, memory max **2 GiB**; memory current
+khoảng **553 MiB**. Đây là mẫu đứng yên, không suy ra tốc độ tăng hay đảm bảo tải
+khi chạy goal. Các goal thật ở trên hoàn thành trước khi bật giới hạn cuối cùng;
+đã kiểm tra lại startup, freshness, localization và Nav2 readiness với giới hạn.
+Thử composition gặp segfault ở domain giả nên không triển khai cấu hình đó.
+Trong startup có một lỗi bond map_server tự phục hồi và cần reseed robot2 khi
+AMCL trả variance âm cỡ 1e-14. Supervisor mới chấp nhận sai số roundoff >=-1e-10,
+vẫn từ chối variance âm thực sự. Log còn vài lần extrapolation vài chục ms;
+không thấy `queue is full` ở phiên cuối. [Ảnh RViz hai robot, Global Status OK](marco-physical-goals.png).
+
+PC: build 4 package; native path runtime **7/7**, planner **6/6**, fleet config
+**5/5**, hardware stop **4/4**. Bộ test đầy đủ đã đạt trước các thay đổi cuối;
+các bài liên quan được chạy lại sau khi sửa. Test giả dùng domain localhost riêng.
+Hai Pi đã đồng bộ source, build profile hardware **3 package**, mỗi Pi đạt
+**5/5 CTest** và **2/2 native watchdog/relay** trong domain cô lập. Giữ các
+process hardware đang chạy; logic guard không đổi. Service `turtlebot4` cũ đã
+bị disable để reboot không tự chạy lại bringup thiếu watchdog.
+
 ---
 
 # Kiểm chứng trên PC, robot1 và robot2 — 2026-10-30
