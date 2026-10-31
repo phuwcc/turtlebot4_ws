@@ -7,13 +7,14 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, Opaq
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from tb4_multi_bringup.configuration import share
-from tb4_multi_bringup.fleet_settings import active_robots, startup_poses, validate_discovery
+from tb4_multi_bringup.fleet_settings import active_robots, startup_poses, validate_discovery, localization_hints
 
 
 def setup(context):
     count = int(LaunchConfiguration('robot_count').perform(context))
     ids = LaunchConfiguration('robot_ids').perform(context)
     robots = active_robots(count, ids)
+    hints = localization_hints(LaunchConfiguration('localization_hints').perform(context), count, ids, float(LaunchConfiguration('anchor_yaw').perform(context)))
     poses = startup_poses(LaunchConfiguration('initial_poses').perform(context), count, ids)
     validate_discovery(os.environ.get('ROS_DISCOVERY_SERVER'), count, ids,
                        os.environ.get('TB4_DISCOVERY_IDS'))
@@ -24,15 +25,20 @@ def setup(context):
     actions = []
     for robot in robots:
         arguments = {'robot_id': robot, 'map': str(map_path),
+                     'managed_startup': LaunchConfiguration('managed_startup'),
+                     'anchor_yaw': LaunchConfiguration('anchor_yaw'),
+                     'nav_params_file': LaunchConfiguration('nav_params_file'),
                      'localization_only': LaunchConfiguration('localization_only'),
                      'initialize_pose': 'true' if robot in poses else 'false'}
         arguments.update(poses.get(robot, {}))
+        arguments.update(hints.get(robot, {}))
         actions.append(IncludeLaunchDescription(
             PythonLaunchDescriptionSource(str(directory / 'navigation.launch.py')),
             launch_arguments=arguments.items()))
     actions.append(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(directory / 'fleet_visualization.launch.py')),
         launch_arguments={'robot_count': str(count), 'robot_ids': ','.join(robots), 'socket': 'true',
+                          'require_localization': LaunchConfiguration('managed_startup'),
                           'rviz': LaunchConfiguration('rviz'),
                           'socket_port': LaunchConfiguration('socket_port')}.items()))
     return actions
@@ -43,6 +49,10 @@ def generate_launch_description():
         DeclareLaunchArgument('robot_count', default_value=os.environ.get('TB4_ROBOT_COUNT', '1'),
                               choices=['1', '2', '3']),
         DeclareLaunchArgument('map'),
+        DeclareLaunchArgument('managed_startup', default_value='false', choices=['true', 'false']),
+        DeclareLaunchArgument('anchor_yaw', default_value='0.0'),
+        DeclareLaunchArgument('localization_hints', default_value=''),
+        DeclareLaunchArgument('nav_params_file', default_value=str(share() / 'config/common/nav2.yaml')),
         DeclareLaunchArgument('initial_poses', default_value='',
                               description='YAML with x, y, yaw (map, radians) per active robot; '
                                           'empty waits for RViz 2D Pose Estimate'),

@@ -14,6 +14,7 @@ parser=argparse.ArgumentParser()
 parser.add_argument('robot_id', nargs='?', choices=['robot1','robot2','robot3'], default='robot1')
 parser.add_argument('--pc', action='store_true', help='Test combined PC launch, headless socket and command routing')
 parser.add_argument('--localization-only', action='store_true', help='Verify the low-load PC mode has no navigation/velocity publishers')
+parser.add_argument('--nav-params-file', type=Path, help='Validate a custom Nav2 profile in the isolated domain')
 args=parser.parse_args()
 if args.localization_only and not args.pc:
     parser.error('--localization-only requires --pc')
@@ -88,6 +89,7 @@ command = (['ros2','launch','tb4_multi_bringup','pc_navigation.launch.py', 'robo
     ['ros2','launch','tb4_multi_bringup','navigation.launch.py','robot_id:='+identity,
     'map:='+str(logs/'room.yaml'),'initialize_pose:=true','initial_x:=0.0','initial_y:=0.0','initial_yaw:=0.0'])
 if args.localization_only:command.append('localization_only:=true')
+if args.nav_params_file:command.append('nav_params_file:='+str(args.nav_params_file.resolve()))
 p=subprocess.Popen(command,
     stdout=stream,stderr=subprocess.STDOUT,start_new_session=True)
 result={'test_domain':domain,'robot_id':identity}

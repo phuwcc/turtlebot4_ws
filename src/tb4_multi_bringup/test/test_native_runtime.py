@@ -183,7 +183,7 @@ class NativeRuntimeTest(unittest.TestCase):
             self.wait(lambda:not any(s['busy'] for s in app.status()['robots'].values()))
             # Bounded parser rejects oversized frames and continues serving later requests.
             with socket.create_connection(('127.0.0.1',app.port),timeout=3) as connection:
-                connection.sendall(b'x'*8193+b'\n')
+                connection.sendall(b'x'*65537+b'\n')
                 self.assertFalse(json.loads(connection.makefile('rb').readline())['ok'])
             self.assertTrue(app.status()['ok'])
         finally:

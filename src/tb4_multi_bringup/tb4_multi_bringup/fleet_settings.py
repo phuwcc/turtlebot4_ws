@@ -90,3 +90,38 @@ def rviz_for_count(template, count, selected=None):
             display['Name'] = 'Shared map (' + robots[0] + ')'
             display['Topic']['Value'] = '/tb4_view/' + robots[0] + '/map'
     return result
+
+
+def localization_hints(filename, count, selected=None, anchor_yaw=0.):
+    """Bounded initial priors, relative to the saved-map anchor, not fixed TFs."""
+    if not filename:
+        return {}
+    with Path(filename).expanduser().open() as stream:
+        hints = yaml.safe_load(stream)
+    if not isinstance(hints, dict) or set(hints)-set(ROBOTS):
+        raise ValueError('Localization hints must use robot1/robot2/robot3 keys')
+    result = {}
+    for robot in active_robots(count, selected):
+        if robot not in hints or robot == 'robot1':
+            continue
+        item = hints[robot]
+        if not isinstance(item, dict) or not {'x','y','yaw'} <= set(item):
+            raise ValueError(robot+' hint requires x, y, yaw')
+        if set(item)-{'x','y','yaw','relative_to','std_xy','std_yaw'}:
+            raise ValueError('Unknown localization hint field')
+        values = [item[k] for k in ('x','y','yaw')]
+        std_xy, std_yaw = item.get('std_xy',.2), item.get('std_yaw',.2)
+        if any(type(v) not in (int,float) or not math.isfinite(v) for v in values+[std_xy,std_yaw]):
+            raise ValueError('Hint and uncertainty must be finite numbers')
+        if not .05 <= std_xy <= 1. or not .05 <= std_yaw <= math.pi:
+            raise ValueError('Hint uncertainty outside supported range')
+        relative = item.get('relative_to','map')
+        x,y,yaw = values
+        if relative == 'robot1':
+            x,y = math.cos(anchor_yaw)*x-math.sin(anchor_yaw)*y, math.sin(anchor_yaw)*x+math.cos(anchor_yaw)*y
+            yaw += anchor_yaw
+        elif relative != 'map':
+            raise ValueError('relative_to must be map or robot1')
+        result[robot] = {'initial_hint':'true','hint_x':str(x),'hint_y':str(y),'hint_yaw':str(yaw),
+                         'hint_std_xy':str(std_xy),'hint_std_yaw':str(std_yaw)}
+    return result

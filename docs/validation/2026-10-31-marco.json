@@ -1,0 +1,259 @@
+{
+  "date": "2026-10-31",
+  "marco_revision": "bef1ac7d3161fb6ce009a507beac86a06fe92371",
+  "marco_modified": false,
+  "hardware_goals": {
+    "completed_robots": [
+      "robot1",
+      "robot2"
+    ],
+    "single_uninterrupted_two_goal_run": false,
+    "completed_events": [
+      {
+        "event": "completed",
+        "robot": "robot1",
+        "task": 1,
+        "pose": [
+          0.15603188662676193,
+          -0.001250657742983163,
+          0.08345018931722828
+        ]
+      },
+      {
+        "event": "completed",
+        "robot": "robot2",
+        "task": 2,
+        "pose": [
+          0.10080006619070817,
+          0.5175976304116928,
+          -0.021022875954080814
+        ]
+      }
+    ],
+    "first_attempt": {
+      "result": "canceled_on_localization_quality_loss",
+      "robot1_travel_m": 0.05715946288590312,
+      "error": "RuntimeError: robot1 localization/sensors not ready: {\"anchor\": true, \"covariance_xyyaw\": [0.01823310879975732, 0.0007562310535706189, 0.025482838658111098], \"phase\": \"running\", \"pose\": [0.04423459249313912, 0.002384514713937162, -0.2073705660702282], \"pose_ready\": false, \"ready\": false, \"reason\": \"amcl_not_converged\", \"scan_match_fraction\": 0.8880597014925373, \"tf_age_s\": 0.04437433732324214}"
+    },
+    "second_attempt": {
+      "result": "robot1_succeeded_then_operator_agent_canceled_robot2",
+      "robots": {
+        "robot1": {
+          "start_odom": [
+            -0.04221317172050476,
+            -0.013411249965429306
+          ],
+          "travel_m": 0.08340744801036211,
+          "max_linear_mps": 0.03333333333333333,
+          "max_angular_rps": 0.17894736842105263,
+          "end_odom": [
+            0.033084671944379807,
+            0.01074261125177145
+          ],
+          "minimum_clearance_m": 0.41237372364631225
+        },
+        "robot2": {
+          "start_odom": [
+            -0.0983804240822792,
+            0.015766216441988945
+          ],
+          "travel_m": 0.008509788576138818,
+          "max_linear_mps": 0.04,
+          "max_angular_rps": 0.12,
+          "end_odom": [
+            -0.09033254534006119,
+            0.014898411929607391
+          ],
+          "minimum_clearance_m": 0.4734043690073892
+        }
+      },
+      "reason": "Preparation rejected a new unsafe map goal, but shell continued the existing authorized mission. Canceled immediately on detection."
+    },
+    "robot2_continuation": {
+      "passed": true,
+      "robots": {
+        "robot1": {
+          "start_odom": [
+            0.033084671944379807,
+            0.01074261125177145
+          ],
+          "travel_m": 0.0,
+          "max_linear_mps": 0.0,
+          "max_angular_rps": 0.0,
+          "end_odom": [
+            0.033084671944379807,
+            0.01074261125177145
+          ],
+          "minimum_clearance_m": 0.41306668908955235
+        },
+        "robot2": {
+          "start_odom": [
+            -0.08016270399093628,
+            0.013790685683488846
+          ],
+          "travel_m": 0.1472127353508101,
+          "max_linear_mps": 0.05,
+          "max_angular_rps": 0.2,
+          "end_odom": [
+            0.060314733535051346,
+            -0.022153757512569427
+          ],
+          "minimum_clearance_m": 0.42415781351354803
+        }
+      },
+      "stopped_after_trial": true
+    },
+    "limits": {
+      "linear_mps": 0.05,
+      "angular_rps": 0.2,
+      "max_action_length_m": 0.35,
+      "tracking_tolerance_m": 0.03,
+      "static_safety_margin_m": 0.04
+    },
+    "final_sensor_status": {
+      "map_revision": 2,
+      "ok": true,
+      "robots": {
+        "robot1": {
+          "busy": false,
+          "localization": {
+            "anchor": true,
+            "covariance_xyyaw": [
+              0.006590392089785596,
+              0.0007272475388672571,
+              0.007618359805243478
+            ],
+            "phase": "running",
+            "pose": [
+              0.15938634793688738,
+              -0.0008803757647722812,
+              0.09451905945372016
+            ],
+            "pose_ready": true,
+            "ready": true,
+            "reason": "stable_localization",
+            "scan_match_fraction": 0.8686131386861314,
+            "tf_age_s": 0.04716014420178222
+          },
+          "localized": true,
+          "odom_fresh": true,
+          "pose": [
+            0.15938634793688738,
+            -0.0008803757647722812,
+            0.09451905945372016
+          ]
+        },
+        "robot2": {
+          "busy": false,
+          "localization": {
+            "anchor": false,
+            "covariance_xyyaw": [
+              0.00637898102014977,
+              0.003064366919519501,
+              0.00659187348707054
+            ],
+            "phase": "running",
+            "pose": [
+              0.1096368350676262,
+              0.5224391656785662,
+              -0.023098761747342607
+            ],
+            "pose_ready": true,
+            "ready": true,
+            "reason": "stable_localization",
+            "scan_match_fraction": 0.823943661971831,
+            "tf_age_s": 0.08013471654345694
+          },
+          "localized": true,
+          "odom_fresh": true,
+          "pose": [
+            0.10963052197261171,
+            0.5224468449776172,
+            -0.023173013418496927
+          ]
+        }
+      }
+    },
+    "interpretation": "Both individual physical FollowPath goals succeeded through MARCO/socket/Nav2 with odometry motion. The combined mission needed cancellation and continuation; it is not a clean uninterrupted acceptance run."
+  },
+  "software": {
+    "pc_build": "4 packages passed",
+    "full_suite_before_final_changes": "passed",
+    "final_targeted_tests": "Planner 6/6, fleet config 5/5, hardware stop 4/4 passed; native path suite final numerical-roundoff case running.",
+    "pi_hardware_builds": "pending"
+  },
+  "performance_unbounded": {
+    "mode": "managed_full_nav2_rviz_idle",
+    "sample_seconds": 15,
+    "logical_cpus": 12,
+    "mean_cpu_percent": 337.70000000000005,
+    "peak_cpu_percent": 408.29999999999995,
+    "peak_rss_mib": 1329.20703125,
+    "samples": [
+      {
+        "cpu_percent": 192.20000000000005,
+        "rss_mib": 1329.203125
+      },
+      {
+        "cpu_percent": 271.50000000000006,
+        "rss_mib": 1329.203125
+      },
+      {
+        "cpu_percent": 274.50000000000006,
+        "rss_mib": 1329.203125
+      },
+      {
+        "cpu_percent": 311.70000000000016,
+        "rss_mib": 1329.203125
+      },
+      {
+        "cpu_percent": 347.1,
+        "rss_mib": 1329.203125
+      },
+      {
+        "cpu_percent": 371.6000000000001,
+        "rss_mib": 1329.20703125
+      },
+      {
+        "cpu_percent": 360.3,
+        "rss_mib": 1329.20703125
+      },
+      {
+        "cpu_percent": 362.1000000000001,
+        "rss_mib": 1329.20703125
+      },
+      {
+        "cpu_percent": 361.00000000000006,
+        "rss_mib": 1329.20703125
+      },
+      {
+        "cpu_percent": 353.40000000000003,
+        "rss_mib": 1329.20703125
+      },
+      {
+        "cpu_percent": 377.7,
+        "rss_mib": 1329.20703125
+      },
+      {
+        "cpu_percent": 408.29999999999995,
+        "rss_mib": 1329.20703125
+      },
+      {
+        "cpu_percent": 364.1000000000001,
+        "rss_mib": 1329.20703125
+      },
+      {
+        "cpu_percent": 343.2000000000001,
+        "rss_mib": 1329.20703125
+      },
+      {
+        "cpu_percent": 366.80000000000007,
+        "rss_mib": 1329.20703125
+      }
+    ]
+  },
+  "composition_experiment": {
+    "deployed": false,
+    "reason": "Nav2 composed controller segfaulted in isolated fake-sensor goal tests. Kept process-per-node profile."
+  }
+}

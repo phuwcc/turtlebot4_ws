@@ -11,3 +11,6 @@ __pycache__/
 /build/
 /install/
 /log/
+
+# Upstream checkout is managed independently; never vendor or modify it.
+/MARCO/

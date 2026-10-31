@@ -1,0 +1,10 @@
+# Initial search hints only, never fixed coordinates or static TFs.
+# Robot1 is placed at the saved map origin and faces map +X (yaw=0).
+# Current arrangement confirmed by the operator: robot2 is 0.5m to its left.
+robot2:
+  relative_to: robot1
+  x: 0.0
+  y: 0.5
+  yaw: 0.0
+  std_xy: 0.2
+  std_yaw: 0.2

@@ -3,10 +3,23 @@ from pathlib import Path as FilePath
 import tempfile
 import unittest
 import yaml
-from tb4_multi_bringup.fleet_settings import ROBOTS, active_robots, rviz_for_count, startup_poses, validate_discovery
+from tb4_multi_bringup.fleet_settings import ROBOTS, active_robots, rviz_for_count, startup_poses, validate_discovery, localization_hints
 
 
 class FleetConfigurationTest(unittest.TestCase):
+    def test_relative_localization_hint(self):
+        import math
+        with tempfile.TemporaryDirectory() as directory:
+            path=FilePath(directory)/'hints.yaml'
+            path.write_text('robot2: {relative_to: robot1, x: 0, y: 0.5, yaw: 0, std_xy: 0.2, std_yaw: 0.2}\n')
+            value=localization_hints(str(path),2,anchor_yaw=math.pi/2)['robot2']
+            self.assertAlmostEqual(float(value['hint_x']),-.5)
+            self.assertAlmostEqual(float(value['hint_y']),0.)
+            self.assertAlmostEqual(float(value['hint_yaw']),math.pi/2)
+            for body in ('robot2: {x: 0, y: .nan, yaw: 0}', 'robot2: {x: 0, y: 0.5, yaw: 0, std_xy: 0}', 'robot2: {x: true, y: 0.5, yaw: 0}'):
+                path.write_text(body)
+                with self.assertRaises(ValueError):localization_hints(str(path),2)
+
     def test_startup_poses(self):
         self.assertEqual(startup_poses('', 2), {})
         with tempfile.TemporaryDirectory() as directory:

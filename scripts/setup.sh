@@ -41,5 +41,6 @@ else
     -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 \
     -o Acquire::Retries=1 install -y "${tb4_packages[@]}"
 fi
+if [[ "$tb4_role" == robot ]]; then export TB4_BUILD_PROFILE=hardware; fi
 echo '[3/3] Build workspace. Đợi tới khi thấy Summary; build có thể mất vài phút trên Pi.'
 exec bash "$tb4_repo/scripts/build.sh"

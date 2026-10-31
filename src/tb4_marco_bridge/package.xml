@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>tb4_marco_bridge</name><version>0.1.0</version>
+  <description>External, fail-closed MARCO planner and socket execution adapter for TurtleBot 4.</description>
+  <maintainer email="maintainer@example.com">Workspace maintainer</maintainer><license>MIT</license>
+  <buildtool_depend>ament_cmake</buildtool_depend><buildtool_depend>ament_cmake_python</buildtool_depend>
+  <exec_depend>tb4_multi_bringup</exec_depend><exec_depend>python3</exec_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

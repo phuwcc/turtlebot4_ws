@@ -30,7 +30,7 @@ class NativeProcess:
     def request(self, request):
         with socket.create_connection(('127.0.0.1', self.port), timeout=3) as connection:
             connection.sendall((json.dumps(request) + '\n').encode())
-            return json.loads(connection.makefile('rb').readline(8193))
+            return json.loads(connection.makefile('rb').readline(16*1024**2))
 
     def status(self):
         return self.request({'command': 'status'})

@@ -1,3 +1,36 @@
+# MARCO và localization — 2026-10-31
+
+Đã hoàn thành goal riêng của robot1 và robot2 trên phần cứng thật qua MARCO →
+socket C++ → kiểm tra costmap → Nav2 FollowPath → stamper → watchdog Pi.
+Đây là các lượt chạy tiếp nối; **chưa phải một lượt hai goal liên tục không lỗi**.
+[Kết quả có cấu trúc](validation/2026-10-31-marco.json).
+
+- Lượt đầu: robot1 đi 0,057 m rồi bị hủy khi variance AMCL vượt 0,01 m²;
+  robot2 đứng yên. Không nới ngưỡng localization.
+- Đổi ngưỡng cập nhật AMCL trong managed mode từ 0,25 m/0,2 rad xuống
+  0,02 m/0,05 rad cho tốc độ thấp và goal ngắn. Không giảm motion noise model.
+- Lượt tiếp: robot1 hoàn thành goal, odometry ghi 0,083 m trong lượt đó.
+  Khi chuẩn bị goal mới bị từ chối vì footprint không an toàn trong map,
+  chuỗi shell thử nghiệm vẫn tiếp tục mission cũ đã được cho phép; đã hủy
+  khi robot2 mới đi khoảng 0,009 m. Không coi lượt này đạt toàn bộ.
+- Chạy tiếp riêng goal robot2: đạt, odometry ghi 0,147 m; robot1 không dịch chuyển.
+  Vận tốc lớn nhất quan sát 0,05 m/s và 0,2 rad/s. Cả hai có lệnh zero mới
+  liên tục sau lượt cuối. Goal checker có tolerance 0,05 m nên quãng đường
+  thực tế có thể ngắn hơn 0,20 m từ vị trí khởi tạo.
+
+Cả hai đã được xác nhận khỏi dock và có người giám sát. Không tự undock,
+không gửi Twist trực tiếp từ MARCO, không chạy BT recovery lùi/xoay.
+Kết quả không chứng nhận hoạt động tự hành dài hạn hoặc độ chính xác tuyệt đối.
+
+MARCO nguyên bản revision `bef1ac7` được giữ sạch. Bridge dùng native assignment
+và coordinator DAG-aware thật; source/module/cache sinh ra đều ở ngoài MARCO.
+Đã bổ sung kiểm tra lease hết hạn, permission timestamp/out-of-order, hủy khi
+mất localization, gợi ý khởi tạo robot2 và giải phóng giới hạn vùng gợi ý sau
+hội tụ. Đã sửa race khi goal hoàn thành giữa lúc đọc status và gia hạn lease.
+Xem [cách chạy và giới hạn](MARCO.md).
+
+---
+
 # Kiểm chứng trên PC, robot1 và robot2 — 2026-10-30
 
 **Cập nhật: map và localization thật của cả robot1/robot2 đã hoạt động; chưa thử goal điều hướng thật.**

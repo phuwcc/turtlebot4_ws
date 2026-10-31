@@ -11,5 +11,5 @@ if [[ "${ROBOT_NAMESPACE:-}" != "/$tb4_robot" ]]; then
 fi
 [[ -e /dev/RPLIDAR ]] || { echo '/dev/RPLIDAR is missing' >&2; exit 1; }
 ros2 pkg prefix tb4_multi_bringup >/dev/null
-sudo systemctl stop turtlebot4
+sudo systemctl disable --now turtlebot4
 exec bash "$tb4_repo/scripts/robot.sh" "$tb4_robot" hardware

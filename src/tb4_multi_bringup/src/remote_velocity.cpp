@@ -10,6 +10,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
+#include <std_msgs/msg/header.hpp>
 
 using namespace std::chrono_literals;
 class RemoteVelocity : public rclcpp::Node {
@@ -20,12 +21,37 @@ public:
     if ((mode_ != "guard" && mode_ != "stamp") || !std::isfinite(timeout_) || timeout_ <= 0.)
       throw std::invalid_argument("mode must be guard/stamp; timeout must be finite and positive");
     auto qos = rclcpp::QoS(1).best_effort();
+    require_permission_=declare_parameter<bool>("require_permission",false);
     if (mode_ == "stamp") {
       stamped_pub_ = create_publisher<geometry_msgs::msg::TwistStamped>("remote_cmd_vel", qos);
+      if(require_permission_) {
+        permission_sub_=create_subscription<std_msgs::msg::Header>("command_permission",qos,[this](std_msgs::msg::Header::ConstSharedPtr m) {
+          const int64_t stamp=int64_t(m->stamp.sec)*1000000000LL+m->stamp.nanosec;
+          const double age=now().seconds()-m->stamp.sec-m->stamp.nanosec*1e-9;
+          if(m->stamp.nanosec>=1000000000u||age<-.1||age>.3||stamp<=last_permission_)return;
+          last_permission_=stamp;
+          permitted_=m->frame_id=="allow";
+          permission_until_=std::chrono::steady_clock::now()+std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(.3-std::max(0.,age)));
+        });
+        timer_=create_wall_timer(50ms,[this] {
+          if(!permitted_||std::chrono::steady_clock::now()>permission_until_) {
+            geometry_msgs::msg::TwistStamped zero;zero.header.stamp=now();stamped_pub_->publish(zero);
+          }
+        });
+      }
       twist_sub_ = create_subscription<geometry_msgs::msg::Twist>("pc_cmd_vel", qos,
         [this](geometry_msgs::msg::Twist::ConstSharedPtr input) {
           geometry_msgs::msg::TwistStamped output;
-          output.header.stamp = now(); output.twist = *input;
+          output.header.stamp = now();
+          if(!require_permission_||(permitted_&&std::chrono::steady_clock::now()<permission_until_)) {
+            output.twist = *input;
+            if(require_permission_) {
+              output.twist.linear.x=std::clamp(output.twist.linear.x,-.05,.05);
+              output.twist.linear.y=output.twist.linear.z=0.;
+              output.twist.angular.x=output.twist.angular.y=0.;
+              output.twist.angular.z=std::clamp(output.twist.angular.z,-.2,.2);
+            }
+          }
           stamped_pub_->publish(output);
         });
     } else {
@@ -63,6 +89,10 @@ private:
       count_publishers(stamped_sub_->get_topic_name()) == 1;
     twist_pub_->publish(active ? command_ : geometry_msgs::msg::Twist{});
   }
+  int64_t last_permission_{std::numeric_limits<int64_t>::min()};
+  bool require_permission_{false},permitted_{false};
+  std::chrono::steady_clock::time_point permission_until_;
+  rclcpp::Subscription<std_msgs::msg::Header>::SharedPtr permission_sub_;
   std::mutex command_mutex_; bool stopped_{false};
   std::string mode_; double timeout_{}; bool received_{false};
   int64_t last_stamp_{std::numeric_limits<int64_t>::min()};

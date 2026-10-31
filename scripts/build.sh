@@ -6,10 +6,19 @@ source /opt/ros/humble/setup.bash
 cd "$tb4_repo"
 export CMAKE_BUILD_PARALLEL_LEVEL=1
 export MAKEFLAGS=-j1
-tb4_command=(colcon build --base-paths src --packages-select tb4_tools tb4_multi_tools tb4_multi_bringup
+tb4_packages=(tb4_tools tb4_multi_tools tb4_multi_bringup)
+tb4_pc_nodes=ON
+if [[ "${TB4_BUILD_PROFILE:-pc}" == hardware ]]; then
+  tb4_pc_nodes=OFF
+elif [[ "${TB4_BUILD_PROFILE:-pc}" == pc ]]; then
+  tb4_packages+=(tb4_marco_bridge)
+else
+  echo 'TB4_BUILD_PROFILE phải là pc hoặc hardware.' >&2; exit 2
+fi
+tb4_command=(colcon build --base-paths src --packages-select "${tb4_packages[@]}"
   --symlink-install --executor sequential
   --cmake-args -DCMAKE_BUILD_TYPE=Release '-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG'
-  -DBUILD_TESTING=ON "$@")
+  -DBUILD_TESTING=ON "-DTB4_BUILD_PC_NODES=$tb4_pc_nodes" "$@")
 if [[ "${TB4_BUILD_RESOURCE_LIMITS:-1}" == 1 ]] && command -v systemd-run >/dev/null &&
    systemctl --user show-environment >/dev/null 2>&1; then
   echo 'Build tuần tự, ưu tiên thấp, CPU tối đa 75% một lõi và RAM tối đa 2,5 GiB (có thể cấu hình).'

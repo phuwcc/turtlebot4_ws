@@ -24,6 +24,11 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <nav2_msgs/action/follow_path.hpp>
+#include <nav2_msgs/srv/is_path_valid.hpp>
+#include <tf2/buffer_core.h>
+#include <std_msgs/msg/string.hpp>
+#include <std_msgs/msg/header.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
@@ -33,6 +38,9 @@ using namespace std::chrono_literals;
 using Json=nlohmann::json;
 using Goal=nav2_msgs::action::NavigateToPose;
 using GoalHandle=rclcpp_action::ClientGoalHandle<Goal>;
+using Follow=nav2_msgs::action::FollowPath;
+using FollowHandle=rclcpp_action::ClientGoalHandle<Follow>;
+using ValidPath=nav2_msgs::srv::IsPathValid;
 using Pose=geometry_msgs::msg::Pose;
 using PoseStamped=geometry_msgs::msg::PoseStamped;
 using InitialPose=geometry_msgs::msg::PoseWithCovarianceStamped;
@@ -59,6 +67,17 @@ static bool valid_pose(const Pose& p) {
 class FleetRuntime final : public rclcpp::Node {
   struct Robot {
     std::string map,base;
+    std::unique_ptr<tf2::BufferCore> buffer=std::make_unique<tf2::BufferCore>();
+    rclcpp_action::Client<Follow>::SharedPtr follower;
+    rclcpp::Client<ValidPath>::SharedPtr validator;
+    FollowHandle::SharedPtr path_goal;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr preview;
+    rclcpp::Publisher<std_msgs::msg::Header>::SharedPtr permission;
+    Clock::time_point odom_at{},localization_at{},lease_until{},validation_until{};
+    bool path_mode{false},validating{false};
+    std::string owner;
+    Json localization={{"ready",false}};
+    nav_msgs::msg::Odometry::ConstSharedPtr odom;
     rclcpp_action::Client<Goal>::SharedPtr action;
     rclcpp::Publisher<InitialPose>::SharedPtr pose_pub;
     GoalHandle::SharedPtr goal;
@@ -90,6 +109,7 @@ public:
       for (const auto& r:robots_) if (std::find(ROBOTS.begin(),ROBOTS.end(),r)==ROBOTS.end())
         throw std::invalid_argument("robot_ids contains an unknown robot");
     }
+    require_localization_=declare_parameter<bool>("require_localization",false);
     selected_=declare_parameter<std::string>("selected_robot",robots_.front());
     if (!active(selected_)) throw std::invalid_argument("selected_robot must be active");
     for (const auto& r:robots_) {
@@ -97,6 +117,10 @@ public:
       state.map=declare_parameter<std::string>(r+".map_frame","map");
       state.base=declare_parameter<std::string>(r+".base_frame","base_link");
       state.action=rclcpp_action::create_client<Goal>(this,"/"+r+"/navigate_to_pose");
+      state.follower=rclcpp_action::create_client<Follow>(this,"/"+r+"/follow_path");
+      state.validator=create_client<ValidPath>("/"+r+"/is_path_valid");
+      state.preview=create_publisher<nav_msgs::msg::Path>("/tb4_view/"+r+"/marco_plan",rclcpp::QoS(1).transient_local());
+      if(require_localization_)state.permission=create_publisher<std_msgs::msg::Header>("/"+r+"/command_permission",rclcpp::QoS(1).best_effort());
       state.pose_pub=create_publisher<InitialPose>("/"+r+"/initialpose",10);
       states_.emplace(r,std::move(state));
     }
@@ -107,7 +131,7 @@ public:
           if (p.get_type()!=rclcpp::ParameterType::PARAMETER_STRING || !active(p.as_string())) {
             result.successful=false; result.reason="selected_robot must be active"; return result;
           }
-        } else if (p.get_name()=="robot_count" || p.get_name()=="robot_ids" ||
+        } else if (p.get_name()=="robot_count" || p.get_name()=="robot_ids" || p.get_name()=="require_localization" || p.get_name()=="visualization_scan_hz" ||
                    ends_with(p.get_name(),".map_frame") || ends_with(p.get_name(),".base_frame")) {
           result.successful=false; result.reason="Frame settings require restarting the launch"; return result;
         }
@@ -116,6 +140,12 @@ public:
       for (const auto& p:parameters) if (p.get_name()=="selected_robot") selected_=p.as_string();
       return result;
     });
+    for(const auto& r:robots_) {
+      subscriptions_.push_back(create_subscription<nav_msgs::msg::Odometry>("/"+r+"/odom",rclcpp::SensorDataQoS(),[this,r](nav_msgs::msg::Odometry::ConstSharedPtr m){auto& s=states_.at(r);s.odom=m;s.odom_at=Clock::now();}));
+      subscriptions_.push_back(create_subscription<std_msgs::msg::String>("/"+r+"/localization_status",rclcpp::QoS(1).transient_local(),[this,r](std_msgs::msg::String::ConstSharedPtr m){try{auto value=Json::parse(m->data);if(value.is_object()){states_.at(r).localization=value;states_.at(r).localization_at=Clock::now();}}catch(const std::exception&){} }));
+      subscriptions_.push_back(create_subscription<nav_msgs::msg::OccupancyGrid>("/"+r+"/map",rclcpp::QoS(1).transient_local(),[this](nav_msgs::msg::OccupancyGrid::ConstSharedPtr m){if(uint64_t(m->info.width)*m->info.height<=4000000&&m->data.size()==size_t(m->info.width)*m->info.height){map_=m;++map_revision_;}}));
+    }
+    control_timer_=create_wall_timer(100ms,[this]{control_tick();});
     const auto latched=rclcpp::QoS(1).transient_local();
     const auto live=rclcpp::QoS(10).best_effort();
     tf_pub_=create_publisher<TF>("/tb4_view/tf",100);
@@ -123,10 +153,13 @@ public:
     labels_pub_=create_publisher<visualization_msgs::msg::MarkerArray>("/tb4_view/labels",latched);
     for (const auto& r:robots_) {
       auto tf_sub=create_subscription<TF>("/"+r+"/tf",rclcpp::QoS(100).best_effort(),
-        [this,r](TF::UniquePtr message) { adapt(*message,r); tf_pub_->publish(std::move(message)); });
+        [this,r](TF::UniquePtr message) {
+          for(const auto& t:message->transforms)try{states_.at(r).buffer->setTransform(t,"hardware",false);}catch(const tf2::TransformException&){}
+          adapt(*message,r); tf_pub_->publish(std::move(message)); });
       subscriptions_.push_back(tf_sub);
       auto static_sub=create_subscription<TF>("/"+r+"/tf_static",rclcpp::QoS(100).transient_local(),
         [this,r](TF::UniquePtr message) {
+          for(const auto& t:message->transforms)try{states_.at(r).buffer->setTransform(t,"hardware",true);}catch(const tf2::TransformException&){}
           adapt(*message,r);
           for (auto& t:message->transforms) static_cache_[t.child_frame_id]=std::move(t);
           TF combined; combined.transforms.reserve(static_cache_.size());
@@ -192,6 +225,7 @@ private:
       [this,robot,topic,pub](typename T::UniquePtr message) {
         // Cap only the display scan; localization and obstacle layers still use raw /robotN/scan.
         if (topic=="scan") {
+          if(require_localization_&&current_pose(robot).is_null())return;
           const auto tick=Clock::now(); auto found=last_scan_.find(robot);
           if (found!=last_scan_.end() && std::chrono::duration<double>(tick-found->second).count()<scan_period_) return;
           last_scan_[robot]=tick;
@@ -209,7 +243,8 @@ private:
   }
   bool goal_pose(PoseStamped message,const std::string& robot) {
     auto& state=states_.at(robot);
-    if (state.busy || !state.action->action_server_is_ready()) return false;
+    if (state.busy || !state.action->action_server_is_ready() || (require_localization_&&!localized(robot))) return false;
+    state.path_mode=false;
     Goal::Goal goal; goal.pose=std::move(message); goal.pose.header.frame_id=state.map; goal.pose.header.stamp=now();
     state.busy=true; state.last_result=nullptr; state.cancel_requested=false;
     const auto generation=++state.generation;
@@ -239,25 +274,114 @@ private:
     auto& state=states_.at(robot);
     if (!state.busy) return false;
     state.cancel_requested=true;
-    if (state.goal) request_cancel(robot);
+    if (state.goal || state.path_goal) request_cancel(robot);
     return true;
   }
   void request_cancel(const std::string& robot) {
     auto& state=states_.at(robot);
-    try {state.action->async_cancel_goal(state.goal);}
+    try {if(state.path_goal)state.follower->async_cancel_goal(state.path_goal);else if(state.goal)state.action->async_cancel_goal(state.goal);}
     catch (const std::exception& e) {RCLCPP_WARN(get_logger(),"Cancel failed: %s",e.what());}
   }
+  Json current_pose(const std::string& robot) {
+    auto& s=states_.at(robot);
+    try {
+      const auto t=s.buffer->lookupTransform(s.map,s.base,tf2::TimePointZero);
+      const double age=now().seconds()-t.header.stamp.sec-t.header.stamp.nanosec*1e-9;
+      if(age<-.1||age>.5||Clock::now()-s.odom_at>500ms)return nullptr;
+      const auto& q=t.transform.rotation;
+      return Json::array({t.transform.translation.x,t.transform.translation.y,std::atan2(2*(q.w*q.z+q.x*q.y),1-2*(q.y*q.y+q.z*q.z))});
+    }catch(const tf2::TransformException&){return nullptr;}
+  }
+  bool localized(const std::string& robot) {
+    const auto& s=states_.at(robot);
+    return Clock::now()-s.localization_at<1500ms&&s.localization.contains("ready")&&s.localization["ready"].is_boolean()&&s.localization["ready"].get<bool>()&&!current_pose(robot).is_null();
+  }
+  nav_msgs::msg::Path parse_path(const Json& req,const std::string& robot) {
+    if(!req.contains("points")||!req["points"].is_array()||req["points"].size()<2||req["points"].size()>512)
+      throw std::invalid_argument("points must contain 2..512 [x,y,yaw] entries");
+    nav_msgs::msg::Path path;path.header.frame_id=states_.at(robot).map;path.header.stamp=now();
+    for(const auto& value:req["points"]) {
+      if(!value.is_array()||value.size()!=3)throw std::invalid_argument("Each point must be [x,y,yaw]");
+      for(const auto& n:value)if(!n.is_number()||!std::isfinite(n.get<double>()))throw std::invalid_argument("Path coordinates must be finite numbers");
+      PoseStamped point;point.header=path.header;point.pose.position.x=value[0];point.pose.position.y=value[1];
+      const double yaw=value[2];point.pose.orientation.z=std::sin(yaw/2);point.pose.orientation.w=std::cos(yaw/2);
+      if(!path.poses.empty()&&std::hypot(point.pose.position.x-path.poses.back().pose.position.x,point.pose.position.y-path.poses.back().pose.position.y)>.15)
+        throw std::invalid_argument("Path segments must be <= 0.15m; supply a dense collision-checked path");
+      path.poses.push_back(point);
+    }
+    return path;
+  }
+  void path_finished(const std::string& robot,uint64_t generation,const std::string& result) {
+    auto& s=states_.at(robot);if(s.generation!=generation)return;
+    s.path_goal.reset();s.validating=false;s.busy=false;s.cancel_requested=false;s.last_result=result;s.owner.clear();
+  }
+  void start_path(const std::string& robot,nav_msgs::msg::Path path,const std::string& owner) {
+    auto& s=states_.at(robot);s.busy=true;s.path_mode=true;s.validating=true;s.cancel_requested=false;s.owner=owner;s.last_result=nullptr;
+    s.lease_until=Clock::now()+2s;s.validation_until=Clock::now()+5s;const auto generation=++s.generation;
+    auto request=std::make_shared<ValidPath::Request>();request->path=path;
+    s.validator->async_send_request(request,[this,robot,generation,path](rclcpp::Client<ValidPath>::SharedFuture f) {
+      auto& st=states_.at(robot);if(st.generation!=generation||!st.busy)return;
+      st.validating=false;
+      if(st.cancel_requested||Clock::now()>st.lease_until||!localized(robot)){path_finished(robot,generation,"canceled");return;}
+      try {
+        if(!f.get()->is_valid){path_finished(robot,generation,"invalid_path");return;}
+        Follow::Goal goal;goal.path=path;goal.path.header.stamp=now();goal.controller_id="FollowPath";goal.goal_checker_id="general_goal_checker";
+        rclcpp_action::Client<Follow>::SendGoalOptions options;
+        options.goal_response_callback=[this,robot,generation](FollowHandle::SharedPtr handle) {
+          auto& current=states_.at(robot);if(current.generation!=generation)return;
+          if(!handle){path_finished(robot,generation,"rejected");return;}
+          current.path_goal=handle;if(current.cancel_requested)request_cancel(robot);
+        };
+        options.result_callback=[this,robot,generation](const FollowHandle::WrappedResult& result) {
+          std::string code="unknown";
+          if(result.code==rclcpp_action::ResultCode::SUCCEEDED)code="succeeded";
+          if(result.code==rclcpp_action::ResultCode::CANCELED)code="canceled";
+          if(result.code==rclcpp_action::ResultCode::ABORTED)code="aborted";
+          path_finished(robot,generation,code);
+        };
+        st.follower->async_send_goal(goal,options);st.preview->publish(path);
+      }catch(const std::exception& e){RCLCPP_ERROR(get_logger(),"Path request: %s",e.what());path_finished(robot,generation,"error");}
+    });
+  }
+  void control_tick() {
+    for(const auto& robot:robots_) {
+      auto& s=states_.at(robot);
+      const bool expired=s.path_mode&&Clock::now()>s.lease_until;
+      if(s.busy&&s.validating&&Clock::now()>s.validation_until){path_finished(robot,s.generation,"validation_timeout");++s.generation;}
+      if(s.busy&&(expired||(require_localization_&&!localized(robot)))&&!s.cancel_requested)cancel_robot(robot);
+      if(s.permission) {
+        std_msgs::msg::Header permission;permission.stamp=now();
+        const bool allow=s.busy&&!s.cancel_requested&&localized(robot)&&(!s.path_mode||!expired)&&bool(s.goal||s.path_goal);
+        permission.frame_id=allow?"allow":"stop";s.permission->publish(permission);
+      }
+    }
+  }
+
   Json dispatch(const Json& request) {
     if (!request.is_object()) throw std::invalid_argument("Expected JSON object");
     if (!request.contains("command") || !request["command"].is_string())
       throw std::invalid_argument("command must be a string");
     const auto command=request["command"].get<std::string>();
+    if(command=="snapshot") {
+      Json result={{"ok",true},{"robots",Json::object()},{"map_revision",map_revision_}};
+      for(const auto& r:robots_) {
+        auto& st=states_.at(r);Json entry={{"pose",current_pose(r)},{"localization",st.localization},{"localized",localized(r)},
+          {"odom_fresh",Clock::now()-st.odom_at<500ms},{"busy",st.busy}};
+        result["robots"][r]=entry;
+      }
+      if(request.value("include_map",false)&&map_) {
+        const auto& o=map_->info.origin;const auto& q=o.orientation;
+        result["map"]={{"width",map_->info.width},{"height",map_->info.height},{"resolution",map_->info.resolution},
+          {"origin",{o.position.x,o.position.y,std::atan2(2*(q.w*q.z+q.x*q.y),1-2*(q.y*q.y+q.z*q.z))}},{"data",map_->data}};
+      }
+      return result;
+    }
     if (command=="status") {
       Json robots=Json::object();
       for (const auto& robot:robots_) {
         const auto& s=states_.at(robot);
         robots[robot]={{"nav_ready",s.action->action_server_is_ready()},{"busy",s.busy},
-          {"accepted",bool(s.goal)},{"cancel_requested",s.cancel_requested},{"last_result",s.last_result}};
+          {"accepted",bool(s.goal)||bool(s.path_goal)},{"path_ready",s.follower->action_server_is_ready()&&s.validator->service_is_ready()},{"localized",localized(robot)},{"mode",s.path_mode?"path":"goal"},{"cancel_requested",s.cancel_requested},{"last_result",s.last_result}};
       }
       return {{"ok",true},{"selected_robot",selected_},{"robots",robots}};
     }
@@ -265,6 +389,26 @@ private:
       throw std::invalid_argument("robot must be active");
     const auto robot=request["robot"].get<std::string>();
     auto& state=states_.at(robot);
+    if(command=="lease") {
+      const bool ok=state.busy&&state.path_mode&&request.value("owner",std::string())==state.owner;
+      if(ok)state.lease_until=Clock::now()+2s;
+      return {{"ok",ok}};
+    }
+    if(command=="clear_preview") {nav_msgs::msg::Path empty;empty.header.frame_id=state.map;state.preview->publish(empty);return {{"ok",true}};}
+    if(command=="path"||command=="preview") {
+      const auto path=parse_path(request,robot);
+      if(command=="preview"){state.preview->publish(path);return {{"ok",true}};}
+      if(!require_localization_)return {{"ok",false},{"reason","managed_startup_required"}};
+      if(state.busy)return {{"ok",false},{"reason","robot_busy"}};
+      if(!localized(robot))return {{"ok",false},{"reason","localization_unavailable"}};
+      const auto owner=request.value("owner",std::string());
+      if(owner.size()<16||owner.size()>64)throw std::invalid_argument("path requires an owner token of 16..64 characters");
+      if(!state.follower->action_server_is_ready()||!state.validator->service_is_ready())return {{"ok",false},{"reason","path_server_unavailable"}};
+      const auto pose=current_pose(robot);
+      if(pose.is_null()||std::hypot(pose[0].get<double>()-path.poses.front().pose.position.x,pose[1].get<double>()-path.poses.front().pose.position.y)>.10)
+        return {{"ok",false},{"reason","stale_path_start"}};
+      start_path(robot,path,owner);return {{"ok",true},{"message","Path validation queued; renew lease and poll status"}};
+    }
     if (command=="select") {
       auto result=set_parameter(rclcpp::Parameter("selected_robot",robot));
       return {{"ok",result.successful},{"selected_robot",robot},{"message",result.reason}};
@@ -282,6 +426,7 @@ private:
       if (!std::isfinite(values[i])) throw std::invalid_argument("Coordinates must be finite numbers");
     }
     if (state.busy) return {{"ok",false},{"reason","robot_busy"},{"message","Cancel the active goal first"}};
+    if (command=="goal" && require_localization_ && !localized(robot)) return {{"ok",false},{"reason","localization_unavailable"}};
     if (command=="goal" && !state.action->action_server_is_ready())
       return {{"ok",false},{"reason","nav_unavailable"},{"message","Nav2 action server unavailable"}};
     PoseStamped pose; pose.header.frame_id=state.map;pose.header.stamp=now();
@@ -328,11 +473,11 @@ private:
           ::close(client.fd);client.fd=-1;continue;
         }
         const auto newline=client.input.find('\n');
-        if (newline!=std::string::npos || client.input.size()>8192) {
+        if (newline!=std::string::npos || client.input.size()>65536) {
           Json response;
           try {
-            if (newline==std::string::npos || newline+1>8192)
-              throw std::invalid_argument("Maximum request size is 8192 bytes including newline");
+            if (newline==std::string::npos || newline+1>65536)
+              throw std::invalid_argument("Maximum request size is 65536 bytes including newline");
             response=dispatch(Json::parse(client.input.substr(0,newline)));
           } catch (const std::exception& e) {response={{"ok",false},{"error",e.what()}};}
           client.output=response.dump()+"\n";
@@ -359,7 +504,7 @@ private:
       marker.ns="robots";marker.id=int(i);marker.type=visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
       marker.pose.orientation.w=1.;marker.pose.position.z=.65;marker.scale.z=.22;
       marker.color.r=COLORS[color][0];marker.color.g=COLORS[color][1];marker.color.b=COLORS[color][2];marker.color.a=1.;
-      marker.text=robot+(robot==selected_ ? " [SELECTED]" : "");labels.markers.push_back(marker);
+      marker.text=robot+(robot==selected_ ? " [SELECTED]" : "")+(require_localization_?(localized(robot)?" [READY]":" [LOCALIZING]"):"");labels.markers.push_back(marker);
     }
     visualization_msgs::msg::Marker marker;marker.header.frame_id="map";marker.ns="selection";marker.id=0;
     marker.type=visualization_msgs::msg::Marker::TEXT_VIEW_FACING;marker.pose.orientation.w=1.;
@@ -368,6 +513,9 @@ private:
     marker.color.r=COLORS[color][0];marker.color.g=COLORS[color][1];marker.color.b=COLORS[color][2];marker.color.a=1.;
     marker.text="Pose / Goal -> "+selected_;labels.markers.push_back(marker);labels_pub_->publish(labels);
   }
+  bool require_localization_{false};uint64_t map_revision_{0};
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr map_;
+  rclcpp::TimerBase::SharedPtr control_timer_;
   double scan_period_{.2};std::map<std::string,Clock::time_point> last_scan_;
   std::vector<std::string> robots_;std::string selected_;
   std::map<std::string,Robot> states_;

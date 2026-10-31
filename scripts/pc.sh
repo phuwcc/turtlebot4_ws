@@ -17,6 +17,15 @@ source /opt/ros/humble/setup.bash
 [[ -f "$tb4_repo/install/setup.bash" ]] || { echo 'Chạy bash scripts/build.sh trước.' >&2; exit 1; }
 source "$tb4_repo/install/setup.bash"
 source "$HOME/.config/turtlebot4/pc_env.sh"
+if [[ -f "$HOME/.config/turtlebot4/runtime_env.sh" ]]; then
+  source "$HOME/.config/turtlebot4/runtime_env.sh"
+fi
+if [[ -n "${TB4_TF2_RUNTIME_LIB:-}" ]]; then
+  [[ -f "$TB4_TF2_RUNTIME_LIB/libtf2.so" && -f "$TB4_TF2_RUNTIME_LIB/libtf2_ros.so" ]] || {
+    echo 'TB4_TF2_RUNTIME_LIB thiếu libtf2.so hoặc libtf2_ros.so.' >&2; exit 1;
+  }
+  export LD_LIBRARY_PATH="$TB4_TF2_RUNTIME_LIB:${LD_LIBRARY_PATH:-}"
+fi
 if [[ -z "${TB4_ROBOT_IDS:-}" ]]; then
   tb4_ids=()
   for ((tb4_i=1; tb4_i<=TB4_ROBOT_COUNT; tb4_i++)); do tb4_ids+=("robot$tb4_i"); done

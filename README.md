@@ -208,6 +208,22 @@ Mô hình đọc `/robotN/robot_description` từ hardware trên Pi. Nếu thi�
 `odom -> base_link`, kiểm tra dữ liệu odom/TF từ Create 3 và republisher trước;
 đặt pose AMCL không tạo được TF odometry bị thiếu.
 
+### MARCO trên hai TurtleBot thật
+
+Với bố trí robot1 ở gốc map, robot2 bên trái khoảng 0,5 m, cùng hướng:
+
+```bash
+bash scripts/pc-marco.sh maps/my_room.yaml
+# Terminal khác: xem localization và lập kế hoạch, chưa điều khiển robot
+bash scripts/marco.sh status
+bash scripts/marco.sh plan config/marco/mission.example.json
+```
+
+`pc-marco.sh` tự khởi tạo robot1, dùng gợi ý trong `config/marco/localization.yaml`
+cho robot2 và chờ AMCL hội tụ trước khi bật điều hướng. Sửa gợi ý khi đổi vị trí.
+Đường đi chỉ được thực thi qua Nav2 khi chạy lệnh `run ... --execute` riêng.
+MARCO nguyên bản không bị chỉnh sửa. Xem [luồng, giới hạn và cách chạy](docs/MARCO.md).
+
 ### PC — Terminal 2: chọn robot và hủy goal
 
 ```bash
