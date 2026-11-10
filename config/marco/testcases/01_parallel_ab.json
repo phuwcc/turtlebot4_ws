@@ -1,0 +1,37 @@
+{
+  "description": "robot1 -> A; robot2 -> B",
+  "example_only": true,
+  "robot_radius": 0.175,
+  "safety_margin": 0.05,
+  "tracking_tolerance": 0.04,
+  "speed_mps": 0.05,
+  "action_timeout_s": 180,
+  "tasks": [
+    {
+      "id": 1,
+      "label": "robot1 -> A",
+      "goal": [
+        0.15,
+        -0.1,
+        0.0
+      ],
+      "candidates": [
+        "robot1"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": 2,
+      "label": "robot2 -> B",
+      "goal": [
+        0.15,
+        0.6,
+        0.0
+      ],
+      "candidates": [
+        "robot2"
+      ],
+      "depends_on": []
+    }
+  ]
+}

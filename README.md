@@ -23,6 +23,88 @@ bằng một giao thức tự truyền scan/TF. Chế độ navigation thông th
 từng robot độc lập. Chế độ [MARCO](#marco-trên-hai-turtlebot-thật) thêm phân công
 nhiệm vụ, dependency và điều phối đường đi giữa các robot trên PC.
 
+## Chạy testcase hai robot: robot1 → A, robot2 → B
+
+Luồng dưới đã chạy thành công trên hai robot thật ngày **10/11/2026** với
+`maps/my_room.yaml`. Chạy các lệnh PC từ `~/turtlebot4_ws`.
+
+**1. Trên mỗi Pi**, nếu chưa build repo, chạy `bash scripts/setup.sh robot`
+một lần. Sau đó mở hardware và giữ terminal chạy:
+
+```bash
+# Pi robot1 — 10.11.52.230
+bash scripts/robot-start.sh robot1
+
+# Pi robot2 — 10.11.52.243 (chạy ở terminal của Pi thứ hai)
+bash scripts/robot-start.sh robot2
+```
+
+Nếu script báo hardware đã chạy, dùng `bash scripts/robot-stop.sh robot1`
+trên Pi 1 hoặc `bash scripts/robot-stop.sh robot2` trên Pi 2 rồi mở lại.
+Phiên hardware phải có `remote_velocity_guard`; service mặc định không đủ.
+
+**2. Trên PC**, lưu IP hai Pi; chỉ cần làm lại khi đổi IP hoặc số robot:
+
+```bash
+python3 scripts/pc_config.py --robots robot1,robot2 <<'EOF'
+10.11.52.230
+10.11.52.243
+EOF
+```
+
+Nếu chưa setup/build PC, chạy `git submodule update --init --recursive MARCO`
+rồi `bash scripts/setup.sh pc` một lần. Tạo pose ban đầu **đúng vị trí thực tế**.
+Ví dụ sau dành cho robot1 ở gốc map, robot2 bên trái 0,5 m, cùng hướng +X:
+
+```bash
+cat > config/initial_poses.yaml <<'EOF'
+robot1: {x: 0.0, y: 0.0, yaw: 0.0}
+robot2: {x: 0.0, y: 0.5, yaw: 0.0}
+EOF
+bash scripts/pc-marco.sh maps/my_room.yaml initial_poses:="$PWD/config/initial_poses.yaml"
+```
+
+Giữ terminal PC này chạy. Chỉ mở một phiên PC; dừng phiên cũ trước nếu có.
+Sau khi robot đã đi, sửa pose theo vị trí hiện tại trước khi khởi động lại;
+không dùng lại `(0,0)` cho robot1 nếu chưa đưa robot về gốc map.
+
+**3. Terminal PC khác**, kiểm tra rồi preview testcase 01:
+
+```bash
+bash scripts/marco.sh status
+bash scripts/pc-command.sh status
+bash scripts/marco.sh plan config/marco/testcases/01_parallel_ab.json --out log/marco/testcases/01-preview.json
+```
+
+Chờ cả hai robot báo `localized=true`, `odom_fresh=true` trong MARCO status,
+và `path_ready=true` trong PC status. Testcase 01 gán robot1 đến
+**A `(x=0.15, y=-0.10, yaw=0)`**, robot2 đến **B `(x=0.15, y=0.60, yaw=0)`**
+trong frame `map` (mét/radian). Hai task không có dependency; lượt preview
+đã kiểm tra có hai path trong cùng batch. `plan` chỉ hiển thị đường trong RViz.
+Đổi `goal` trong JSON nếu A/B thực tế khác; các tọa độ này dành cho map và bố
+trí đã thử, không tự áp dụng cho phòng khác.
+
+**4. Chạy thật**, khi preview phù hợp, robot đã khỏi dock, vùng chạy trống
+và có người giám sát:
+
+```bash
+bash scripts/marco.sh run config/marco/testcases/01_parallel_ab.json --execute --out log/marco/testcases/01-run.json
+bash scripts/pc-command.sh status
+```
+
+Tốc độ tối đa 0,05 m/s và 0,2 rad/s. Nhấn **Ctrl+C ở terminal mission** để hủy
+các path còn hoạt động. Thành công khi báo cáo có `result: "succeeded"`,
+`completed_tasks` chứa `1` và `2`, status hai robot có `busy=false`,
+`last_result="succeeded"`. Mất điều kiện định vị sẽ hủy nhiệm vụ; chờ định vị
+ổn định rồi preview lại từ vị trí hiện tại trước khi chạy lại. Không nới ngưỡng
+AMCL để ép chạy.
+
+**Kết quả 10/11/2026:** lượt đầu bị hủy do covariance AMCL robot1 vượt ngưỡng;
+lượt chạy lại hoàn thành cả hai task, hai lệnh vận tốc về 0. Các log phiên này
+ở `log/marco/testcases/01-retry-run.json` và `01-retry-stop-check.json` (log cục
+bộ, không lưu trong Git). Chưa kiểm chứng thực thi testcase đổi đích và tuần tự.
+Xem [ba testcase và cách đổi kịch bản](config/marco/testcases/README.md).
+
 ## 1. Cài đặt một lần
 
 Yêu cầu Ubuntu 22.04, ROS 2 Humble tại `/opt/ros/humble`, repo ở
@@ -290,10 +372,11 @@ hạn 0,05 m/s và 0,2 rad/s. Lease và permission hết hạn hoặc mất loca
 hủy path; watchdog trên Pi vẫn giám sát luồng lệnh. Nhấn **Ctrl+C** ở terminal
 mission để hủy các path còn hoạt động.
 
-**Kiểm chứng 31/10/2026:** goal riêng của cả robot1 và robot2 đã hoàn thành qua
-MARCO/socket/Nav2 trên phần cứng thật, nhưng phải hủy và chạy tiếp; chưa đạt một
-lượt hai goal liên tục không lỗi. Mẫu PC đứng yên với đầy đủ Nav2/RViz đạt trung
-bình khoảng 153% CPU, peak 170%; không suy ra tải khi chạy goal. Xem
+**Kiểm chứng 10/11/2026:** testcase 01 hai robot đi A/B đã hoàn thành trong
+cùng một lượt chạy lại, sau lượt đầu bị hủy do chất lượng localization. Xem
+hướng dẫn testcase phía trên. Kết quả lịch sử 31/10 ghi nhận goal riêng từng
+robot; mẫu PC đứng yên với đầy đủ Nav2/RViz đạt trung bình khoảng 153% CPU,
+peak 170%, không suy ra tải khi chạy goal. Xem
 [báo cáo và ảnh RViz](docs/VALIDATION.md), [luồng và giới hạn MARCO](docs/MARCO.md).
 
 ### PC — Terminal 2: chọn robot và hủy goal

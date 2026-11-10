@@ -103,6 +103,10 @@ không đẩy scan hiển thị vào RViz để tránh tích queue; scan gốc A
 
 ## Xem kế hoạch và thực thi
 
+Các testcase `robot1 → A, robot2 → B`, đổi đích và dependency tuần tự nằm tại
+[config/marco/testcases](../config/marco/testcases/README.md). Tọa độ trong đó
+là mẫu để preview; sửa theo điểm thực tế trước khi thực thi.
+
 ```bash
 cp config/marco/mission.example.json config/marco/mission.json
 # Sửa goal theo những điểm trống thực tế trên my_room; ví dụ không phải điểm đã chứng nhận an toàn.
