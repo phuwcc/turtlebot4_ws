@@ -13,13 +13,18 @@ export PYTHONDONTWRITEBYTECODE=1
 colcon test --packages-select tb4_tools tb4_multi_tools tb4_multi_bringup tb4_marco_bridge --event-handlers console_direct+
 colcon test-result --verbose
 python3 tests/test_pc_config.py -v
+python3 tests/test_run_menu.py -v
+python3 tests/test_socket_protocol.py -v
 python3 tests/test_diagnostics.py -v
 python3 tests/test_hardware_stop.py -v
 python3 src/tb4_multi_bringup/test/test_fleet_view.py -v
 python3 src/tb4_multi_bringup/test/test_remote_control.py -v
 python3 src/tb4_multi_bringup/test/test_native_runtime.py -v
 python3 src/tb4_multi_bringup/test/test_path_runtime.py -v
-if [[ -f "${MARCO_ROOT:-$tb4_repo/MARCO}/src/core/assignment.py" ]]; then python3 -B tests/test_marco_planner.py -v; fi
+if [[ -f "${MARCO_ROOT:-$tb4_repo/MARCO}/src/core/assignment.py" ]]; then
+  python3 -B tests/test_marco_planner.py -v
+  python3 -B tests/test_marco_scenarios.py -v
+fi
 python3 tests/smoke_navigation.py --pc robot1
 python3 tests/smoke_navigation.py --pc robot2
 python3 tests/smoke_navigation.py --pc --localization-only robot1

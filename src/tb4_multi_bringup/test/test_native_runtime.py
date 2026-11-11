@@ -232,5 +232,37 @@ class NativeRuntimeTest(unittest.TestCase):
         self.assertEqual(stamped[-1].twist.linear.x,.03)
         self.assertGreater(stamped[-1].header.stamp.sec,0)
 
+    def test_tcp_fragmentation_limits_and_slow_clients(self):
+        app = self.start('socket_control', {'robot_count':2})
+
+        def exchange(payload):
+            with socket.create_connection(('127.0.0.1',app.port),timeout=3) as connection:
+                connection.sendall(payload)
+                raw=connection.makefile('rb').readline(8193)
+                self.assertTrue(raw.endswith(b'\n'))
+                return json.loads(raw)
+
+        # TCP may split one JSON frame across several packets.
+        with socket.create_connection(('127.0.0.1',app.port),timeout=3) as connection:
+            connection.sendall(b'{"command":"sel')
+            time.sleep(.06)
+            connection.sendall(b'ect","robot":"robot2"}\n')
+            self.assertTrue(json.loads(connection.makefile('rb').readline())['ok'])
+        self.assertEqual(app.status()['selected_robot'],'robot2')
+        for invalid in (b'{broken}\n', b'[]\n', b'{"command":true}\n', b'{"command":"unknown","robot":"robot1"}\n'):
+            self.assertFalse(exchange(invalid)['ok'])
+        # Exact limit includes the newline; an oversized frame must not dispatch.
+        frame=b'{"command":"status"}'
+        self.assertTrue(exchange(frame+b' '*(65535-len(frame))+b'\n')['ok'])
+        self.assertFalse(exchange(frame+b' '*(65536-len(frame))+b'\n')['ok'])
+        # A partial/idle client must not prevent another client from progressing.
+        with socket.create_connection(('127.0.0.1',app.port),timeout=3) as slow:
+            slow.sendall(b'{"command":')
+            self.assertTrue(app.status()['ok'])
+        # This protocol processes one request then closes, rather than pipelining.
+        reply=exchange(b'{"command":"status"}\n{"command":"select","robot":"robot1"}\n')
+        self.assertTrue(reply['ok'])
+        self.assertEqual(app.status()['selected_robot'],'robot2')
+
 
 if __name__=='__main__':unittest.main()

@@ -1,0 +1,2 @@
+# Let robots without an anchor use global AMCL localization and scan matching.
+{}

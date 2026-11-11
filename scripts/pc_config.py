@@ -110,6 +110,19 @@ def save_environment(path, addresses, selected=None, server_ids=None):
     return values
 
 
+def environment_for_robot(values, robot):
+    """Derive a one-robot session without changing the saved fleet configuration."""
+    ids = robot_ids(values.get('TB4_ROBOT_IDS',
+        ','.join('robot' + str(i + 1) for i in range(int(values['TB4_ROBOT_COUNT'])))))
+    if robot not in ids:
+        raise ValueError(robot + ' không có trong cấu hình PC.')
+    indices = discovery_ids(values.get('TB4_DISCOVERY_IDS',
+        ','.join(str(int(r[-1]) - 1) for r in ids)), ids)
+    index = indices[ids.index(robot)]
+    address = values['ROS_DISCOVERY_SERVER'].split(';')[index].rsplit(':', 1)[0]
+    return make_environment([address], [robot], [index])
+
+
 def configure(path, input_fn=input, selected=None, server_ids=None):
     print('Nhập câu trả lời sau dấu nhắc; không sửa nội dung lệnh read.')
     if selected is not None:
@@ -143,7 +156,10 @@ def configure(path, input_fn=input, selected=None, server_ids=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--check', action='store_true')
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument('--check', action='store_true')
+    action.add_argument('--print-robot-env', choices=('robot1', 'robot2', 'robot3'),
+                        help='In môi trường một robot cho phiên quét map; không ghi file cấu hình')
     parser.add_argument('--server-ids', help='Override discovery IDs thực tế, ví dụ 0 cho một Pi đang chạy server ID 0')
     parser.add_argument('--robots', help='Ví dụ robot2 hoặc robot1,robot3; mặc định chọn robot1..N')
     parser.add_argument('--path', type=Path, default=Path.home() / '.config/turtlebot4/pc_env.sh')
@@ -151,6 +167,10 @@ def main():
     try:
         if args.check:
             load_environment(args.path)
+        elif args.print_robot_env:
+            values = environment_for_robot(load_environment(args.path), args.print_robot_env)
+            for key, value in values.items():
+                print('export ' + key + '=' + shlex.quote(value))
         else:
             configure(args.path, selected=args.robots, server_ids=args.server_ids)
     except (OSError, ValueError, EOFError, KeyboardInterrupt) as error:

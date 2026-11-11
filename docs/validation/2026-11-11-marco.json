@@ -1,0 +1,332 @@
+{
+  "date": "2026-11-11",
+  "map": "maps/my_room.yaml",
+  "map_image_sha256": "9dc1a24efc4be092c4cd5855d2d715bf8cf14216ef06aaa3a2ac185880f5f513",
+  "motion_limits": {
+    "linear_mps": 0.05,
+    "angular_rps": 0.2
+  },
+  "hardware_build": "3 packages successful on each Pi",
+  "trials": [
+    {
+      "id": "01-trial",
+      "passed": false,
+      "error": "AssertionError: RuntimeError: robot2 localization/sensors not ready: {\"anchor\": false, \"covariance_xyyaw\": [0.004712377882573392, 0.010321640060388937, 0.008226619135952814], \"phase\": \"running\", \"pose\": [-0.022730449695568436, 0.5486021056675122, 1.016783795666625], \"pose_ready\": false, \"ready\": false, \"reason\": \"amcl_not_converged\", \"scan_match_fraction\": 0.7567567567567568, \"tf_age_s\": 0.09729487920275876}",
+      "stopped_after_trial": true,
+      "robots": {
+        "robot1": {
+          "travel_m": 0.18335099462273752,
+          "max_linear_mps": 0.05,
+          "max_angular_rps": 0.2,
+          "start_odom": [
+            -0.01632915809750557,
+            -0.070334292948246
+          ],
+          "end_odom": [
+            0.1197677031159401,
+            -0.1362207531929016
+          ],
+          "last_cmd": [
+            0.0,
+            0.0
+          ],
+          "last_odom_velocity": [
+            0.0,
+            0.0
+          ]
+        },
+        "robot2": {
+          "travel_m": 0.02307170807274443,
+          "max_linear_mps": 0.02666666666666667,
+          "max_angular_rps": 0.2,
+          "start_odom": [
+            0.03933623060584068,
+            -0.08972989022731781
+          ],
+          "end_odom": [
+            0.031546756625175476,
+            -0.07633263617753983
+          ],
+          "last_cmd": [
+            0.0,
+            0.0
+          ],
+          "last_odom_velocity": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "execution_result": "failed",
+      "completed_events": [
+        {
+          "event": "completed",
+          "robot": "robot2",
+          "task": null,
+          "pose": [
+            -0.013160343192008601,
+            0.5419392533236733,
+            1.126199140079428
+          ]
+        },
+        {
+          "event": "completed",
+          "robot": "robot1",
+          "task": 1,
+          "pose": [
+            0.13722270732946323,
+            -0.07107322028307782,
+            -0.13324905792176145
+          ]
+        }
+      ],
+      "completed_tasks": [],
+      "strategies": [
+        "relocate",
+        "committed_priority",
+        "disjoint_routes"
+      ]
+    },
+    {
+      "id": "01-retry-trial",
+      "passed": true,
+      "error": null,
+      "stopped_after_trial": true,
+      "robots": {
+        "robot1": {
+          "travel_m": 5.5410176278756443e-05,
+          "max_linear_mps": 0.0,
+          "max_angular_rps": 0.0,
+          "start_odom": [
+            0.11990848183631897,
+            -0.1363835334777832
+          ],
+          "end_odom": [
+            0.11994456499814987,
+            -0.13642558455467224
+          ],
+          "last_cmd": [
+            0.0,
+            0.0
+          ],
+          "last_odom_velocity": [
+            0.0,
+            -5.809646097532095e-08
+          ]
+        },
+        "robot2": {
+          "travel_m": 0.18283591152204534,
+          "max_linear_mps": 0.04333333333333333,
+          "max_angular_rps": 0.2,
+          "start_odom": [
+            0.03145274892449379,
+            -0.07653804123401642
+          ],
+          "end_odom": [
+            0.08201040327548981,
+            0.0669960305094719
+          ],
+          "last_cmd": [
+            0.0,
+            0.0
+          ],
+          "last_odom_velocity": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "execution_result": "succeeded",
+      "completed_events": [
+        {
+          "event": "completed",
+          "robot": "robot1",
+          "task": 1,
+          "pose": [
+            0.14275731224083715,
+            -0.07753791263769312,
+            -0.08760800170128756
+          ]
+        },
+        {
+          "event": "completed",
+          "robot": "robot2",
+          "task": 2,
+          "pose": [
+            0.10180656973884603,
+            0.5745547056817248,
+            0.15932584810285408
+          ]
+        }
+      ],
+      "completed_tasks": [
+        1,
+        2
+      ],
+      "strategies": [
+        "disjoint_routes",
+        null
+      ]
+    },
+    {
+      "id": "02-trial",
+      "passed": false,
+      "error": "AssertionError: RuntimeError: robot2 left reserved path corridor",
+      "stopped_after_trial": true,
+      "robots": {
+        "robot1": {
+          "travel_m": 5.974185312349987e-05,
+          "max_linear_mps": 0.0,
+          "max_angular_rps": 0.0,
+          "start_odom": [
+            0.12001420557498932,
+            -0.13650664687156677
+          ],
+          "end_odom": [
+            0.120047926902771,
+            -0.13654585182666779
+          ],
+          "last_cmd": [
+            0.0,
+            0.0
+          ],
+          "last_odom_velocity": [
+            0.0,
+            1.1489480300497235e-07
+          ]
+        },
+        "robot2": {
+          "travel_m": 0.09505992425929824,
+          "max_linear_mps": 0.0,
+          "max_angular_rps": 0.13684210526315788,
+          "start_odom": [
+            0.08202781528234482,
+            0.06700530648231506
+          ],
+          "end_odom": [
+            0.07971405237913132,
+            0.07367997616529465
+          ],
+          "last_cmd": [
+            0.0,
+            0.0
+          ],
+          "last_odom_velocity": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "execution_result": "failed",
+      "completed_events": [],
+      "completed_tasks": [],
+      "strategies": [
+        "relocate"
+      ]
+    }
+  ],
+  "head_on_09": {
+    "physical_execution": "not_dispatched_localization_not_ready",
+    "synthetic_result": "completed_both_tasks_and_verified_swap_endpoints",
+    "relative_scan_registration": {
+      "robot1_reference": [
+        -0.031544836712407695,
+        -0.05561574441687797,
+        3.0482916022856954
+      ],
+      "candidate_modes": [
+        {
+          "relative_pose": [
+            1.4181513151809066,
+            0.13358749150944832,
+            -3.0162044655926223
+          ],
+          "rmse_m": 0.07135320377864539,
+          "coverage": 0.4744186046511628,
+          "score": 0.26035899331522666
+        }
+      ],
+      "points": {
+        "robot1": 433,
+        "robot2": 430
+      },
+      "robot2_map_seed": [
+        -1.4559738417313894,
+        -0.056499089058247395,
+        0.03208713669307306
+      ]
+    },
+    "snapshot": {
+      "map_revision": 3,
+      "ok": true,
+      "robots": {
+        "robot1": {
+          "busy": false,
+          "localization": {
+            "anchor": true,
+            "covariance_xyyaw": [
+              0.00285297266850651,
+              0.009174992370860512,
+              0.0028172343281037044
+            ],
+            "phase": "running",
+            "pose": [
+              -0.03264068216272918,
+              -0.054121728660028096,
+              3.062049337915783
+            ],
+            "pose_ready": true,
+            "ready": true,
+            "reason": "stable_localization",
+            "scan_match_fraction": 0.8503401360544217,
+            "tf_age_s": 0.05299355406225581
+          },
+          "localized": true,
+          "odom_fresh": true,
+          "pose": [
+            -0.03264068216272918,
+            -0.054121728660028096,
+            3.062049337915783
+          ]
+        },
+        "robot2": {
+          "busy": false,
+          "localization": {
+            "anchor": false,
+            "covariance_xyyaw": [
+              0.0017422461923231047,
+              0.011976602599193698,
+              0.0031572711598956593
+            ],
+            "global_scan_search": {
+              "mode_gap": 0.013541578322850856,
+              "score": 0.6224566981462261,
+              "unique": false
+            },
+            "phase": "localizing",
+            "pose": [
+              -1.474804894200679,
+              -0.07222561694459231,
+              -0.0036888630590221033
+            ],
+            "pose_ready": false,
+            "ready": false,
+            "reason": "global_search_ambiguous_set_manual_initial_pose",
+            "scan_match_fraction": 0.6312056737588653,
+            "tf_age_s": 0.06942527966003409
+          },
+          "localized": false,
+          "odom_fresh": true,
+          "pose": [
+            -1.474804894200679,
+            -0.07222561694459231,
+            -0.0036888630590221033
+          ]
+        }
+      }
+    },
+    "note": "Initial 1m coordinate guess was inaccurate. Manual/relative initialization is not a localization success until map/AMCL quality gates pass.",
+    "operator_confirmed_relative_display": true,
+    "map_match_required_fraction": 0.7
+  }
+}

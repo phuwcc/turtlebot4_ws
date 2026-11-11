@@ -1,0 +1,23 @@
+{
+  "description": "Robot2 dung chan duong robot1, MARCO dieu phoi nhuong",
+  "example_only": true,
+  "robot_radius": 0.175,
+  "safety_margin": 0.05,
+  "tracking_tolerance": 0.04,
+  "speed_mps": 0.05,
+  "action_timeout_s": 180,
+  "tasks": [
+    {
+      "id": 1,
+      "goal": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "candidates": [
+        "robot1"
+      ],
+      "depends_on": []
+    }
+  ]
+}

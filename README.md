@@ -23,6 +23,103 @@ bằng một giao thức tự truyền scan/TF. Chế độ navigation thông th
 từng robot độc lập. Chế độ [MARCO](#marco-trên-hai-turtlebot-thật) thêm phân công
 nhiệm vụ, dependency và điều phối đường đi giữa các robot trên PC.
 
+## Chạy hằng ngày — hai lệnh
+
+Trong thư mục repo, dùng hai điểm vào sau. Các script sẽ hỏi thông tin trong
+terminal; không cần nhớ các option ROS hoặc sửa file shell.
+
+**1. Trên mỗi Pi:**
+
+```bash
+bash run_robot.sh
+```
+
+Chọn **1 — Hardware + watchdog**, rồi chọn đúng robot1/robot2. Giữ terminal này
+chạy. Script vẫn kiểm tra namespace, dừng service cũ và chặn driver chạy trùng.
+Menu còn có lái bàn phím khi mapping, dừng hardware và kiểm tra cảm biến.
+Không chạy Nav2/AMCL/SLAM trên Pi trong luồng này.
+
+**2. Trên PC:**
+
+```bash
+bash run_pc.sh
+```
+
+Menu PC:
+
+| Mục | Công việc |
+| --- | --- |
+| 1 | MARCO + Nav2 + RViz |
+| 2 | Chỉ localization + RViz, không điều hướng |
+| 3 | Quét map bằng một robot, mặc định robot1 |
+| 4 | Chọn robot, đặt pose/goal, hủy goal |
+| 5 | Xem kế hoạch từ mission JSON |
+| 6 | Preview rồi thực thi mission JSON |
+| 7 | Lưu map đang quét |
+| 8 | Đổi số robot và IP |
+
+Lần đầu, PC hỏi số robot và IP từng Pi; lần sau hiển thị cấu hình đã lưu để
+chọn dùng tiếp hoặc nhập lại. Khi mở navigation/localization, menu hỏi file map
+và cách khởi tạo: xác nhận bố trí đã khai báo hoặc nhập file pose thực tế của
+từng robot. Không chọn seed `(0,0)` nếu robot1 đã đi khỏi gốc map.
+
+Thiếu workspace build, script hỏi trước khi gọi setup/build. Thiếu MARCO ở chế
+độ cần planner, script hỏi trước khi lấy submodule đã ghim. Thao tác cài gói có
+thể yêu cầu mật khẩu sudo trong terminal.
+
+Giữ menu 1/2/3 chạy ở terminal PC thứ nhất. Mở **cùng lệnh `bash run_pc.sh`** ở
+terminal PC thứ hai, chọn 4/5/6/7 để điều khiển hoặc làm việc với phiên đó.
+Chỉ mở một phiên navigation/localization/mapping; khóa phiên cũ vẫn được giữ.
+Mapping: dùng terminal Pi thứ hai với `bash run_robot.sh`, chọn mục 2 để lái,
+sau khi đã dừng navigation. Đổi IP/số robot thì khởi động lại phiên PC.
+
+Chọn mục 6 không tự chạy robot ngay: phải có mission JSON hợp lệ, preview thành
+công, rồi nhập **CHAY** sau khi xem đường đi, đưa robot khỏi dock và giám sát.
+Preview lỗi hoặc hủy nhập liệu sẽ dừng trước khi gửi yêu cầu thực thi.
+
+Test nhỏ cho menu/cấu hình, không dùng ROS hoặc điều khiển robot:
+
+```bash
+python3 -B tests/test_run_menu.py -v
+python3 -B tests/test_pc_config.py -v
+```
+
+## Quét map bằng một robot (mặc định robot1)
+
+Trên PC chạy `bash run_pc.sh`, chọn **3**, nhấn Enter ở câu hỏi robot để dùng
+**robot1**. Hoặc gọi trực tiếp:
+
+```bash
+bash scripts/pc-mapping.sh
+# Chọn robot khác khi cần:
+# bash scripts/pc-mapping.sh robot2
+```
+
+Mỗi phiên chỉ chạy một SLAM và một robot trong RViz/gateway, kể cả khi cấu
+hình PC lưu hai hoặc ba robot. Phiên mapping tự chọn discovery của robot đó,
+giữ đúng server ID; cấu hình fleet trong `~/.config/turtlebot4/pc_env.sh`
+không bị sửa. Robot được chọn phải có trong cấu hình PC. Mặc định dòng lệnh
+là robot1; nếu cấu hình chỉ có robot2, truyền `robot2` rõ ràng.
+
+Trước khi mapping, dừng phiên navigation/localization trên PC. Trên Pi robot1,
+giữ hardware/watchdog chạy bằng `bash scripts/robot-start.sh robot1`. Khi PC
+báo **Start origin captured**, dùng terminal thứ hai **trên Pi robot1** để lái:
+
+```bash
+bash scripts/robot-teleop.sh robot1
+```
+
+Ở terminal PC khác, lưu map trong lúc SLAM vẫn chạy:
+
+```bash
+bash scripts/pc-save-map.sh robot1 maps/site
+```
+
+Map lưu thành `maps/site.yaml` và `maps/site.pgm`. Trong menu, mục **7** cũng
+mặc định chọn robot1 để lưu map. Dừng teleop rồi dừng mapping trước khi mở
+navigation với map vừa lưu. Các robot còn lại đứng yên; không cần bật chúng
+để quét map bằng robot1.
+
 ## Chạy testcase hai robot: robot1 → A, robot2 → B
 
 Luồng dưới đã chạy thành công trên hai robot thật ngày **10/11/2026** với
@@ -103,7 +200,109 @@ AMCL để ép chạy.
 lượt chạy lại hoàn thành cả hai task, hai lệnh vận tốc về 0. Các log phiên này
 ở `log/marco/testcases/01-retry-run.json` và `01-retry-stop-check.json` (log cục
 bộ, không lưu trong Git). Chưa kiểm chứng thực thi testcase đổi đích và tuần tự.
-Xem [ba testcase và cách đổi kịch bản](config/marco/testcases/README.md).
+Xem [toàn bộ testcase và cách đổi kịch bản](config/marco/testcases/README.md).
+
+**Kiểm tra lại 11/11/2026 trên map cũ:** testcase 01 hoàn thành sau một lượt
+thử lại từ vị trí quan sát; robot1 đã ở A từ lượt đầu, robot2 hoàn thành B ở
+lượt sau. Testcase 02 có kế hoạch nhường đường nhưng bị hủy khi lệch hành lang;
+chưa đạt đổi chỗ hoàn chỉnh trên phần cứng. Testcase 09 đối đầu khoảng 1 m
+mới đạt trên map tổng hợp, chưa chạy thật vì robot2 chưa đạt localization.
+Xem [kết quả và giới hạn thực tế](docs/VALIDATION.md).
+
+## Thêm 5 kịch bản kiểm tra xung đột MARCO
+
+Các file **04–08** dưới đây là mẫu cho bố trí test riêng, có kiểm thử bằng
+MARCO thật trên map tổng hợp; **chưa chạy trên hai robot thật**. Tọa độ dùng
+frame `map`, mét/radian. Không mặc định chúng phù hợp với `my_room.yaml`:
+chọn vùng trống phù hợp trên map thực tế, sửa `goal` trong JSON và file pose
+khởi tạo theo vị trí thật trước khi preview. Không đặt lại pose chỉ để làm
+robot trên RViz giống bố trí trong bảng.
+
+| Kịch bản / file trong `config/marco/testcases/` | Bố trí ban đầu (x, y, yaw) | Goal và tiêu chí đạt |
+| --- | --- | --- |
+| **04 — Cắt ngang tại giao lộ**, `04_crossing.json` | robot1 `(-1,0,0)`; robot2 `(0,-1,1.5708)`; giao lộ có vùng tránh | robot1 → `(1,0,0)`; robot2 → `(0,1,1.5708)`. MARCO phát hiện hai đường giao nhau, chọn ưu tiên/nhường; hoàn thành task 1, 2, không cho hai path xung đột chạy đồng thời. |
+| **05 — Đối đầu**, `05_head_on.json` | robot1 `(-1,0,0)`; robot2 `(1,0,3.1416)`; có vùng trống bên cạnh để tránh | Hai robot đổi vị trí. Preview phải có can thiệp `relocate` hoặc `short_replan`, sau đó robot được ưu tiên đi qua; cuối lượt hoàn thành task 1, 2. |
+| **06 — Robot đứng chắn đường**, `06_idle_blocker.json` | robot1 `(-1,0,0)`; robot2 `(0,0,0)`; có chỗ tránh | Chỉ giao task robot1 → `(1,0,0)`. MARCO phải xét cả robot2 đang idle, chọn nhường đường hoặc đường vòng; task 1 hoàn thành. Robot2 vẫn có thể nhận động tác nhường dù không có task riêng. |
+| **07 — Xung đột kèm dependency**, `07_conflict_dag.json` | Như 05, có chỗ tránh | Hai robot đổi chỗ (task 1, 2), rồi quay về (task 3, 4). Cả task 3 và 4 phụ thuộc **cả 1 và 2**. Chỉ bắt đầu lượt về sau khi hai task lượt đi đã hoàn thành; kết quả có đủ task 1–4. |
+| **08 — Không có chỗ nhường**, `08_no_escape.json` | Như 05 nhưng trong hành lang hẹp, kín hai đầu, không đủ khoảng trống để tránh hoặc lùi ra | Hai robot đổi chỗ. Kết quả mong đợi là **từ chối kế hoạch**, không dispatch path và không di chuyển. Đây là negative test; không ép planner chạy bằng cách giảm bán kính/margin. |
+
+Kịch bản 08 khác 05 ở **hình học map**, không chỉ ở goal JSON. Fixture phần
+mềm dùng hành lang rộng khoảng 0,9 m, dài khoảng 2,7 m trước khi inflate, với
+hai robot ở x=−1 và x=1; hai đầu không đủ khoảng lùi để nhường. Hành lang dài
+hơn có thể cho robot lùi và lập được kế hoạch, khi đó không phải bố trí test 08.
+Fixture tái lập của cả năm kịch bản nằm trong `tests/test_marco_scenarios.py`.
+
+Ví dụ kiểm tra kịch bản cắt ngang, sau khi đã mở phiên MARCO và định vị đúng:
+
+```bash
+bash scripts/marco.sh status
+bash scripts/marco.sh plan config/marco/testcases/04_crossing.json --out log/marco/testcases/04-preview.json
+# Chỉ thực thi sau khi kiểm tra bố trí và đường preview thực tế:
+bash scripts/marco.sh run config/marco/testcases/04_crossing.json --execute --out log/marco/testcases/04-run.json
+```
+
+Thay tên file tương ứng để thử 05–07. Với 08, chỉ gọi `plan` và kiểm tra báo
+cáo `result="failed"`, `events` không có `dispatch`; **không gọi run**.
+`plan` chỉ hiển thị batch đầu; khi chạy, MARCO tính tiếp từ pose quan sát sau
+mỗi batch. Can thiệp nhường có `task: null`; một robot hoàn thành task vẫn có
+thể phải nhường để robot kia đi tiếp. Không diễn giải danh sách task đã hoàn
+thành là bảo đảm cả hai robot vẫn giữ nguyên goal cuối cùng.
+
+Với 04–07, xem `events[].batch.audit.strategy`, thứ tự `dispatch`/`completed`
+và `completed_tasks` trong báo cáo. `disjoint_routes` là đường tách biệt;
+`relocate`/`short_replan` và `committed_clearance`/`committed_priority` thể hiện
+can thiệp và việc giữ ưu tiên đã chọn. Nếu preview không phát hiện xung đột,
+bố trí hiện tại chưa tái tạo trường hợp cần test. Chạy kiểm thử phần mềm:
+
+```bash
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+python3 -B tests/test_marco_scenarios.py -v
+```
+
+## Kiểm tra giao tiếp socket
+
+```text
+Client JSON/TCP → PC gateway → Nav2/FollowPath → DDS → Pi watchdog → Create 3
+MARCO planner  → PC gateway (path + lease) ────────────┘
+```
+
+Gateway nghe **127.0.0.1:8765 trên PC**, được mở cùng phiên navigation hoặc
+mapping. Mỗi kết nối gửi một JSON object kết thúc bằng `\n`, nhận một JSON
+object kết thúc bằng `\n`, rồi đóng. Request tối đa **65.536 byte tính cả
+newline**. Status/select/pose/goal/cancel dùng `scripts/pc-command.sh`; MARCO
+dùng thêm `snapshot`, `preview`, `path`, `lease` để giữ nguyên đường đã điều phối.
+Socket không truyền trực tiếp LiDAR hay lệnh motor sang Pi; phần đó qua DDS.
+
+```bash
+bash scripts/pc-command.sh status
+bash scripts/pc-command.sh select robot1
+bash scripts/marco.sh status
+```
+
+`Connection refused` nghĩa là chưa có gateway nghe tại host/port đó: mở phiên
+PC trước. `ok=true` khi gửi goal/path chỉ là đã tiếp nhận, chưa phải tới đích;
+poll status đến khi `busy=false` và kiểm tra `last_result`. Các goal độc lập
+gửi bằng `pc-command.sh goal` **không đi qua coordinator MARCO**; dùng mission
+`marco.sh plan/run` để thử xử lý xung đột nhiều robot.
+
+Kiểm tra socket bằng fake Nav2/cảm biến, ROS domain riêng không nối robot thật:
+
+```bash
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+python3 -B tests/test_socket_protocol.py -v
+python3 -B src/tb4_multi_bringup/test/test_native_runtime.py -v
+python3 -B src/tb4_multi_bringup/test/test_path_runtime.py PathRuntimeTest.test_marco_cli_through_two_fake_hardware_chains -v
+```
+
+Các test bao phủ TCP chia gói, JSON lỗi/phản hồi thiếu newline, giới hạn kích
+thước, client gửi dở dang, chọn/hủy đúng robot, chống goal chồng nhau, lease và
+luồng MARCO → socket → FollowPath → watchdog với hai base giả. Kết quả phần
+mềm không thay thế thử nghiệm xung đột trên phần cứng.
+
+<details>
+<summary>Tham khảo kỹ thuật: cài đặt, các script thành phần và giao thức socket</summary>
 
 ## 1. Cài đặt một lần
 
@@ -408,7 +607,7 @@ script check liệt kê graph, không chứng nhận robot đủ điều kiện 
 
 Gateway chạy cùng `pc-start.sh`, mặc định **TCP `127.0.0.1:8765` trên PC**.
 Client không cần ROS. Mỗi kết nối gửi một JSON kết thúc bằng newline, nhận
-một JSON rồi đóng; giới hạn request 8192 byte.
+một JSON rồi đóng; giới hạn request 65.536 byte tính cả newline.
 
 Trên PC:
 
@@ -538,3 +737,5 @@ Xem [kết quả và lỗi còn mở](docs/VALIDATION.md).
 - [Mạng Pi / Create 3 / PC](docs/NETWORK.md)
 - [Kết quả kiểm thử](docs/VALIDATION.md)
 - [Hướng dẫn một robot cũ](docs/SINGLE_ROBOT.md) — tham khảo kiến trúc cũ, không chạy cùng phiên mới.
+
+</details>

@@ -13,6 +13,21 @@ spec.loader.exec_module(pc)
 
 
 class LaptopConfigTest(unittest.TestCase):
+    def test_mapping_environment_preserves_fleet_and_discovery_slots(self):
+        fleet = pc.make_environment(['10.11.52.230', '10.11.52.243'])
+        before = dict(fleet)
+        for robot, expected in [('robot1', '10.11.52.230:11811;'),
+                                ('robot2', ';10.11.52.243:11811;')]:
+            selected = pc.environment_for_robot(fleet, robot)
+            self.assertEqual(selected['TB4_ROBOT_COUNT'], '1')
+            self.assertEqual(selected['TB4_ROBOT_IDS'], robot)
+            self.assertEqual(selected['ROS_DISCOVERY_SERVER'], expected)
+        self.assertEqual(fleet, before)
+        with self.assertRaises(ValueError): pc.environment_for_robot(fleet, 'robot3')
+        override = pc.make_environment(['10.11.52.243'], 'robot2', '0')
+        self.assertEqual(pc.environment_for_robot(override, 'robot2')['ROS_DISCOVERY_SERVER'],
+                         '10.11.52.243:11811;')
+
     def test_count_and_roundtrip(self):
         for count in (1, 2, 3):
             with self.subTest(count=count), tempfile.TemporaryDirectory() as directory:

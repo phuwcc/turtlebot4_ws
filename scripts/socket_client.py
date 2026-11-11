@@ -7,13 +7,19 @@ import socket
 
 
 def send(request, host='127.0.0.1', port=8765):
+    payload = (json.dumps(request, allow_nan=False) + '\n').encode()
+    if len(payload) > 65536:
+        raise ValueError('Maximum request size is 65536 bytes including newline')
     with socket.create_connection((host, port), timeout=4) as connection:
-        connection.sendall((json.dumps(request, allow_nan=False) + '\n').encode())
+        connection.sendall(payload)
         with connection.makefile('rb') as stream:
             raw = stream.readline(8193)
         if not raw.endswith(b'\n') or len(raw) > 8192:
             raise ValueError('Invalid response from gateway')
-        return json.loads(raw)
+        response = json.loads(raw)
+        if not isinstance(response, dict):
+            raise ValueError('Expected gateway JSON object')
+        return response
 
 
 def main():

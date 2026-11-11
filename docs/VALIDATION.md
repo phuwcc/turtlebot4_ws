@@ -1,4 +1,35 @@
-# MARCO và localization — 2026-10-31
+# MARCO và localization — 2026-11-11
+
+Kiểm tra trên hai robot thật, dùng lại `maps/my_room.yaml`, không thay bản đồ.
+Hai Pi build thành công profile hardware 3 package và chạy watchdog của repo.
+[Kết quả có cấu trúc ngày 11/11](validation/2026-11-11-marco.json).
+
+- Testcase 01 A/B: MARCO chọn một bước robot2 nhường trước. Lượt đầu robot1
+  hoàn thành A, robot2 bị hủy khi variance AMCL y lên 0,01032 m². Đã xác nhận
+  hai robot dừng, không nới ngưỡng localization.
+- Lượt chạy lại từ vị trí quan sát: mission `succeeded`, đủ task 1 và 2.
+  Robot1 đã ở gần A nên gần như không dịch chuyển trong lượt chạy lại;
+  robot2 đi khoảng 0,183 m theo odometry. Ở lượt đầu robot1 đã đi khoảng
+  0,183 m. Không mô tả kết quả này là một lượt hai robot cùng di chuyển liên tục.
+  Lệnh vận tốc và vận tốc odometry về gần 0 sau lượt thử.
+- Testcase 02 đổi đích: preview có `relocate` của robot2, nhưng thực thi bị hủy
+  do robot2 lệch hành lang path quá ngưỡng 0,04 m. Đã xác nhận dừng. Chưa đạt thử nghiệm
+  đổi chỗ/xử lý xung đột hoàn chỉnh trên phần cứng.
+- Testcase 09 đối đầu sau khi người vận hành đổi bố trí: chưa dispatch path,
+  vì robot2 chưa đạt localization. Gợi ý cách tâm 1 m không phù hợp dữ liệu;
+  đối chiếu hai scan cho khoảng cách tương đối khoảng 1,42 m. Sau khởi tạo lại,
+  độ khớp map robot2 vẫn khoảng 63–68%, dưới ngưỡng 70%. Không coi vị trí seed
+  hoặc kết quả global search chưa được xác nhận là pose đủ điều kiện chạy.
+
+Phần mềm: menu/cấu hình, client socket, 6 bài native gateway, planner và luồng
+MARCO → TCP → FollowPath → permission → watchdog với hai base giả đều đạt.
+Các kịch bản 04–07 và 09 hoàn thành trên map tổng hợp; 08 bị từ chối trước khi
+có action trong hành lang kín không đủ khoảng nhường. Testcase 09 kiểm tra cả
+hai vị trí cuối đã đổi chỗ. Những kết quả này không chứng nhận thử nghiệm thật
+ở bố trí hiện tại. Tùy chọn mapping một robot đã kiểm tra tham số launch; phần
+quét/lưu map thật được bỏ qua theo yêu cầu người vận hành.
+
+## Kết quả lịch sử — 2026-10-31
 
 Đã hoàn thành goal riêng của robot1 và robot2 trên phần cứng thật qua MARCO →
 socket C++ → kiểm tra costmap → Nav2 FollowPath → stamper → watchdog Pi.

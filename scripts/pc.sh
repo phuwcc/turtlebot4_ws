@@ -53,14 +53,20 @@ case "$tb4_mode" in
     exec ros2 launch tb4_multi_bringup pc_navigation.launch.py \
       "robot_count:=$TB4_ROBOT_COUNT" "map:=$tb4_map" "$@" ;;
   mapping|teleop)
-    tb4_robot="${1:-${TB4_ROBOT_IDS%%,*}}"; if (( $# )); then shift; fi
+    tb4_robot="${1:-${TB4_ROBOT_IDS%%,*}}"
+    if [[ "$tb4_mode" == mapping && $# == 0 ]]; then tb4_robot=robot1; fi
+    if (( $# )); then shift; fi
     case "$tb4_robot" in robot1|robot2|robot3) ;; *) echo 'Cần robot1, robot2 hoặc robot3.' >&2; exit 2;; esac
     [[ ",$TB4_ROBOT_IDS," == *",$tb4_robot,"* ]] || { echo 'Robot không có trong phiên.' >&2; exit 2; }
     if [[ "$tb4_mode" == teleop ]]; then
       exec ros2 run tb4_multi_tools teleop_keyboard --ros-args -r "__ns:=/$tb4_robot" -p remote:=true "$@"
     fi
     # Mapping uses the same PC session; teleop runs on the Pi in a separate terminal.
+    tb4_mapping_env="$(python3 "$tb4_repo/scripts/pc_config.py" --print-robot-env "$tb4_robot")"
+    source /dev/stdin <<< "$tb4_mapping_env"
+    echo "Quét map bằng một robot: $tb4_robot (cấu hình fleet đã lưu không đổi)."
     exec ros2 launch tb4_multi_bringup pc_mapping.launch.py "robot_id:=$tb4_robot" "robot_count:=$TB4_ROBOT_COUNT" \
+      "robot_ids:=$TB4_ROBOT_IDS" \
       "origin_file:=$tb4_state/${tb4_robot}_mapping_origin.json" "$@" ;;
   save-map)
     tb4_robot="${1:-${TB4_ROBOT_IDS%%,*}}"; tb4_map="${2:-$tb4_repo/maps/site}"

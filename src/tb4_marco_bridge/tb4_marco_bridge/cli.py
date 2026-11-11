@@ -14,11 +14,15 @@ import uuid
 
 
 def request(value,port):
+    payload=(json.dumps(value,allow_nan=False)+'\n').encode()
+    if len(payload)>65536:raise ValueError('Maximum request size is 65536 bytes including newline')
     with socket.create_connection(('127.0.0.1',port),timeout=2) as connection:
-        connection.sendall((json.dumps(value,allow_nan=False)+'\n').encode())
-        response=connection.makefile('rb').readline(16*1024**2)
-        if not response or len(response)>=16*1024**2:raise RuntimeError('Invalid gateway response')
+        connection.sendall(payload)
+        with connection.makefile('rb') as stream:
+            response=stream.readline(16*1024**2+1)
+        if not response.endswith(b'\n') or len(response)>16*1024**2:raise RuntimeError('Invalid gateway response')
         result=json.loads(response)
+        if not isinstance(result,dict):raise RuntimeError('Expected gateway JSON object')
         if not result.get('ok'):raise RuntimeError('Gateway rejected request: '+json.dumps(result))
         return result
 

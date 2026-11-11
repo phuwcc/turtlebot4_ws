@@ -84,8 +84,13 @@ hoặc **2D Pose Estimate**, không tự coi một giả thuyết bất kỳ là
 Có thể bỏ toàn bộ gợi ý cho một lần chạy:
 
 ```bash
-bash scripts/pc-marco.sh maps/my_room.yaml localization_hints:=''
+bash scripts/pc-marco.sh maps/my_room.yaml localization_hints:="$PWD/config/marco/no_localization_hints.yaml"
 ```
+
+File này chứa YAML `{}`. Không truyền `localization_hints:=` rỗng vì ROS 2 CLI
+Humble từ chối launch argument không có giá trị. Khi robot1 ở gốc nhưng quay
+180 độ so với lúc quét map, thêm `anchor_yaw:=3.141592653589793` hoặc truyền
+file pose thực tế; không đổi gốc/hướng của bản đồ.
 
 `status` chỉ báo `localized=true` khi có TF/odom/scan mới, scan khớp map >=70%,
 variance x/y <=0,01 m² và yaw <=0,04 rad², liên tục trong 3 giây.
