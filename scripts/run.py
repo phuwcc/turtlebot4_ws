@@ -72,7 +72,7 @@ def robot_command(repo, mode, robot):
 
 def pc_command(repo, mode, ids, input_fn=input):
     if mode in ('1', '2'):
-        default = 'maps/my_room.yaml' if (repo / 'maps/my_room.yaml').is_file() else None
+        default = 'maps/room_real.yaml' if (repo / 'maps/room_real.yaml').is_file() else None
         map_file = file_input(repo, 'Map YAML', ('.yaml', '.yml'), input_fn, default)
         pose_mode = choose('Vị trí khởi tạo (phải đúng vị trí robot thật):', {
             '1': 'Bố trí đã khai báo: robot1 ở (0,0,yaw=0); gợi ý các robot khác trong config/marco/localization.yaml',
@@ -104,7 +104,7 @@ def pc_command(repo, mode, ids, input_fn=input):
         return script(repo, 'marco.sh', 'run', mission, '--execute')
     if mode == '7':
         robot = robot_choice(ids, input_fn, default='robot1')
-        value = input_fn('Tên map lưu, không cần đuôi file [maps/site]: ').strip() or 'maps/site'
+        value = input_fn('Tên map lưu, không cần đuôi file [maps/room_real]: ').strip() or 'maps/room_real'
         path = Path(value).expanduser()
         if not path.is_absolute():
             path = repo / path

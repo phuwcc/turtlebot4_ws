@@ -32,8 +32,8 @@ bash run.bash check
 
 ```bash
 # PC — robot1 rời dock, giữ yên khi lấy gốc map
-# i/, tiến/lùi; j/l quay; k/Space dừng; Ctrl+C lưu map và thoát
-bash mapping.bash --save-as maps/room_real
+# i/, tiến/lùi; j/l quay; k/Space dừng; Ctrl+C lưu maps/room_real.yaml + maps/room_real.pgm
+bash mapping.bash
 ```
 
 ```bash
@@ -45,9 +45,9 @@ nano config/marco/mission.local.json
 ```
 
 ```bash
-# PC — toàn bộ luồng: hardware → định vị → MARCO preview → thực thi
+# PC — dùng maps/room_real.yaml: hardware → định vị → MARCO preview → thực thi
 # Robot rời dock; pose/goal đã kiểm tra. Bỏ --execute để chỉ preview.
-bash multi_robot.bash --map maps/room_real.yaml \
+bash multi_robot.bash \
   --poses config/marco/initial_poses.local.yaml \
   --mission config/marco/mission.local.json --execute
 ```

@@ -2,7 +2,7 @@
 # Start localization + Nav2 + socket/RViz. No mission or motion is started here.
 set -eo pipefail
 tb4_repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-tb4_map="${1:-$tb4_repo/maps/my_room.yaml}"; if (( $# )); then shift; fi
+tb4_map="${1:-$tb4_repo/maps/room_real.yaml}"; if (( $# )); then shift; fi
 tb4_command=(bash "$tb4_repo/scripts/pc-start.sh" "$tb4_map" managed_startup:=true \
   "localization_hints:=$tb4_repo/config/marco/localization.yaml" \
   "nav_params_file:=$tb4_repo/config/marco/nav2.yaml" "$@")

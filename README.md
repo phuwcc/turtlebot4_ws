@@ -7,8 +7,8 @@ bash run.bash check
 
 ```bash
 # PC — quét map bằng robot1; i/, tiến/lùi, j/l quay, k/Space dừng
-# Rời dock, giữ yên lúc khởi tạo. Ctrl+C để lưu map và thoát.
-bash mapping.bash --save-as maps/room_real
+# Rời dock, giữ yên lúc khởi tạo. Ctrl+C lưu maps/room_real.yaml + maps/room_real.pgm.
+bash mapping.bash
 ```
 
 ```bash
@@ -20,8 +20,8 @@ nano config/marco/mission.local.json
 ```
 
 ```bash
-# PC — mở đa robot + MARCO; kiểm tra pose trên RViz
-bash multi_robot.bash --map maps/room_real.yaml --poses config/marco/initial_poses.local.yaml
+# PC — mở đa robot + MARCO bằng maps/room_real.yaml; kiểm tra pose trên RViz
+bash multi_robot.bash --poses config/marco/initial_poses.local.yaml
 ```
 
 ```bash

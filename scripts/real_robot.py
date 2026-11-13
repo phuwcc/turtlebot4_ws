@@ -237,7 +237,7 @@ def mapping(args, values, ids):
     ensure_no_session()
     single = environment_for_robot(values, args.robot)
     directory = log_directory('mapping')
-    target = file_path(args.save_as) if args.save_as else ROOT/'maps'/('scan_'+datetime.now().strftime('%Y%m%d_%H%M%S'))
+    target = file_path(args.save_as)
     if target.suffix in ('.yaml', '.pgm'):
         target = target.with_suffix('')
     start_hardware([args.robot], values, args.install_service)
@@ -279,12 +279,12 @@ def parser():
             s.add_argument('--install-service', action='store_true', help='Cài/bật hardware tự chạy sau reboot trên Pi')
     s = sub.add_parser('mapping')
     s.add_argument('--robot', choices=('robot1', 'robot2', 'robot3'), default='robot1')
-    s.add_argument('--save-as', help='Tên map, không có đuôi; mặc định tên mới theo thời gian')
+    s.add_argument('--save-as', default='maps/room_real', help='Tên map; mặc định maps/room_real (.yaml và .pgm)')
     s.add_argument('--no-teleop', action='store_true')
     s.add_argument('--no-rviz', action='store_true')
     s.add_argument('--install-service', action='store_true')
     s = sub.add_parser('multi')
-    s.add_argument('--map', default='maps/my_room.yaml')
+    s.add_argument('--map', default='maps/room_real.yaml')
     s.add_argument('--poses', help='YAML x/y/yaw thật trên map, đủ các robot')
     s.add_argument('--mission')
     s.add_argument('--execute', action='store_true')
@@ -298,7 +298,7 @@ def parser():
     s = sub.add_parser('teleop')
     s.add_argument('robot', choices=('robot1', 'robot2', 'robot3'), default='robot1', nargs='?')
     s = sub.add_parser('save-map')
-    s.add_argument('filename')
+    s.add_argument('filename', nargs='?', default='maps/room_real')
     s.add_argument('--robot', choices=('robot1', 'robot2', 'robot3'), default='robot1')
     return p
 

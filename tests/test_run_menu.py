@@ -18,7 +18,7 @@ class RunMenuTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)
         (self.repo/'maps').mkdir()
-        (self.repo/'maps/my_room.yaml').write_text('image: my_room.pgm\n')
+        (self.repo/'maps/room_real.yaml').write_text('image: room_real.pgm\n')
         (self.repo/'poses.yaml').write_text('robot1: {x: 1, y: 2, yaw: 0}\n')
         (self.repo/'mission.json').write_text('{"tasks":[{"id":1,"goal":[0,0]}]}')
         self.quiet = contextlib.redirect_stdout(io.StringIO())

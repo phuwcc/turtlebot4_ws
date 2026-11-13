@@ -48,7 +48,7 @@ case "$tb4_mode" in
   diagnose)
     exec python3 "$tb4_repo/scripts/pc_diagnose.py" "$@" ;;
   nav)
-    tb4_map="${1:-$tb4_repo/maps/site.yaml}"; if (( $# )); then shift; fi
+    tb4_map="${1:-$tb4_repo/maps/room_real.yaml}"; if (( $# )); then shift; fi
     python3 "$tb4_repo/scripts/pc_diagnose.py" --preflight --map "$tb4_map"
     exec ros2 launch tb4_multi_bringup pc_navigation.launch.py \
       "robot_count:=$TB4_ROBOT_COUNT" "map:=$tb4_map" "$@" ;;
@@ -69,11 +69,12 @@ case "$tb4_mode" in
       "robot_ids:=$TB4_ROBOT_IDS" \
       "origin_file:=$tb4_state/${tb4_robot}_mapping_origin.json" "$@" ;;
   save-map)
-    tb4_robot="${1:-${TB4_ROBOT_IDS%%,*}}"; tb4_map="${2:-$tb4_repo/maps/site}"
+    tb4_robot="${1:-${TB4_ROBOT_IDS%%,*}}"; tb4_map="${2:-$tb4_repo/maps/room_real}"
+    case "$tb4_map" in *.yaml|*.pgm) tb4_map="${tb4_map%.*}";; esac
     case "$tb4_robot" in robot1|robot2|robot3) ;; *) exit 2;; esac
     [[ ",$TB4_ROBOT_IDS," == *",$tb4_robot,"* ]] || exit 2
     mkdir -p "$(dirname "$tb4_map")"
-    exec ros2 run nav2_map_server map_saver_cli -f "$tb4_map" --ros-args \
+    exec ros2 run nav2_map_server map_saver_cli -f "$tb4_map" --fmt pgm --ros-args \
       -r "__ns:=/$tb4_robot" -r "map:=/$tb4_robot/map" -p save_map_timeout:=15.0 ;;
   rviz)
     exec ros2 launch tb4_multi_bringup fleet_visualization.launch.py \

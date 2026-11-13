@@ -22,7 +22,7 @@ class RealRobotTest(unittest.TestCase):
         self.values = make_environment(['10.11.52.230', '10.11.52.243'], ['robot1', 'robot2'])
 
     def test_mapping_only_starts_selected_robot_and_saves_before_shutdown(self):
-        args = real.parser().parse_args(['mapping', '--no-teleop', '--save-as', 'maps/new room'])
+        args = real.parser().parse_args(['mapping', '--no-teleop'])
         child = Mock();child.poll.return_value = None;child.wait.side_effect = KeyboardInterrupt
         events = []
         with patch.object(real, 'require_pc'), patch.object(real, 'ensure_no_session'), \
@@ -38,7 +38,7 @@ class RealRobotTest(unittest.TestCase):
         self.assertTrue(preflight.call_args_list[1].kwargs['map_ready'])
         self.assertEqual([event[0] for event in events], ['save', 'stop'])
         self.assertIn('pc-save-map.sh', events[0][1][1])
-        self.assertEqual(events[0][1][-1], str(real.ROOT/'maps/new room'))
+        self.assertEqual(events[0][1][-1], str(real.ROOT/'maps/room_real'))
 
     def test_mapping_startup_failure_never_saves_an_unready_map(self):
         args = real.parser().parse_args(['mapping', '--no-teleop'])

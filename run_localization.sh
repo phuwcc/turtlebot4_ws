@@ -12,5 +12,5 @@ if pgrep -f '^/[^ ]*/lib/nav2_amcl/amcl([[:space:]]|$)' > /dev/null ||
   exit 1
 fi
 exec ros2 launch turtlebot4_navigation localization.launch.py \
-  "map:=${tb4_workspace}/maps/my_room.yaml" use_sim_time:=false \
+  "map:=${tb4_workspace}/maps/room_real.yaml" use_sim_time:=false \
   set_initial_pose:=true initial_x:=0.0 initial_y:=0.0 initial_yaw:=0.0 "$@"
