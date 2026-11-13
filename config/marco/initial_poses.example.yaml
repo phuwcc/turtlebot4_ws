@@ -1,0 +1,5 @@
+# EXAMPLE ONLY. Replace with the physical poses on the map you select.
+# This layout means robot2 is 0.5m left of robot1, both face map +X.
+# Do not reuse after moving the robots to another starting location.
+robot1: {x: 0.0, y: 0.0, yaw: 0.0}
+robot2: {x: 0.0, y: 0.5, yaw: 0.0}

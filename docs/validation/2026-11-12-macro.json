@@ -1,0 +1,73 @@
+{
+  "date": "2026-11-12",
+  "upstream": {
+    "url": "https://github.com/pairs-lab/MACRO.git",
+    "revision": "d8045a5a08cfdce516b6bdaff165aebc7758801d",
+    "working_tree_clean": true
+  },
+  "checks": {
+    "bridge_build": "passed",
+    "planner": {
+      "tests": 6,
+      "result": "passed"
+    },
+    "scenario_tests": {
+      "tests": 2,
+      "cases": [
+        "04_crossing",
+        "05_head_on",
+        "06_idle_blocker",
+        "07_conflict_dag",
+        "08_no_escape",
+        "09_head_on_1m"
+      ],
+      "result": "passed"
+    },
+    "socket_protocol": {
+      "tests": 3,
+      "result": "passed"
+    },
+    "run_menu": {
+      "tests": 13,
+      "result": "passed"
+    },
+    "path_runtime": {
+      "tests": 7,
+      "includes": "MACRO -> TCP -> FollowPath -> guard -> two fake bases",
+      "result": "passed"
+    },
+    "offline_my_room_ab": {
+      "result": "passed",
+      "physical_motion": false,
+      "completed_tasks": [
+        1,
+        2
+      ]
+    }
+  },
+  "physical_trial": {
+    "result": "blocked_before_dispatch",
+    "motion_dispatched": false,
+    "layout": "robot2 left of robot1 by operator-described 0.5m, same heading",
+    "map": "maps/my_room.yaml",
+    "upstream_unchanged": true,
+    "hardware_build": "passed on both Pi, three hardware packages",
+    "preview": "passed using observed poses; disjoint_routes",
+    "observer_error": "robot2 missing odom",
+    "robot2_driver_error": "Low battery, starting power off timer; create3_republisher aborted with UnknownGoalHandleError",
+    "next_action": "Charge robot2, restart driver and confirm both localizations before retry",
+    "final_status": {
+      "robot1_busy": false,
+      "robot2_busy": false,
+      "robot1_cmd_vel": [
+        0.0,
+        0.0
+      ],
+      "robot2_cmd_vel": [
+        0.0,
+        0.0
+      ],
+      "robot2_odom_available": false
+    }
+  }
+}

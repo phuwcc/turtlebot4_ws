@@ -95,15 +95,15 @@ class RunMenuTest(unittest.TestCase):
         self.assertFalse((self.repo/'SHOULD_NOT_EXIST').exists())
 
     def test_missing_submodule_is_optional_and_checked(self):
-        with patch.dict(menu.os.environ, {'MARCO_ROOT':str(self.repo/'MARCO')}),patch.object(menu.subprocess,'run') as call:
+        with patch.dict(menu.os.environ, {'MARCO_ROOT':str(self.repo/'MACRO')}),patch.object(menu.subprocess,'run') as call:
             with self.assertRaises(ValueError):menu.ensure_marco(self.repo,self.answers(''))
             call.assert_not_called()
             with self.assertRaises(ValueError):menu.ensure_marco(self.repo,self.answers('y'))
             self.assertEqual(call.call_count,1)
 
     def test_existing_submodule_requires_no_network(self):
-        path=self.repo/'MARCO/src/core/assignment.py';path.parent.mkdir(parents=True);path.write_text('')
-        with patch.dict(menu.os.environ, {'MARCO_ROOT':str(self.repo/'MARCO')}),patch.object(menu.subprocess,'run') as call:
+        path=self.repo/'MACRO/src/core/assignment.py';path.parent.mkdir(parents=True);path.write_text('')
+        with patch.dict(menu.os.environ, {'MARCO_ROOT':str(self.repo/'MACRO')}),patch.object(menu.subprocess,'run') as call:
             menu.ensure_marco(self.repo,self.answers())
         call.assert_not_called()
 

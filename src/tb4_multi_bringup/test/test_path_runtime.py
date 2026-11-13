@@ -136,7 +136,7 @@ class PathRuntimeTest(unittest.TestCase):
         import subprocess,sys
         from pathlib import Path
         root=Path(__file__).resolve().parents[3]
-        if not (root/'MARCO/src/core/assignment.py').is_file():self.skipTest('MARCO checkout is on the PC only')
+        if not (root/'MACRO/src/core/assignment.py').is_file():self.skipTest('MARCO checkout is on the PC only')
         folder=root/'log/marco_test';folder.mkdir(parents=True,exist_ok=True)
         positions={'robot1':[-1.,0.,0.],'robot2':[-1.,1.,0.]};velocities={r:[0.,0.] for r in positions};seen_goals=[];peak=[0.]
         group=ReentrantCallbackGroup();command_pubs={}
@@ -180,7 +180,7 @@ class PathRuntimeTest(unittest.TestCase):
         self.wait(lambda:all(s['path_ready'] for s in app.status()['robots'].values()))
         mission={'tasks':[{'id':1,'goal':[-.8,0,0],'candidates':['robot1']},{'id':2,'goal':[-.8,1,0],'candidates':['robot2']},{'id':3,'goal':[-.6,0,0],'candidates':['robot1'],'depends_on':[1,2]}]}
         filename=folder/'e2e-mission.json';filename.write_text(json.dumps(mission))
-        common=[str(filename),'--root',str(root/'MARCO'),'--port',str(app.port)]
+        common=[str(filename),'--root',str(root/'MACRO'),'--port',str(app.port)]
         preview=subprocess.run([sys.executable,'-B','-m','tb4_marco_bridge.cli','plan',*common,'--out',str(folder/'e2e-preview.json')],capture_output=True,text=True,timeout=12)
         self.assertEqual(preview.returncode,0,preview.stderr);self.assertEqual(seen_goals,[])
         run=subprocess.run([sys.executable,'-B','-m','tb4_marco_bridge.cli','run',*common,'--execute','--out',str(folder/'e2e-result.json')],capture_output=True,text=True,timeout=40)

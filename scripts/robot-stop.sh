@@ -8,4 +8,8 @@ case "$tb4_robot" in robot1|robot2|robot3) ;; *) echo 'Usage: bash scripts/robot
 source /etc/turtlebot4/setup.bash
 [[ "${ROBOT_NAMESPACE:-}" == "/$tb4_robot" ]] || { echo 'Robot ID không khớp namespace của Pi này.' >&2; exit 1; }
 sudo systemctl stop turtlebot4
+if systemctl cat tb4-hardware.service >/dev/null 2>&1 &&
+   [[ "$(systemctl show tb4-hardware.service -p LoadState --value)" != bad-setting ]]; then
+  sudo systemctl stop tb4-hardware.service
+fi
 exec python3 "$tb4_repo/scripts/stop_hardware.py" "$tb4_robot"

@@ -13,11 +13,13 @@ def generate_launch_description():
         DeclareLaunchArgument('robot_count', default_value=os.environ.get('TB4_ROBOT_COUNT', '1')),
         DeclareLaunchArgument('robot_ids', default_value=os.environ.get('TB4_ROBOT_IDS', '')),
         DeclareLaunchArgument('origin_file', default_value=''),
+        DeclareLaunchArgument('rviz', default_value='true', choices=['true', 'false']),
         IncludeLaunchDescription(PythonLaunchDescriptionSource(str(directory / 'mapping.launch.py')),
             launch_arguments={'robot_id': LaunchConfiguration('robot_id'),
                               'robot_config': LaunchConfiguration('robot_config'),
                               'origin_file': LaunchConfiguration('origin_file')}.items()),
         IncludeLaunchDescription(PythonLaunchDescriptionSource(str(directory / 'fleet_visualization.launch.py')),
             launch_arguments={'robot_count': LaunchConfiguration('robot_count'), 'socket': 'true',
+                              'rviz': LaunchConfiguration('rviz'),
                               'robot_ids': LaunchConfiguration('robot_ids')}.items()),
     ])

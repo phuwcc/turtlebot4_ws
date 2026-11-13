@@ -129,7 +129,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command',choices=['status','plan','run'])
     parser.add_argument('mission',nargs='?',type=Path)
-    parser.add_argument('--root',type=Path,default=Path(os.environ.get('MARCO_ROOT','MARCO')))
+    parser.add_argument('--root',type=Path,default=Path(os.environ.get('MARCO_ROOT','MACRO')))
     parser.add_argument('--port',type=int,default=int(os.environ.get('TB4_SOCKET_PORT','8765')))
     parser.add_argument('--out',type=Path,default=Path('log/marco/mission.json'))
     parser.add_argument('--execute',action='store_true',help='Explicitly permit physical path execution')

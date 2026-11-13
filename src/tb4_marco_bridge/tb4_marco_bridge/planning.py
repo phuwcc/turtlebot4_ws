@@ -5,6 +5,7 @@ import importlib
 import json
 import math
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -14,12 +15,27 @@ def finite(value):
 
 def load_core(root):
     root = Path(root).expanduser().resolve()
-    if not (root/'src/core/coordination/coordinator.py').is_file():
-        raise ValueError('MARCO_ROOT must point to the original MARCO checkout')
+    if not (root/'src/core/coordination/relocation_search.py').is_file():
+        raise ValueError('MARCO_ROOT must point to the MACRO checkout')
     # No __pycache__, build metadata, scenario outputs or logs inside MARCO.
     sys.dont_write_bytecode = True
     sys.path.insert(0, str(root/'src'))
     return importlib.import_module('core')
+
+
+@dataclass
+class RobotState:
+    """Simulator-independent snapshot consumed by MACRO's coordination core."""
+    robot_id: str
+    cell: tuple
+    color: tuple
+    goal: tuple | None = None
+    path: list = field(default_factory=list)
+    path_index: int = 0
+    phase: str = 'idle'
+    current_task: dict | None = None
+    action_remaining: float = 0.
+    interrupted_action_remaining: float | None = None
 
 
 class Grid:
@@ -79,9 +95,8 @@ class Grid:
 class Planner:
     def __init__(self, root):
         self.core=load_core(root)
-        from core.coordination import planner, coordinator, relocation_search
-        from core.models import RobotState
-        self.algorithms, self.coordinator = planner, coordinator
+        from core.coordination import planner, relocation_search
+        self.algorithms, self.coordinator = planner, relocation_search
         self.conflict=relocation_search._path_conflict
         self.RobotState=RobotState
         self.grid=None
@@ -132,11 +147,9 @@ class Planner:
                 route=parent.algorithms.astar(parent.grid.cells,start,goal)
                 if route is None:raise ValueError('No static route for task '+location)
                 return parent.algorithms.path_length(route,parent.grid.res),goal
-        mode='chain_bnb'
-        try:
-            from core.assignment_cpp import require_native
-            require_native();mode='chain_bnb_cpp'
-        except (ImportError,RuntimeError):pass
+        from core.assignment_cpp import require_native
+        require_native()
+        mode='chain_bnb_cpp'
         result=self.core.optimize_task_assignments(self.tasks,Distance(),robot_speed=self.speed,service_time=.001,search_mode=mode)
         return {'assignment':{str(k):self.names[v] for k,v in result['assignment'].items()},
                 'sequences':{self.names[k]:v for k,v in result['robot_plans'].items()},
@@ -194,11 +207,11 @@ class Planner:
                 priority=candidate['priority_robot']
                 route=candidate['preferred_paths'].get(priority,[])
                 return distance/self.speed+self.algorithms.path_length(route,self.grid.res)/self.speed+.5*(len(steps)+1)
-            plan=self.coordinator.compute_conflict_plan(cluster=states,dag_robots=states,tasks=tasks,
+            plan=self.coordinator.search_relocation_plan(robots=states,dag_robots=states,tasks=tasks,
                 task_status={t['id']:'completed' if t['id'] in completed else 'pending' for t in tasks},objects=objects,
                 navigation_cells=self.grid.cells,robot_radius=radius,grid_size=self.grid.res,
-                speed_cells_per_second=self.speed/self.grid.res,planning_timeout_s=3.,hypothesis_workers=1,
-                local_resolution_time_evaluator=timing,selection_policy='dag_aware',release_prediction_model='dynamic_events_guarded')
+                speed_cells_per_second=self.speed/self.grid.res,planning_timeout_s=3.,
+                local_time_evaluator=timing,selection_policy='dag_aware')
             if not plan:raise RuntimeError('No feasible guarded MARCO intervention')
             audit={key:plan.get(key) for key in ('strategy','selected_hypothesis','priority_robot','local_resolution_delay','estimated_makespan')}
             relocations=plan.get('relocation_sequence',[])

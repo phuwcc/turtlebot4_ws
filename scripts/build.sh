@@ -18,7 +18,8 @@ fi
 tb4_command=(colcon build --base-paths src --packages-select "${tb4_packages[@]}"
   --symlink-install --executor sequential
   --cmake-args -DCMAKE_BUILD_TYPE=Release '-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG'
-  -DBUILD_TESTING=ON "-DTB4_BUILD_PC_NODES=$tb4_pc_nodes" "$@")
+  -DBUILD_TESTING=ON "-DTB4_BUILD_PC_NODES=$tb4_pc_nodes"
+  "-DTB4_MARCO_ROOT=${MARCO_ROOT:-$tb4_repo/MACRO}" "$@")
 if [[ "${TB4_BUILD_RESOURCE_LIMITS:-1}" == 1 ]] && command -v systemd-run >/dev/null &&
    systemctl --user show-environment >/dev/null 2>&1; then
   echo 'Build tuần tự, ưu tiên thấp, CPU tối đa 75% một lõi và RAM tối đa 2,5 GiB (có thể cấu hình).'

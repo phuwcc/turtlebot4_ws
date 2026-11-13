@@ -11,3 +11,6 @@ __pycache__/
 /build/
 /install/
 /log/
+
+# Per-session physical robot starting poses
+/config/marco/initial_poses.local.yaml

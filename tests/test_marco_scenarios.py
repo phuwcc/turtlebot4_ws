@@ -38,7 +38,7 @@ class DocumentedScenarioTest(unittest.TestCase):
     def test_conflict_cases_complete_in_bounded_batches(self):
         for name in ('04_crossing', '05_head_on', '06_idle_blocker', '07_conflict_dag', '09_head_on_1m'):
             with self.subTest(name=name):
-                planner = Planner(ROOT / 'MARCO')
+                planner = Planner(ROOT / 'MACRO')
                 mission = json.loads((CASES / (name + '.json')).read_text())
                 state = scenario(name)
                 assignment = planner.assign(state, mission)
@@ -67,7 +67,7 @@ class DocumentedScenarioTest(unittest.TestCase):
                         self.assertLess(math.dist(actual[:2], task['goal'][:2]), .1)
 
     def test_no_escape_rejects_before_any_action(self):
-        planner = Planner(ROOT / 'MARCO')
+        planner = Planner(ROOT / 'MACRO')
         mission = json.loads((CASES / '08_no_escape.json').read_text())
         state = scenario('08_no_escape')
         before = copy.deepcopy(state)

@@ -123,15 +123,15 @@ def ensure_built(repo, role, input_fn=input):
 
 
 def ensure_marco(repo, input_fn=input):
-    root = Path(os.environ.get('MARCO_ROOT', str(repo / 'MARCO'))).expanduser()
+    root = Path(os.environ.get('MARCO_ROOT', str(repo / 'MACRO'))).expanduser()
     if (root / 'src/core/assignment.py').is_file():
         return
-    if root.resolve() != (repo / 'MARCO').resolve():
+    if root.resolve() != (repo / 'MACRO').resolve():
         raise ValueError('MARCO_ROOT không trỏ tới checkout MARCO hợp lệ.')
     answer = input_fn('Chưa có MARCO. Tải submodule đã ghim và build nếu cần? [y/N]: ').strip().lower()
     if answer not in ('y', 'yes'):
         raise ValueError('Cần MARCO submodule cho chế độ này.')
-    subprocess.run(['git', 'submodule', 'update', '--init', '--recursive', 'MARCO'], cwd=repo, check=True)
+    subprocess.run(['git', 'submodule', 'update', '--init', '--recursive', 'MACRO'], cwd=repo, check=True)
     if not (root / 'src/core/assignment.py').is_file():
         raise ValueError('Submodule chưa sẵn sàng.')
     if (repo / 'install/setup.bash').is_file():

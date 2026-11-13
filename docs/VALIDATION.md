@@ -1,3 +1,53 @@
+# Ba file bash cho robot thật — 2026-11-13
+
+`run.bash`, `mapping.bash`, `multi_robot.bash` điều phối SSH/hardware và các
+script ROS hiện có. Checkout MACRO hiện là `5ce3762`; commit này thêm adapter
+ROS/Gazebo, không đổi `src/core` hoặc các module native so với `d8045a5`.
+
+- Hai Pi `10.11.52.230` và `10.11.52.243`: `tb4-hardware.service` active/enabled,
+  driver màn hình/LED khởi tạo thành công; người vận hành xác nhận cả hai sáng.
+  Pin lúc kiểm tra cuối khoảng 75%/29%, bánh xe đều báo enabled, scan/odom mới.
+- `bash run.bash check` và `bash run.bash hardware` đạt trên hai TB4 thật.
+- `mapping.bash --no-teleop --no-rviz` chạy SLAM bằng robot1 thật, nhận LiDAR và
+  tạo/lưu map 87×149 ô ở 0,05 m/ô khi Ctrl+C. Chỉ thử đứng yên; chưa quét đủ
+  phòng và không gửi lệnh bánh xe. Map kiểm tra được lưu dưới `log/validation/2026-11-13/`.
+- 7 kiểm thử điều phối đạt: map chưa sẵn sàng không được lưu, thiếu pose chặn
+  trước SSH, preview lỗi không dispatch, thiếu định vị/path server không chạy.
+- 3 kiểm thử telemetry ROS ở localhost/domain 184 đạt: dữ liệu mới và bánh xe
+  enabled được nhận; timestamp cũ, pin yếu hoặc E-Stop chặn điều khiển.
+- MACRO planner 6, scenario 2 (04–09), menu 13, hardware-stop 4 và một bài
+  MACRO → TCP → FollowPath → hai fake base đều đạt với checkout hiện tại.
+  Không gọi kết quả fake base là thử nghiệm chuyển động thật.
+
+Đã thử bật hardware và mapping/lưu map thật. Chưa thực thi mission đa robot
+trong lượt này: chưa có file pose/goal hiện tại được xác nhận cho map thực tế.
+[Hướng dẫn chạy](REAL_ROBOT.md). [Kết quả có cấu trúc](validation/2026-11-13-real-entrypoints.json).
+
+# MACRO mới — 2026-11-12
+
+Adapter đã chuyển sang `pairs-lab/MACRO`, revision
+`d8045a5a08cfdce516b6bdaff165aebc7758801d`. Source upstream giữ nguyên;
+module C++ được build trong workspace (assignment `bnb-cpp-chain-atomic-v2`,
+geometry `grid-geometry-v5`). Mặc định checkout là `MACRO/`; API điều phối
+được gọi trực tiếp qua `search_relocation_plan`.
+
+- 31 kiểm thử đạt: planner 6, scenario 2 (bao gồm 6 tình huống 04–09),
+  socket 3, menu 13, ROS path runtime 7. Luồng MACRO → TCP → FollowPath →
+  watchdog chạy với hai base giả; không chứng nhận chuyển động trên robot thật.
+- Preview offline testcase 01 trên `maps/my_room.yaml`, robot1 `(0,0,0)`,
+  robot2 `(0,0.5,0)`, hoàn thành hai task theo các bước nhường/đi ưu tiên.
+  Tọa độ đầu vào là seed do người vận hành mô tả, chưa phải pose đo từ cảm biến.
+
+Phần cứng: cả hai Pi build thành công 3 package hardware. Hai robot có lúc đạt
+localization và preview live A/B thành công với `disjoint_routes`. Lượt thực thi
+bị observer chặn **trước dispatch**, vì robot2 mất odom. Log Pi robot2 báo
+`Low battery, starting power off timer`, sau đó `create3_republisher` crash với
+`rclcpp_action::exceptions::UnknownGoalHandleError`. Không có task nào được gửi;
+không ghi nhận thành công trên robot thật. Robot1 có cmd/odom về 0; robot2 mất
+telemetry nên không thể xác nhận dừng bằng odom. Cần sạc robot2 và khởi động lại
+driver trước lượt thử sau. Không thay ngưỡng định vị/freshness để chạy tiếp.
+[Kết quả ngày 12/11](validation/2026-11-12-macro.json).
+
 # MARCO và localization — 2026-11-11
 
 Kiểm tra trên hai robot thật, dùng lại `maps/my_room.yaml`, không thay bản đồ.

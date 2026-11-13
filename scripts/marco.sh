@@ -4,7 +4,7 @@ tb4_repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 source /opt/ros/humble/setup.bash
 source "$tb4_repo/install/setup.bash"
 export PYTHONDONTWRITEBYTECODE=1
-export MARCO_ROOT="${MARCO_ROOT:-$tb4_repo/MARCO}"
+export MARCO_ROOT="${MARCO_ROOT:-$tb4_repo/MACRO}"
 cd "$tb4_repo"
 # Prevent two local mission dispatchers from competing for the same robot leases.
 tb4_state="${XDG_STATE_HOME:-$HOME/.local/state}/tb4_multi_robot/pc"

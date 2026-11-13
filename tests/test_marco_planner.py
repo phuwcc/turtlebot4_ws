@@ -20,7 +20,7 @@ def snapshot():
     return {'map':room(),'robots':{'robot1':{'pose':[-1,0,0]},'robot2':{'pose':[-1,1,0]}}}
 
 class MarcoPlanningTest(unittest.TestCase):
-    def setUp(self):self.planner=Planner(ROOT/'MARCO')
+    def setUp(self):self.planner=Planner(ROOT/'MACRO')
 
     def test_rotated_map_and_unknown_clearance(self):
         m=room();m['origin']=[2,-3,math.pi/3];m['data'][20*40+20]=-1
@@ -72,15 +72,15 @@ class MarcoPlanningTest(unittest.TestCase):
         self.assertEqual(set(completed),{1,2})
 
     def test_worker_protocol_does_not_modify_marco(self):
-        before=subprocess.check_output(['git','-C',str(ROOT/'MARCO'),'status','--porcelain'])
+        before=subprocess.check_output(['git','-C',str(ROOT/'MACRO'),'status','--porcelain'])
         directory=ROOT/'log/marco_test';directory.mkdir(parents=True,exist_ok=True)
-        worker=Worker(ROOT/'MARCO',directory/'worker.log')
+        worker=Worker(ROOT/'MACRO',directory/'worker.log')
         try:
             result=worker.call({'command':'assign','snapshot':snapshot(),
                                 'mission':{'tasks':[{'id':1,'goal':[1,0],'candidates':['robot1']}]}})
             self.assertEqual(result['assignment'],{'1':'robot1'})
         finally:worker.close()
-        self.assertEqual(before,subprocess.check_output(['git','-C',str(ROOT/'MARCO'),'status','--porcelain']))
+        self.assertEqual(before,subprocess.check_output(['git','-C',str(ROOT/'MACRO'),'status','--porcelain']))
 
     def test_completion_racing_lease_renewal(self):
         action={'robot':'robot1','task':1,'points':[[0.,0.,0.],[.1,0.,0.]]}
