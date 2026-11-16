@@ -1,5 +1,6 @@
 // PC-only lifecycle/AMCL initialization. Never publishes motor commands.
 #include "global_scan_match.hpp"
+#include "scan_hit.hpp"
 #include <rclcpp/rclcpp.hpp>
 #include <tf2/buffer_core.h>
 #include <tf2_msgs/msg/tf_message.hpp>
@@ -34,6 +35,13 @@ public:
     if(!std::isfinite(hint_x_)||!std::isfinite(hint_y_)||!std::isfinite(hint_yaw_)||!std::isfinite(hint_std_xy_)||!std::isfinite(hint_std_yaw_)||hint_std_xy_<.05||hint_std_xy_>1.||hint_std_yaw_<.05||hint_std_yaw_>M_PI)throw std::invalid_argument("Invalid localization hint");
     anchor_yaw_=declare_parameter<double>("anchor_yaw",0.0);
     navigate_=declare_parameter<bool>("navigation",true);
+    const auto profile=declare_parameter<std::string>("localization_profile","strict");
+    if(profile!="strict"&&profile!="navigation")throw std::invalid_argument("Unknown localization profile");
+    // Normal Nav2 goals tolerate a 15cm position standard deviation; MARCO's
+    // guarded path validation retains the original 10cm acquisition limit.
+    max_covariance_xy_=profile=="navigation"?.0225:.01;
+    max_covariance_yaw_=profile=="navigation"?.09:.04;
+    min_scan_match_=profile=="navigation"?.65:.70;
     wait_seconds_=declare_parameter<double>("global_timeout",120.0);
     if(!std::isfinite(anchor_yaw_)||!std::isfinite(wait_seconds_)||wait_seconds_<=0)throw std::invalid_argument("Invalid anchor yaw or global timeout");
     loc_=create_client<Manage>("lifecycle_manager_localization/manage_nodes");
@@ -87,7 +95,7 @@ private:
         const double dx=laser.translation.x+r*std::cos(angle)-map_->info.origin.position.x;
         const double dy=laser.translation.y+r*std::sin(angle)-map_->info.origin.position.y;
         const int x=std::floor((co*dx+si*dy)/res),y=std::floor((-si*dx+co*dy)/res);++total;
-        if(x>=0&&y>=0&&x<int(map_->info.width)&&y<int(map_->info.height)&&dist_[y*map_->info.width+x]*res<=.15)++hits;
+        if(tb4::near_occupied_cell(map_->data,int(map_->info.width),int(map_->info.height),x,y,res,.15))++hits;
       }
       if(has_hint_&&!hint_verified_&&std::hypot(body.transform.translation.x-hint_x_,body.transform.translation.y-hint_y_)>std::max(.15,2*hint_std_xy_)){status["reason"]="outside_initial_hint_region";return false;}
       const double score=total?double(hits)/total:0;
@@ -97,7 +105,7 @@ private:
       status["pose"]={body.transform.translation.x,body.transform.translation.y,yaw(body.transform.rotation)};
       // AMCL may return -1e-14 from floating-point cancellation after resampling.
       // Accept only numerical roundoff; materially negative variances still fail.
-      const bool ok=total>=20&&score>=.70&&std::isfinite(cov[0])&&std::isfinite(cov[7])&&std::isfinite(cov[35])&&cov[0]>=-1e-10&&cov[7]>=-1e-10&&cov[35]>=-1e-10&&cov[0]<=.01&&cov[7]<=.01&&cov[35]<=.04;
+      const bool ok=total>=20&&score>=min_scan_match_&&std::isfinite(cov[0])&&std::isfinite(cov[7])&&std::isfinite(cov[35])&&cov[0]>=-1e-10&&cov[7]>=-1e-10&&cov[35]>=-1e-10&&cov[0]<=max_covariance_xy_&&cov[7]<=max_covariance_xy_&&cov[35]<=max_covariance_yaw_;
       status["reason"]=ok?"stable_localization":"amcl_not_converged";return ok;
     }catch(const tf2::TransformException&){status["reason"]="waiting_for_map_tf";return false;}
   }
@@ -163,12 +171,26 @@ private:
     }
     if(phase_=="localizing"||phase_=="navigation"||phase_=="running"||phase_=="paused") {
       const bool ok=quality(status);
+      // A modest covariance increase while turning can be resolved by fresh
+      // stationary scan updates. Hold motion permissions, but keep Nav2's goal
+      // alive for a bounded recovery window. Missing/stale sensors never qualify.
+      bool recovering=false;
+      if(!ok&&status.value("reason",std::string())=="amcl_not_converged"&&
+          status.contains("covariance_xyyaw")&&status.value("scan_match_fraction",0.)>=min_scan_match_) {
+        const auto& c=status["covariance_xyyaw"];
+        recovering=c[0].get<double>()>=0.&&c[0].get<double>()<=.04&&
+                   c[1].get<double>()>=0.&&c[1].get<double>()<=.04&&
+                   c[2].get<double>()>=0.&&c[2].get<double>()<=.09;
+      }
+      status["recovering"]=recovering&&phase_=="running";
       if(!ok){if(!bad_quality_)bad_since_=Clock::now();bad_quality_=true;}else bad_quality_=false;
       if(!ok&&phase_=="localizing")assist_global_search();
       if(!search_audit_.is_null())status["global_scan_search"]=search_audit_;
       if(ok) {if(!quality_started_)quality_since_=Clock::now();quality_started_=true;}
       else quality_started_=false;
-      const bool ready=ok&&quality_started_&&Clock::now()-quality_since_>=3s;
+      // A running, already verified pose recovers from a single noisy scan
+      // immediately. Initial acquisition and resuming paused Nav2 still need 3s.
+      const bool ready=ok&&quality_started_&&(phase_=="running"||Clock::now()-quality_since_>=3s);
       if(ready)hint_verified_=true; // A seed constrains initialization, not later navigation.
       status["pose_ready"]=ready;
       status["ready"]=ready&&(!navigate_||phase_=="running");
@@ -177,10 +199,14 @@ private:
         if(navigate_&&nav_->service_is_ready())manage(nav_,Manage::Request::STARTUP,"running");
         else if(!navigate_)phase_="running";
       }
-      if(phase_=="running"&&navigate_&&bad_quality_&&Clock::now()-bad_since_>2s&&!pending_&&nav_->service_is_ready())manage(nav_,Manage::Request::PAUSE,"paused");
+      const auto recovery_window=recovering?10s:2s;
+      if(phase_=="running"&&navigate_&&bad_quality_&&Clock::now()-bad_since_>recovery_window&&!pending_&&nav_->service_is_ready())manage(nav_,Manage::Request::PAUSE,"paused");
       if(phase_=="paused"&&ready&&!pending_&&nav_->service_is_ready())manage(nav_,Manage::Request::RESUME,"running");
       if(phase_=="localizing"&&Clock::now()-phase_at_>std::chrono::duration<double>(wait_seconds_))status["reason"]=has_hint_?"hint_not_converged_check_scan_alignment":"global_search_ambiguous_set_manual_initial_pose";
-      if(!ready&&Clock::now()-last_update_>1s&&Clock::now()-phase_at_<std::chrono::duration<double>(wait_seconds_)&&update_->service_is_ready()) {
+      // The initial global-search deadline must not disable recovery later in
+      // a session. Stationary AMCL needs forced updates after a pause/pose reset.
+      const bool recovery_phase=phase_=="paused"||phase_=="running";
+      if(!ready&&Clock::now()-last_update_>1s&&(recovery_phase||Clock::now()-phase_at_<std::chrono::duration<double>(wait_seconds_))&&update_->service_is_ready()) {
         last_update_=Clock::now();update_->async_send_request(std::make_shared<Empty::Request>());
       }
     }
@@ -188,6 +214,7 @@ private:
     if(last_phase_!=phase_){RCLCPP_INFO(get_logger(),"Localization state: %s",phase_.c_str());last_phase_=phase_;}
   }
   bool has_hint_{false},hint_verified_{false};double hint_x_{0},hint_y_{0},hint_yaw_{0},hint_std_xy_{.2},hint_std_yaw_{.2};
+  double max_covariance_xy_{.01},max_covariance_yaw_{.04},min_scan_match_{.70};
   bool bad_quality_{false};Clock::time_point bad_since_;
   Json search_audit_=nullptr;bool assisted_{false};Clock::time_point last_search_;
   uint64_t generation_{0};

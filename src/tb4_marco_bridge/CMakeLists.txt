@@ -3,7 +3,7 @@ project(tb4_marco_bridge)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 ament_python_install_package(${PROJECT_NAME})
-install(PROGRAMS scripts/marco DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS scripts/marco scripts/marco_rviz DESTINATION lib/${PROJECT_NAME})
 # Read upstream source only. Every generated file stays in the colcon build/install dirs.
 set(TB4_MARCO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../MACRO" CACHE PATH "Unmodified MARCO checkout")
 find_package(Python3 COMPONENTS Interpreter Development QUIET)

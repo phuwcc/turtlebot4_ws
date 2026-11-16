@@ -9,12 +9,12 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.qos import QoSProfile,DurabilityPolicy,qos_profile_sensor_data
 from rclpy.action import ActionServer,CancelResponse
-from geometry_msgs.msg import TransformStamped,PoseWithCovarianceStamped,Twist,TwistStamped
+from geometry_msgs.msg import TransformStamped,PoseStamped,PoseWithCovarianceStamped,Twist,TwistStamped
 from std_msgs.msg import Header,String
 from nav_msgs.msg import Odometry,OccupancyGrid
 from sensor_msgs.msg import LaserScan
 from tf2_msgs.msg import TFMessage
-from nav2_msgs.action import FollowPath
+from nav2_msgs.action import FollowPath,NavigateToPose
 from nav2_msgs.srv import IsPathValid,ManageLifecycleNodes
 from std_srvs.srv import Empty
 from native_process import NativeProcess
@@ -48,7 +48,7 @@ class PathRuntimeTest(unittest.TestCase):
         m=OccupancyGrid();m.header.frame_id='map';m.info.resolution=.05;m.info.width=m.info.height=81
         m.info.origin.position.x=m.info.origin.position.y=-2.025;m.info.origin.orientation.w=1.
         m.data=[100 if x in (0,80) or y in (0,80) else 0 for y in range(81) for x in range(81)];grid.publish(m)
-        self.quality=pose_quality;self.loc_ready=True
+        self.quality=pose_quality;self.loc_ready=True;self.loc_recovering=False
         def publish():
             if self.paused:return
             stamp=self.node.get_clock().now().to_msg()
@@ -63,7 +63,7 @@ class PathRuntimeTest(unittest.TestCase):
             if self.covariance_override is not None:
                 p.pose.covariance[0]=p.pose.covariance[7]=self.covariance_override
             amcl.publish(p)
-            if publish_loc:loc.publish(String(data=json.dumps({'ready':self.loc_ready})))
+            if publish_loc:loc.publish(String(data=json.dumps({'ready':self.loc_ready,'recovering':self.loc_recovering})))
         timer=self.node.create_timer(.05,publish);self.keep += [tf,odom,scan,loc,amcl,grid,timer]
 
     def test_path_validation_lease_and_permission(self):
@@ -132,7 +132,76 @@ class PathRuntimeTest(unittest.TestCase):
             self.wait(lambda:ManageLifecycleNodes.Request.PAUSE in commands)
             app.close();self.apps.remove(app)
 
+    def test_stationary_localization_recovers_after_search_timeout(self):
+        self.sensors('robot1',publish_loc=False);statuses=[];updates=[];commands=[];group=ReentrantCallbackGroup()
+        def manager(req,res):commands.append(req.command);res.success=True;return res
+        def update(req,res):updates.append(time.monotonic());return res
+        self.keep += [self.node.create_service(ManageLifecycleNodes,'/robot1/lifecycle_manager_localization/manage_nodes',manager,callback_group=group),
+            self.node.create_service(ManageLifecycleNodes,'/robot1/lifecycle_manager_navigation/manage_nodes',manager,callback_group=group),
+            self.node.create_service(Empty,'/robot1/request_nomotion_update',update,callback_group=group),
+            self.node.create_subscription(PoseWithCovarianceStamped,'/robot1/initialpose',lambda m:None,10),
+            self.node.create_subscription(String,'/robot1/localization_status',lambda m:statuses.append(json.loads(m.data)),self.latched)]
+        self.start('localization_supervisor',{'anchor':True,'navigation':True,'global_timeout':.5},'/robot1')
+        self.wait(lambda:statuses and statuses[-1]['ready'],timeout=18)
+        self.quality=False
+        self.wait(lambda:not statuses[-1]['ready'])
+        self.quality=True
+        self.wait(lambda:statuses[-1]['ready'],timeout=1.5)
+        self.covariance_override=.02
+        self.wait(lambda:statuses[-1].get('recovering',False))
+        time.sleep(2.5)
+        self.assertEqual(statuses[-1]['phase'],'running')
+        self.assertFalse(statuses[-1]['ready'])
+        self.covariance_override=None
+        self.wait(lambda:statuses[-1]['ready'],timeout=1.5)
+        self.quality=False
+        self.wait(lambda:statuses[-1]['phase']=='paused')
+        time.sleep(.7);count=len(updates)
+        self.wait(lambda:len(updates)>=count+2,timeout=4)
+        self.quality=True
+        self.wait(lambda:statuses[-1]['ready'],timeout=7)
+        self.assertIn(ManageLifecycleNodes.Request.RESUME,commands)
+
+    def test_navigation_noise_stops_commands_without_losing_goal(self):
+        self.sensors('robot1');goals=[];group=ReentrantCallbackGroup()
+        def execute(handle):
+            goals.append(handle.request.pose)
+            while not handle.is_cancel_requested:time.sleep(.02)
+            handle.canceled();return NavigateToPose.Result()
+        action=ActionServer(self.node,NavigateToPose,'/robot1/navigate_to_pose',execute_callback=execute,
+            cancel_callback=lambda _:CancelResponse.ACCEPT,callback_group=group)
+        self.keep.append(action)
+        app=self.start('socket_control',{'robot_count':1,'require_localization':True})
+        permissions=[]
+        self.keep.append(self.node.create_subscription(Header,'/robot1/command_permission',permissions.append,qos_profile_sensor_data))
+        self.wait(lambda:app.status()['robots']['robot1']['localized'] and app.status()['robots']['robot1']['nav_ready'])
+        goal={'command':'goal','robot':'robot1','x':.5,'y':0.}
+        self.assertTrue(app.request(goal)['ok']);self.wait(lambda:app.status()['robots']['robot1']['accepted'])
+        self.wait(lambda:permissions and permissions[-1].frame_id=='allow')
+        self.loc_ready=False
+        self.loc_recovering=True
+        self.wait(lambda:permissions[-1].frame_id=='stop')
+        time.sleep(2.5);self.assertTrue(app.status()['robots']['robot1']['busy'])
+        self.loc_ready=True
+        self.wait(lambda:permissions[-1].frame_id=='allow')
+        self.assertEqual(len(goals),1)
+        self.loc_ready=False
+        self.loc_recovering=False
+        self.wait(lambda:not app.status()['robots']['robot1']['busy'],timeout=5)
+        self.assertEqual(app.status()['robots']['robot1']['last_result'],'canceled')
+        self.loc_ready=True
+        self.wait(lambda:app.status()['robots']['robot1']['localized'])
+        self.assertTrue(app.request(goal)['ok']);self.wait(lambda:len(goals)==2)
+        app.request({'command':'cancel','robot':'robot1'})
+        self.wait(lambda:not app.status()['robots']['robot1']['busy'])
+
     def test_marco_cli_through_two_fake_hardware_chains(self):
+        self.run_marco_fake_hardware()
+
+    def test_rviz_marco_through_two_fake_hardware_chains(self):
+        self.run_marco_fake_hardware(rviz=True)
+
+    def run_marco_fake_hardware(self,rviz=False):
         import subprocess,sys
         from pathlib import Path
         root=Path(__file__).resolve().parents[3]
@@ -172,12 +241,40 @@ class PathRuntimeTest(unittest.TestCase):
         grid=self.node.create_publisher(OccupancyGrid,'/robot1/map',self.latched)
         m=OccupancyGrid();m.header.frame_id='map';m.info.resolution=.05;m.info.width=m.info.height=81;m.info.origin.position.x=m.info.origin.position.y=-2.025;m.info.origin.orientation.w=1.
         m.data=[100 if x in (0,80) or y in (0,80) else 0 for y in range(81) for x in range(81)];grid.publish(m);self.keep.append(grid)
-        app=self.start('socket_control',{'robot_count':2,'require_localization':True})
+        app=self.start('socket_control',{'robot_count':2,'require_localization':True,'coordinated_goals':rviz})
         for r in positions:
             self.start('remote_velocity',{'mode':'stamp','require_permission':True},'/'+r)
             self.start('remote_velocity',{'mode':'guard'},'/'+r)
         self.wait(lambda:all(s['localized'] for s in app.request({'command':'snapshot'})['robots'].values()))
         self.wait(lambda:all(s['path_ready'] for s in app.status()['robots'].values()))
+        if rviz:
+            # Use a separate ROS process so shutdown and worker leases are real.
+            command=[sys.executable,'-B','-m','tb4_marco_bridge.rviz_coordinator','--ros-args',
+                '-p','socket_port:='+str(app.port),'-p','marco_root:='+str(root/'MACRO'),
+                '-p','log_directory:='+str(folder/'rviz'),'-p','mission_lock_path:='+str(folder/'rviz.lock')]
+            log=(folder/'rviz-process.log').open('w');process=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT)
+            try:
+                publishers=[]
+                for r,y in [('robot1',0.),('robot2',1.)]:
+                    p=self.node.create_publisher(PoseStamped,'/tb4_view/'+r+'/goal_pose',10);publishers.append(p)
+                    self.wait(lambda:p.get_subscription_count()>=2)
+                    goal=PoseStamped();goal.header.frame_id='map';goal.pose.position.x=-.8;goal.pose.position.y=y;goal.pose.orientation.w=1.;p.publish(goal)
+                self.wait(lambda:len(seen_goals)>=2,timeout=15)
+                # Change robot2's goal while both leased paths are active.
+                # Old actions must stop before the coordinator replans both.
+                goal=PoseStamped();goal.header.frame_id='map';goal.pose.position.x=-.6;goal.pose.position.y=1.;goal.pose.orientation.w=1.
+                publishers[1].publish(goal)
+                self.wait(lambda:len(seen_goals)>=4,timeout=12)
+                self.wait(lambda:(folder/'rviz/status.json').exists() and json.loads((folder/'rviz/status.json').read_text())['phase']=='idle',timeout=20)
+                self.assertEqual(set(seen_goals),{'robot1','robot2'})
+                self.assertLess(abs(positions['robot1'][0]+.8),.04)
+                self.assertLess(abs(positions['robot2'][0]+.6),.04)
+                self.assertFalse(app.request({'command':'goal','robot':'robot1','x':0,'y':0})['ok'])
+                self.assertTrue((folder/'rviz/plans.jsonl').exists())
+            finally:
+                process.terminate();process.wait(timeout=10);log.close()
+            self.wait(lambda:all(abs(v[0])<.001 for v in velocities.values()))
+            return
         mission={'tasks':[{'id':1,'goal':[-.8,0,0],'candidates':['robot1']},{'id':2,'goal':[-.8,1,0],'candidates':['robot2']},{'id':3,'goal':[-.6,0,0],'candidates':['robot1'],'depends_on':[1,2]}]}
         filename=folder/'e2e-mission.json';filename.write_text(json.dumps(mission))
         common=[str(filename),'--root',str(root/'MACRO'),'--port',str(app.port)]
@@ -209,6 +306,23 @@ class PathRuntimeTest(unittest.TestCase):
         self.assertTrue(all(m.twist.linear.x==0 for m in outputs[-3:]))
         future=Header();future.stamp=self.node.get_clock().now().to_msg();future.stamp.sec+=5;future.frame_id='allow';permissions.publish(future)
         time.sleep(.15);self.assertTrue(all(m.twist.linear.x==0 for m in outputs[-3:]))
+
+    def test_navigation_speed_limits_respect_permission(self):
+        self.start('remote_velocity',{'mode':'stamp','require_permission':True,
+            'max_linear_speed':.12,'max_angular_speed':.50},'/robot2')
+        outputs=[];allowed=[True]
+        permissions=self.node.create_publisher(Header,'/robot2/command_permission',qos_profile_sensor_data)
+        commands=self.node.create_publisher(Twist,'/robot2/pc_cmd_vel',qos_profile_sensor_data)
+        sub=self.node.create_subscription(TwistStamped,'/robot2/remote_cmd_vel',outputs.append,qos_profile_sensor_data)
+        def publish():
+            h=Header();h.stamp=self.node.get_clock().now().to_msg();h.frame_id='allow' if allowed[0] else 'stop';permissions.publish(h)
+            t=Twist();t.linear.x=.3;t.angular.z=1.;commands.publish(t)
+        timer=self.node.create_timer(.05,publish);self.keep += [permissions,commands,sub,timer]
+        self.wait(lambda:any(m.twist.linear.x>.05 for m in outputs))
+        active=[m for m in outputs if m.twist.linear.x>0]
+        self.assertTrue(all(m.twist.linear.x==.12 and m.twist.angular.z==.50 for m in active))
+        allowed[0]=False
+        self.wait(lambda:outputs[-1].twist.linear.x==0. and outputs[-1].twist.angular.z==0.)
 
     def test_neighbor_hint_is_a_prior_not_a_forced_transform(self):
         self.sensors('robot2',publish_loc=False);anchors=[];statuses=[];global_calls=[];group=ReentrantCallbackGroup()
@@ -261,5 +375,23 @@ class PathRuntimeTest(unittest.TestCase):
         self.wait(lambda:statuses[-1].get('covariance_xyyaw',[1])[0]<0 and statuses[-1]['ready'])
         self.covariance_override=-.001
         self.wait(lambda:statuses[-1].get('covariance_xyyaw',[1])[0]<-.0001 and not statuses[-1]['ready'])
+
+    def test_rviz_navigation_covariance_profile(self):
+        self.sensors('robot2',publish_loc=False);statuses=[];group=ReentrantCallbackGroup()
+        self.covariance_override=.015
+        def local(req,res):res.success=True;return res
+        def empty(req,res):return res
+        self.keep += [self.node.create_service(ManageLifecycleNodes,'/robot2/lifecycle_manager_localization/manage_nodes',local,callback_group=group),
+            self.node.create_service(Empty,'/robot2/request_nomotion_update',empty,callback_group=group),
+            self.node.create_subscription(PoseWithCovarianceStamped,'/robot2/initialpose',lambda m:None,10),
+            self.node.create_subscription(String,'/robot2/localization_status',lambda m:statuses.append(json.loads(m.data)),self.latched)]
+        self.start('localization_supervisor',{'hint':True,'navigation':False,'localization_profile':'navigation'},'/robot2')
+        self.wait(lambda:statuses and statuses[-1]['ready'],timeout=18)
+        self.assertGreater(statuses[-1]['covariance_xyyaw'][0],.01)
+        self.covariance_override=.03
+        self.wait(lambda:not statuses[-1]['ready'])
+        self.paused=True
+        self.wait(lambda:statuses[-1].get('reason') in ('stale_sensors','stale_scan_timestamp'))
+        self.assertFalse(statuses[-1]['ready'])
 
 if __name__=='__main__':unittest.main()

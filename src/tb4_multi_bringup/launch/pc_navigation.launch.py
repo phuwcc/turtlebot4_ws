@@ -14,6 +14,9 @@ def setup(context):
     count = int(LaunchConfiguration('robot_count').perform(context))
     ids = LaunchConfiguration('robot_ids').perform(context)
     robots = active_robots(count, ids)
+    coordinated=LaunchConfiguration('coordinated_goals').perform(context)=='true'
+    if coordinated and (robots!=('robot1','robot2') or LaunchConfiguration('managed_startup').perform(context)!='true' or LaunchConfiguration('localization_only').perform(context)=='true'):
+        raise ValueError('RViz MARCO requires robot1,robot2 with managed navigation')
     hints = localization_hints(LaunchConfiguration('localization_hints').perform(context), count, ids, float(LaunchConfiguration('anchor_yaw').perform(context)))
     poses = startup_poses(LaunchConfiguration('initial_poses').perform(context), count, ids)
     validate_discovery(os.environ.get('ROS_DISCOVERY_SERVER'), count, ids,
@@ -26,6 +29,7 @@ def setup(context):
     for robot in robots:
         arguments = {'robot_id': robot, 'map': str(map_path),
                      'managed_startup': LaunchConfiguration('managed_startup'),
+                     'localization_profile': LaunchConfiguration('localization_profile'),
                      'anchor_yaw': LaunchConfiguration('anchor_yaw'),
                      'nav_params_file': LaunchConfiguration('nav_params_file'),
                      'localization_only': LaunchConfiguration('localization_only'),
@@ -39,8 +43,19 @@ def setup(context):
         PythonLaunchDescriptionSource(str(directory / 'fleet_visualization.launch.py')),
         launch_arguments={'robot_count': str(count), 'robot_ids': ','.join(robots), 'socket': 'true',
                           'require_localization': LaunchConfiguration('managed_startup'),
+                          'coordinated_goals': LaunchConfiguration('coordinated_goals'),
                           'rviz': LaunchConfiguration('rviz'),
                           'socket_port': LaunchConfiguration('socket_port')}.items()))
+    if coordinated:
+        from launch_ros.actions import Node
+        from launch.actions import RegisterEventHandler, EmitEvent
+        from launch.event_handlers import OnProcessExit
+        from launch.events import Shutdown
+        coordinator=Node(package='tb4_marco_bridge',executable='marco_rviz',name='marco_rviz',
+            parameters=[{'robot_ids':','.join(robots),'socket_port':LaunchConfiguration('socket_port'),
+                         'speed_mps':.12,'tracking_tolerance':.08}],output='screen')
+        actions += [RegisterEventHandler(OnProcessExit(target_action=coordinator,
+            on_exit=[EmitEvent(event=Shutdown(reason='MARCO coordinator exited'))])),coordinator]
     return actions
 
 
@@ -50,6 +65,8 @@ def generate_launch_description():
                               choices=['1', '2', '3']),
         DeclareLaunchArgument('map'),
         DeclareLaunchArgument('managed_startup', default_value='false', choices=['true', 'false']),
+        DeclareLaunchArgument('localization_profile', default_value='strict', choices=['strict','navigation']),
+        DeclareLaunchArgument('coordinated_goals', default_value='false', choices=['true','false']),
         DeclareLaunchArgument('anchor_yaw', default_value='0.0'),
         DeclareLaunchArgument('localization_hints', default_value=''),
         DeclareLaunchArgument('nav_params_file', default_value=str(share() / 'config/common/nav2.yaml')),

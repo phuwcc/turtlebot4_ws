@@ -82,17 +82,23 @@ def tracking_error(position,points):
     return best
 
 
-def execute_batch(actions,mission,port,map_revision,report):
+class ReplanRequested(RuntimeError):
+    pass
+
+
+def execute_batch(actions,mission,port,map_revision,report,interrupted=None):
     owner=uuid.uuid4().hex;active={};completed=[]
     tolerance=mission.get('tracking_tolerance',.04)
     started=time.monotonic();timeout=mission.get('action_timeout_s',180.)
     if type(timeout) not in (int,float) or not math.isfinite(timeout) or not 0<timeout<=600:raise ValueError('action_timeout_s must be 0..600')
     try:
         for action in actions:
+            if interrupted and interrupted():raise ReplanRequested('New RViz goal or coordinator shutdown')
             response=request({'command':'path','robot':action['robot'],'points':action['points'],'owner':owner},port)
             active[action['robot']]=action
             report.append({'event':'dispatch','action':action,'response':response})
         while active:
+            if interrupted and interrupted():raise ReplanRequested('New RViz goal or coordinator shutdown')
             if time.monotonic()-started>timeout:raise TimeoutError('Execution deadline exceeded')
             snapshot=request({'command':'snapshot'},port);ready(snapshot)
             if snapshot['map_revision']!=map_revision:raise RuntimeError('Map changed during execution; replan required')

@@ -2,6 +2,7 @@
 #undef NDEBUG
 #endif
 #include "../src/global_scan_match.hpp"
+#include "../src/scan_hit.hpp"
 #include <cassert>
 #include <deque>
 #include <iostream>
@@ -17,6 +18,16 @@ static std::vector<tb4::ScanPoint> scan(const std::vector<int8_t>& cells,int w,d
   return result;
 }
 int main() {
+  // At 5cm/cell, a two-by-two diagonal is 14.1cm, not the Manhattan 20cm.
+  // An aligned return inside the 15cm threshold must pass in either direction.
+  std::vector<int8_t> diagonal(49,0);diagonal[3*7+3]=100;
+  assert(tb4::near_occupied_cell(diagonal,7,7,1,1,.05,.15));
+  assert(tb4::near_occupied_cell(diagonal,7,7,5,5,.05,.15));
+  assert(tb4::near_occupied_cell(diagonal,7,7,0,3,.05,.15));
+  assert(!tb4::near_occupied_cell(diagonal,7,7,0,2,.05,.15));
+  assert(!tb4::near_occupied_cell(diagonal,7,7,-1,3,.05,.15));
+  diagonal[3*7+3]=-1;
+  assert(!tb4::near_occupied_cell(diagonal,7,7,1,1,.05,.15));
   const int w=81;std::vector<int8_t> cells(w*w,0);
   for(int x=0;x<w;++x)for(int y=0;y<w;++y)if(x==0||y==0||x==w-1||y==w-1)cells[y*w+x]=100;
   auto symmetric=tb4::global_scan_match(w,w,.05,cells,distances(cells,w),scan(cells,w,40.5,40.5,0),3.);

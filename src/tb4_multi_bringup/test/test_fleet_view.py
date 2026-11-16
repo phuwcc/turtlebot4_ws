@@ -48,6 +48,9 @@ class FleetConfigurationTest(unittest.TestCase):
             view = rviz_for_count(template, count)
             groups = [d['Name'] for d in view['Visualization Manager']['Displays'] if d['Name'] in ROBOTS]
             self.assertEqual(groups, list(ROBOTS[:count]))
+            goal_tools = [t['Class'] for t in view['Visualization Manager']['Tools']
+                          if t['Class'].startswith('tb4_multi_bringup/GoalRobot')]
+            self.assertEqual(goal_tools, ['tb4_multi_bringup/GoalRobot'+str(i+1) for i in range(count)])
             valid = ';'.join(f'10.11.63.{119 + index}:11811' for index in range(count)) + ';'
             validate_discovery(valid, count)
         self.assertEqual(len([d for d in template['Visualization Manager']['Displays']

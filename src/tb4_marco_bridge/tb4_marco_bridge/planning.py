@@ -106,11 +106,15 @@ class Planner:
             raise ValueError('Mission needs 1..8 navigation tasks')
         self.radius=mission.get('robot_radius',.175)+mission.get('safety_margin',.05)+mission.get('tracking_tolerance',.04)
         self.speed=mission.get('speed_mps',.05)
-        if not finite(self.radius) or not .175 <= self.radius <= .6 or not finite(self.speed) or not 0 < self.speed <= .05:
-            raise ValueError('Invalid robot clearance or validation speed (maximum 0.05m/s)')
+        if not finite(self.radius) or not .175 <= self.radius <= .6 or not finite(self.speed) or not 0 < self.speed <= .12:
+            raise ValueError('Invalid robot clearance or speed (maximum 0.12m/s)')
         if not self.grid or self.grid.message != snapshot['map'] or self.last_radius != self.radius:
             self.grid=Grid(snapshot['map'],self.radius);self.last_radius=self.radius
         self.robots=tuple(sorted(snapshot['robots']))
+        self.priority_order=mission.get('priority_order')
+        if self.priority_order is not None and (not isinstance(self.priority_order,list) or
+                len(self.priority_order)!=len(self.robots) or set(self.priority_order)!=set(self.robots)):
+            raise ValueError('priority_order must list every active robot exactly once')
         if not self.robots or any(r not in ('robot1','robot2','robot3') for r in self.robots):
             raise ValueError('Unsupported robot identifiers')
         self.ids={r:'R'+r[-1] for r in self.robots};self.names={v:k for k,v in self.ids.items()}
@@ -207,12 +211,32 @@ class Planner:
                 priority=candidate['priority_robot']
                 route=candidate['preferred_paths'].get(priority,[])
                 return distance/self.speed+self.algorithms.path_length(route,self.grid.res)/self.speed+.5*(len(steps)+1)
+            priority_args={}
+            if self.priority_order:
+                active_priority=next(r for r in self.priority_order if self.ids[r] in current)
+                # Search only the highest-priority active root. An idle robot
+                # above it in the order must never be moved aside for a peer.
+                priority_args={'priority_robot_ids':[self.ids[active_priority]],
+                    'fixed_robot_ids':[self.ids[r] for r in self.priority_order[:self.priority_order.index(active_priority)]]}
+                if len(current)==1 and priority_args['fixed_robot_ids']:
+                    # Once robot1 has finished, keep its footprint reserved.
+                    # The lower-priority robot must route around it rather than
+                    # asking the relocation search to evict it from its goal.
+                    rid=self.ids[active_priority];task=current[rid]
+                    route=self.algorithms._astar_around_robot_bodies(self.grid.cells,self.positions[rid],
+                        self.goals[task['object']][0],robot_centres=[p for r,p in self.positions.items() if r!=rid],
+                        clearance_cells=clearance)
+                    if route is None:raise RuntimeError('No route without displacing the higher-priority robot')
+                    return self.package_actions(snapshot,[(rid,route,task['id'])],
+                        {'strategy':'fixed_priority_detour','priority_robot':rid,'held_robots':priority_args['fixed_robot_ids']},None)
             plan=self.coordinator.search_relocation_plan(robots=states,dag_robots=states,tasks=tasks,
                 task_status={t['id']:'completed' if t['id'] in completed else 'pending' for t in tasks},objects=objects,
                 navigation_cells=self.grid.cells,robot_radius=radius,grid_size=self.grid.res,
                 speed_cells_per_second=self.speed/self.grid.res,planning_timeout_s=3.,
-                local_time_evaluator=timing,selection_policy='dag_aware')
+                local_time_evaluator=timing,selection_policy='dag_aware',**priority_args)
             if not plan:raise RuntimeError('No feasible guarded MARCO intervention')
+            if self.priority_order and plan['priority_robot']!=self.ids[active_priority]:
+                raise RuntimeError('MARCO returned a plan violating the fixed priority')
             audit={key:plan.get(key) for key in ('strategy','selected_hypothesis','priority_robot','local_resolution_delay','estimated_makespan')}
             relocations=plan.get('relocation_sequence',[])
             if relocations:

@@ -81,7 +81,11 @@ class FleetRuntime final : public rclcpp::Node {
     rclcpp_action::Client<Goal>::SharedPtr action;
     rclcpp::Publisher<InitialPose>::SharedPtr pose_pub;
     GoalHandle::SharedPtr goal;
+    PoseStamped goal_target;
+    bool has_goal_target{false};
     bool busy{false},cancel_requested{false};
+    bool localization_lost{false};
+    Clock::time_point localization_lost_at{};
     Json last_result=nullptr;
     uint64_t generation{0};
   };
@@ -110,6 +114,8 @@ public:
         throw std::invalid_argument("robot_ids contains an unknown robot");
     }
     require_localization_=declare_parameter<bool>("require_localization",false);
+    coordinated_goals_=declare_parameter<bool>("coordinated_goals",false);
+    if(coordinated_goals_&&!require_localization_)throw std::invalid_argument("MARCO requires managed localization");
     selected_=declare_parameter<std::string>("selected_robot",robots_.front());
     if (!active(selected_)) throw std::invalid_argument("selected_robot must be active");
     for (const auto& r:robots_) {
@@ -122,6 +128,17 @@ public:
       state.preview=create_publisher<nav_msgs::msg::Path>("/tb4_view/"+r+"/marco_plan",rclcpp::QoS(1).transient_local());
       if(require_localization_)state.permission=create_publisher<std_msgs::msg::Header>("/"+r+"/command_permission",rclcpp::QoS(1).best_effort());
       state.pose_pub=create_publisher<InitialPose>("/"+r+"/initialpose",10);
+      subscriptions_.push_back(create_subscription<PoseStamped>("/tb4_view/"+r+"/goal_pose",10,
+        [this,r](PoseStamped::ConstSharedPtr p) {
+          if(p->header.frame_id!="map" || !valid_pose(p->pose)) {
+            RCLCPP_WARN(get_logger(),"Goal for %s rejected: expected a finite pose in map",r.c_str());
+          } else if(coordinated_goals_) {
+            states_.at(r).goal_target=*p;states_.at(r).has_goal_target=true;
+            RCLCPP_INFO(get_logger(),"RViz goal -> MARCO for %s",r.c_str());
+          } else if(!goal_pose(*p,r)) {
+            RCLCPP_WARN(get_logger(),"Goal for %s rejected: robot busy, Nav2 unavailable or localization not ready",r.c_str());
+          }
+        }));
       states_.emplace(r,std::move(state));
     }
     parameter_callback_=add_on_set_parameters_callback([this](const std::vector<rclcpp::Parameter>& parameters) {
@@ -131,7 +148,7 @@ public:
           if (p.get_type()!=rclcpp::ParameterType::PARAMETER_STRING || !active(p.as_string())) {
             result.successful=false; result.reason="selected_robot must be active"; return result;
           }
-        } else if (p.get_name()=="robot_count" || p.get_name()=="robot_ids" || p.get_name()=="require_localization" || p.get_name()=="visualization_scan_hz" ||
+        } else if (p.get_name()=="coordinated_goals" || p.get_name()=="robot_count" || p.get_name()=="robot_ids" || p.get_name()=="require_localization" || p.get_name()=="visualization_scan_hz" ||
                    ends_with(p.get_name(),".map_frame") || ends_with(p.get_name(),".base_frame")) {
           result.successful=false; result.reason="Frame settings require restarting the launch"; return result;
         }
@@ -183,6 +200,7 @@ public:
       }));
     subscriptions_.push_back(create_subscription<PoseStamped>("/tb4_view/goal_pose",10,
       [this](PoseStamped::UniquePtr p) {
+        if(coordinated_goals_){RCLCPP_WARN(get_logger(),"Use the per-robot MARCO goal tools");return;}
         if (p->header.frame_id=="map" && valid_pose(p->pose)) goal_pose(*p,selected_);
         else RCLCPP_ERROR(get_logger(),"Goal rejected: use frame map and a finite normalized pose");
       }));
@@ -245,8 +263,10 @@ private:
     auto& state=states_.at(robot);
     if (state.busy || !state.action->action_server_is_ready() || (require_localization_&&!localized(robot))) return false;
     state.path_mode=false;
+    state.goal_target=message;state.has_goal_target=true;
     Goal::Goal goal; goal.pose=std::move(message); goal.pose.header.frame_id=state.map; goal.pose.header.stamp=now();
     state.busy=true; state.last_result=nullptr; state.cancel_requested=false;
+    state.localization_lost=false;
     const auto generation=++state.generation;
     typename rclcpp_action::Client<Goal>::SendGoalOptions options;
     options.goal_response_callback=[this,robot,generation](GoalHandle::SharedPtr handle) {
@@ -348,10 +368,25 @@ private:
       auto& s=states_.at(robot);
       const bool expired=s.path_mode&&Clock::now()>s.lease_until;
       if(s.busy&&s.validating&&Clock::now()>s.validation_until){path_finished(robot,s.generation,"validation_timeout");++s.generation;}
-      if(s.busy&&(expired||(require_localization_&&!localized(robot)))&&!s.cancel_requested)cancel_robot(robot);
+      const bool pose_ready=localized(robot);
+      const bool recovering=Clock::now()-s.localization_at<1500ms&&
+        s.localization.value("recovering",false)&&!current_pose(robot).is_null();
+      if(!pose_ready) {
+        if(!s.localization_lost)s.localization_lost_at=Clock::now();
+        s.localization_lost=true;
+      } else s.localization_lost=false;
+      // Commands stop immediately below. Keep a normal navigation goal through
+      // a brief scan-quality dip instead of canceling it at the first bad sample.
+      // Leased MARCO paths retain their strict cancellation behavior.
+      const bool lost=require_localization_&&!pose_ready&&
+        (s.path_mode||Clock::now()-s.localization_lost_at>(recovering?10s:2s));
+      if(s.busy&&(expired||lost)&&!s.cancel_requested) {
+        RCLCPP_WARN(get_logger(),"Cancel %s: %s",robot.c_str(),expired?"path lease expired":s.localization.value("reason",std::string("localization unavailable")).c_str());
+        cancel_robot(robot);
+      }
       if(s.permission) {
         std_msgs::msg::Header permission;permission.stamp=now();
-        const bool allow=s.busy&&!s.cancel_requested&&localized(robot)&&(!s.path_mode||!expired)&&bool(s.goal||s.path_goal);
+        const bool allow=s.busy&&!s.cancel_requested&&pose_ready&&(!s.path_mode||!expired)&&bool(s.goal||s.path_goal);
         permission.frame_id=allow?"allow":"stop";s.permission->publish(permission);
       }
     }
@@ -383,7 +418,7 @@ private:
         robots[robot]={{"nav_ready",s.action->action_server_is_ready()},{"busy",s.busy},
           {"accepted",bool(s.goal)||bool(s.path_goal)},{"path_ready",s.follower->action_server_is_ready()&&s.validator->service_is_ready()},{"localized",localized(robot)},{"mode",s.path_mode?"path":"goal"},{"cancel_requested",s.cancel_requested},{"last_result",s.last_result}};
       }
-      return {{"ok",true},{"selected_robot",selected_},{"robots",robots}};
+      return {{"ok",true},{"selected_robot",selected_},{"robots",robots},{"coordinated_goals",coordinated_goals_}};
     }
     if (!request.contains("robot") || !request["robot"].is_string() || !active(request["robot"].get<std::string>()))
       throw std::invalid_argument("robot must be active");
@@ -417,6 +452,7 @@ private:
       bool ok=cancel_robot(robot);return {{"ok",ok},{"message",ok ? "Cancellation requested" : "No owned goal"}};
     }
     if (command!="pose" && command!="goal") throw std::invalid_argument("Unknown command");
+    if(command=="goal"&&coordinated_goals_)return {{"ok",false},{"reason","use_rviz_marco_goals"}};
     std::array<double,3> values{};
     const char* keys[]={"x","y","yaw"};
     for (size_t i=0;i<3;++i) {
@@ -505,15 +541,27 @@ private:
       marker.pose.orientation.w=1.;marker.pose.position.z=.65;marker.scale.z=.22;
       marker.color.r=COLORS[color][0];marker.color.g=COLORS[color][1];marker.color.b=COLORS[color][2];marker.color.a=1.;
       marker.text=robot+(robot==selected_ ? " [SELECTED]" : "")+(require_localization_?(localized(robot)?" [READY]":" [LOCALIZING]"):"");labels.markers.push_back(marker);
+      const auto& state=states_.at(robot);
+      if(state.has_goal_target&&!coordinated_goals_) {
+        marker.header.frame_id="map";marker.ns="navigation_goals";
+        marker.type=visualization_msgs::msg::Marker::ARROW;
+        marker.pose=state.goal_target.pose;marker.pose.position.z=.08;
+        marker.scale.x=.35;marker.scale.y=.07;marker.scale.z=.10;
+        labels.markers.push_back(marker);
+        marker.ns="navigation_goal_labels";marker.type=visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+        marker.pose.position.z=.35;marker.pose.orientation.x=marker.pose.orientation.y=marker.pose.orientation.z=0.;marker.pose.orientation.w=1.;
+        marker.scale.z=.16;marker.text="Goal "+robot;
+        labels.markers.push_back(marker);
+      }
     }
     visualization_msgs::msg::Marker marker;marker.header.frame_id="map";marker.ns="selection";marker.id=0;
     marker.type=visualization_msgs::msg::Marker::TEXT_VIEW_FACING;marker.pose.orientation.w=1.;
     marker.pose.position.y=-.7;marker.pose.position.z=.1;marker.scale.z=.22;
     const auto color=std::distance(ROBOTS.begin(),std::find(ROBOTS.begin(),ROBOTS.end(),selected_));
     marker.color.r=COLORS[color][0];marker.color.g=COLORS[color][1];marker.color.b=COLORS[color][2];marker.color.a=1.;
-    marker.text="Pose / Goal -> "+selected_;labels.markers.push_back(marker);labels_pub_->publish(labels);
+    marker.text="2D Pose Estimate -> "+selected_;labels.markers.push_back(marker);labels_pub_->publish(labels);
   }
-  bool require_localization_{false};uint64_t map_revision_{0};
+  bool require_localization_{false},coordinated_goals_{false};uint64_t map_revision_{0};
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr map_;
   rclcpp::TimerBase::SharedPtr control_timer_;
   double scan_period_{.2};std::map<std::string,Clock::time_point> last_scan_;

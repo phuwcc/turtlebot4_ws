@@ -18,6 +18,7 @@ def setup(context):
     initialize, pose = initial_pose(context)
     localization_only = LaunchConfiguration('localization_only').perform(context) == 'true'
     managed = LaunchConfiguration('managed_startup').perform(context) == 'true'
+    interactive = LaunchConfiguration('localization_profile').perform(context) == 'navigation'
     nav_params_file = Path(LaunchConfiguration('nav_params_file').perform(context)).expanduser().resolve()
     if not nav_params_file.is_file():
         raise ValueError('Nav2 parameters do not exist: ' + str(nav_params_file))
@@ -66,7 +67,9 @@ def setup(context):
     if not localization_only:
         actions += [
             Node(package='tb4_multi_bringup', executable='remote_velocity',
-                 name='remote_velocity_stamp', parameters=[{'mode': 'stamp', 'require_permission': managed}], output='screen'),
+                 name='remote_velocity_stamp', parameters=[{'mode': 'stamp', 'require_permission': managed,
+                    'max_linear_speed': .12 if interactive else .05,
+                    'max_angular_speed': .50 if interactive else .2}], output='screen'),
             IncludeLaunchDescription(PythonLaunchDescriptionSource(str(launch_dir / 'navigation_launch.py')),
                 launch_arguments={'namespace': ns, 'use_sim_time': 'false', 'params_file': nav,
                                   'autostart': 'false' if managed else 'true',
@@ -79,7 +82,8 @@ def setup(context):
                                          'hint': initialize or LaunchConfiguration('initial_hint').perform(context) == 'true',
                                          **{key: float(LaunchConfiguration(key).perform(context)) for key in ('hint_std_xy','hint_std_yaw')},
                                          **{key: pose[i] if initialize else float(LaunchConfiguration(key).perform(context)) for i,key in enumerate(('hint_x','hint_y','hint_yaw'))},
-                                         'navigation': not localization_only}], output='screen'))
+                                         'navigation': not localization_only,
+                                         'localization_profile': LaunchConfiguration('localization_profile')}], output='screen'))
     return [GroupAction(actions)]
 
 
@@ -87,6 +91,7 @@ def generate_launch_description():
     return LaunchDescription(robot_arguments() + [
         DeclareLaunchArgument('map', description='Absolute path to the shared saved map YAML'),
         DeclareLaunchArgument('managed_startup', default_value='false', choices=['true', 'false']),
+        DeclareLaunchArgument('localization_profile', default_value='strict', choices=['strict','navigation']),
         DeclareLaunchArgument('anchor_yaw', default_value='0.0'),
         DeclareLaunchArgument('initial_hint', default_value='false', choices=['true','false']),
         *[DeclareLaunchArgument(key, default_value=value) for key,value in [('hint_x','0.0'),('hint_y','0.0'),('hint_yaw','0.0'),('hint_std_xy','0.2'),('hint_std_yaw','0.2')]],

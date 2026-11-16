@@ -1,0 +1,11 @@
+<library path="robot_goal_tools">
+  <class name="tb4_multi_bringup/GoalRobot1" type="tb4_multi_bringup::GoalRobot1" base_class_type="rviz_common::Tool">
+    <description>Goal robot1</description>
+  </class>
+  <class name="tb4_multi_bringup/GoalRobot2" type="tb4_multi_bringup::GoalRobot2" base_class_type="rviz_common::Tool">
+    <description>Goal robot2</description>
+  </class>
+  <class name="tb4_multi_bringup/GoalRobot3" type="tb4_multi_bringup::GoalRobot3" base_class_type="rviz_common::Tool">
+    <description>Goal robot3</description>
+  </class>
+</library>

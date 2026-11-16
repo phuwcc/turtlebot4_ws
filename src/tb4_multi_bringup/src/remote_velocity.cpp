@@ -22,6 +22,10 @@ public:
       throw std::invalid_argument("mode must be guard/stamp; timeout must be finite and positive");
     auto qos = rclcpp::QoS(1).best_effort();
     require_permission_=declare_parameter<bool>("require_permission",false);
+    max_linear_=declare_parameter<double>("max_linear_speed",.05);
+    max_angular_=declare_parameter<double>("max_angular_speed",.2);
+    if(!std::isfinite(max_linear_)||max_linear_<=0.||!std::isfinite(max_angular_)||max_angular_<=0.)
+      throw std::invalid_argument("Speed limits must be finite and positive");
     if (mode_ == "stamp") {
       stamped_pub_ = create_publisher<geometry_msgs::msg::TwistStamped>("remote_cmd_vel", qos);
       if(require_permission_) {
@@ -46,10 +50,10 @@ public:
           if(!require_permission_||(permitted_&&std::chrono::steady_clock::now()<permission_until_)) {
             output.twist = *input;
             if(require_permission_) {
-              output.twist.linear.x=std::clamp(output.twist.linear.x,-.05,.05);
+              output.twist.linear.x=std::clamp(output.twist.linear.x,-max_linear_,max_linear_);
               output.twist.linear.y=output.twist.linear.z=0.;
               output.twist.angular.x=output.twist.angular.y=0.;
-              output.twist.angular.z=std::clamp(output.twist.angular.z,-.2,.2);
+              output.twist.angular.z=std::clamp(output.twist.angular.z,-max_angular_,max_angular_);
             }
           }
           stamped_pub_->publish(output);
@@ -91,6 +95,7 @@ private:
   }
   int64_t last_permission_{std::numeric_limits<int64_t>::min()};
   bool require_permission_{false},permitted_{false};
+  double max_linear_{.05},max_angular_{.2};
   std::chrono::steady_clock::time_point permission_until_;
   rclcpp::Subscription<std_msgs::msg::Header>::SharedPtr permission_sub_;
   std::mutex command_mutex_; bool stopped_{false};

@@ -91,7 +91,7 @@ class NativeRuntimeTest(unittest.TestCase):
             subscriptions.append(self.node.create_subscription(kind,topic,lambda m:received.__setitem__(key,m),qos))
         subscribe(MarkerArray,'/tb4_view/labels','labels',self.latched)
         self.wait(lambda:'labels' in received)
-        self.assertEqual(received['labels'].markers[-1].text,'Pose / Goal -> robot1')
+        self.assertEqual(received['labels'].markers[-1].text,'2D Pose Estimate -> robot1')
         # Separate static batches must all survive for a late RViz subscriber.
         for robot in ('robot1','robot2','robot3'):
             publisher=self.node.create_publisher(TFMessage,'/'+robot+'/tf_static',self.latched)
@@ -170,9 +170,22 @@ class NativeRuntimeTest(unittest.TestCase):
             self.assertTrue(app.request({'command':'cancel','robot':'robot2'})['ok'])
             self.wait(lambda:app.status()['robots']['robot2']['last_result']=='canceled')
             # Each robot owns its own goal; canceling one cannot affect the others.
-            for robot in goals:
-                self.assertTrue(app.request({'command':'goal','robot':robot,'x':1,'y':1})['ok'])
+            # Dedicated RViz tools route independently of selected_robot (robot2).
+            goal_publishers=[];markers=[]
+            marker_sub=self.node.create_subscription(MarkerArray,'/tb4_view/labels',markers.append,self.latched)
+            for index,robot in enumerate(goals):
+                publisher=self.node.create_publisher(PoseStamped,'/tb4_view/'+robot+'/goal_pose',10)
+                goal_publishers.append(publisher)
+                self.wait(lambda:publisher.get_subscription_count()>0)
+                target=PoseStamped();target.header.frame_id='map';target.pose.orientation.w=1.
+                target.pose.position.x=float(index+1);target.pose.position.y=1.
+                publisher.publish(target)
             self.wait(lambda:all(s['accepted'] for s in app.status()['robots'].values()))
+            self.wait(lambda:all(goals[r] and goals[r][-1].pose.position.x==float(i+1)
+                                 for i,r in enumerate(goals)))
+            self.wait(lambda:markers and len([m for m in markers[-1].markers if m.ns=='navigation_goals'])==3)
+            self.assertEqual({m.text for m in markers[-1].markers if m.ns=='navigation_goal_labels'},
+                             {'Goal robot1','Goal robot2','Goal robot3'})
             self.assertTrue(app.request({'command':'select','robot':'robot3'})['ok'])
             cancel=self.node.create_client(Trigger,'/tb4_view/cancel')
             self.assertTrue(cancel.wait_for_service(timeout_sec=3))

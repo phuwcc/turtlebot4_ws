@@ -89,6 +89,10 @@ def rviz_for_count(template, count, selected=None):
         if display.get('Name', '').startswith('Shared map ('):
             display['Name'] = 'Shared map (' + robots[0] + ')'
             display['Topic']['Value'] = '/tb4_view/' + robots[0] + '/map'
+    manager = result['Visualization Manager']
+    manager['Tools'] = [tool for tool in manager.get('Tools', [])
+        if not tool.get('Class', '').startswith('tb4_multi_bringup/GoalRobot')
+        or 'robot' + tool['Class'][-1] in robots]
     return result
 
 

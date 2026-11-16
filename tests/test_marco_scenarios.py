@@ -35,6 +35,30 @@ def scenario(name):
 
 
 class DocumentedScenarioTest(unittest.TestCase):
+    def test_fixed_robot1_priority_and_idle_robot_protection(self):
+        for name in ('04_crossing','05_head_on','06_idle_blocker','09_head_on_1m'):
+            with self.subTest(name=name):
+                state=scenario(name);mission=json.loads((CASES/(name+'.json')).read_text())
+                mission.update(priority_order=['robot1','robot2'],speed_mps=.12,tracking_tolerance=.08)
+                planner=Planner(ROOT/'MACRO');assignment=planner.assign(state,mission)
+                completed=[];intent=None
+                for _ in range(32):
+                    batch=planner.next_batch(state,mission,assignment,completed,intent);intent=batch.get('intent')
+                    if not batch['actions']:break
+                    if batch['audit'].get('priority_robot') is not None:
+                        expected='R1' if 1 not in completed else 'R2'
+                        self.assertEqual(batch['audit']['priority_robot'],expected)
+                    for action in batch['actions']:
+                        if 1 not in completed and action['robot']=='robot2':self.assertIsNone(action['task'])
+                        state['robots'][action['robot']]['pose']=action['points'][-1]
+                        if action['task'] is not None:completed.append(action['task'])
+                self.assertEqual(set(completed),{t['id'] for t in mission['tasks']})
+        # A lower-priority goal cannot evict robot1 from its occupied position.
+        state=scenario('05_head_on')
+        mission={'priority_order':['robot1','robot2'],'tasks':[{'id':2,'goal':[-1,0,0],'candidates':['robot2']}]}
+        planner=Planner(ROOT/'MACRO');assignment=planner.assign(state,mission)
+        with self.assertRaises(RuntimeError):planner.next_batch(state,mission,assignment,[])
+
     def test_conflict_cases_complete_in_bounded_batches(self):
         for name in ('04_crossing', '05_head_on', '06_idle_blocker', '07_conflict_dag', '09_head_on_1m'):
             with self.subTest(name=name):

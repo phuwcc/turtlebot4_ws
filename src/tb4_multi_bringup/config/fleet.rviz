@@ -473,6 +473,16 @@ Visualization Manager:
       History Policy: Keep Last
       Reliability Policy: Reliable
       Durability Policy: Transient Local
+  - Class: rviz_default_plugins/MarkerArray
+    Name: MARCO coordination / priority
+    Enabled: true
+    Value: true
+    Topic:
+      Value: /tb4_view/marco_coordination
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
   Tools:
   - Class: rviz_default_plugins/MoveCamera
   - Class: rviz_default_plugins/Select
@@ -483,9 +493,23 @@ Visualization Manager:
       History Policy: Keep Last
       Reliability Policy: Reliable
       Durability Policy: Volatile
-  - Class: rviz_default_plugins/SetGoal
+  - Class: tb4_multi_bringup/GoalRobot1
     Topic:
-      Value: /tb4_view/goal_pose
+      Value: /tb4_view/robot1/goal_pose
+      Depth: 10
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: tb4_multi_bringup/GoalRobot2
+    Topic:
+      Value: /tb4_view/robot2/goal_pose
+      Depth: 10
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: tb4_multi_bringup/GoalRobot3
+    Topic:
+      Value: /tb4_view/robot3/goal_pose
       Depth: 10
       History Policy: Keep Last
       Reliability Policy: Reliable
