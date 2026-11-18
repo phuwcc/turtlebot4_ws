@@ -1,7 +1,8 @@
 from launch import LaunchDescription
-from launch.actions import GroupAction, IncludeLaunchDescription, OpaqueFunction
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import GroupAction, OpaqueFunction
+from launch.substitutions import Command
 from launch_ros.actions import Node, PushRosNamespace, SetRemap
+from launch_ros.parameter_descriptions import ParameterValue
 from nav2_common.launch import RewrittenYaml
 from tb4_multi_bringup.configuration import load_robot, robot_arguments, share
 
@@ -26,9 +27,15 @@ def setup(context):
              parameters=[{'serial_port': '/dev/RPLIDAR', 'serial_baudrate': 115200,
                           'frame_id': frames['lidar'], 'inverted': False,
                           'angle_compensate': True, 'auto_standby': True}], output='screen'),
-        IncludeLaunchDescription(PythonLaunchDescriptionSource(str(
-            share('turtlebot4_description') / 'launch/robot_description.launch.py')),
-            launch_arguments={'model': cfg['model'], 'namespace': ns, 'use_sim_time': 'false'}.items()),
+        # Same URDF/TF as turtlebot4_description/robot_description.launch.py, but the
+        # Python joint_state_publisher is replaced by a native C++ publisher.
+        Node(package='robot_state_publisher', executable='robot_state_publisher',
+             name='robot_state_publisher', output='screen',
+             parameters=[{'use_sim_time': False, 'robot_description': ParameterValue(Command([
+                 'xacro ', str(share('turtlebot4_description') / 'urdf' / cfg['model'] / 'turtlebot4.urdf.xacro'),
+                 ' gazebo:=ignition namespace:=', ns]), value_type=str)}]),
+        Node(package='tb4_multi_bringup', executable='wheel_joint_states',
+             name='joint_state_publisher', output='screen'),
     ]
     if cfg['model'] == 'standard':
         actions.append(Node(package='turtlebot4_base', executable='turtlebot4_base_node',

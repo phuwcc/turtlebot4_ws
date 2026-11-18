@@ -13,6 +13,7 @@ DRIVERS = (
     '/lib/turtlebot4_base/turtlebot4_base_node',
     '/lib/robot_state_publisher/robot_state_publisher',
     '/lib/joint_state_publisher/joint_state_publisher',
+    '/lib/tb4_multi_bringup/wheel_joint_states',
 )
 
 
