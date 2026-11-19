@@ -19,6 +19,9 @@ def setup(context):
     localization_only = LaunchConfiguration('localization_only').perform(context) == 'true'
     managed = LaunchConfiguration('managed_startup').perform(context) == 'true'
     interactive = LaunchConfiguration('localization_profile').perform(context) == 'navigation'
+    # With peer footprints the local costmap static layer reads the shared map plus
+    # the other robots' bodies (fleet_footprints); AMCL and the global costmap keep the clean map.
+    costmap_map = '/' + ns + '/fleet_map' if LaunchConfiguration('peer_footprints').perform(context) == 'true' else 'map'
     nav_params_file = Path(LaunchConfiguration('nav_params_file').perform(context)).expanduser().resolve()
     if not nav_params_file.is_file():
         raise ValueError('Nav2 parameters do not exist: ' + str(nav_params_file))
@@ -44,6 +47,11 @@ def setup(context):
             'local_costmap.local_costmap.ros__parameters.global_frame': frames['odom'],
             'global_costmap.global_costmap.ros__parameters.global_frame': frames['map'],
             'behavior_server.ros__parameters.global_frame': frames['odom'],
+            # MARCO nav2_tb1.yaml: only the local costmap sees peer bodies; the
+            # global costmap (path validation) keeps the clean map so a nominal
+            # route through a peer that will move is not rejected up front.
+            'local_costmap.local_costmap.ros__parameters.static_layer.map_topic': costmap_map,
+            'global_costmap.global_costmap.ros__parameters.static_layer.map_topic': 'map',
         }, convert_types=True)
     launch_dir = share('nav2_bringup') / 'launch'
     lifecycle = RewrittenYaml(source_file=str(share() / 'config/common/lifecycle.yaml'),
@@ -68,8 +76,8 @@ def setup(context):
         actions += [
             Node(package='tb4_multi_bringup', executable='remote_velocity',
                  name='remote_velocity_stamp', parameters=[{'mode': 'stamp', 'require_permission': managed,
-                    'max_linear_speed': .12 if interactive else .05,
-                    'max_angular_speed': .50 if interactive else .2}], output='screen'),
+                    'max_linear_speed': .16 if interactive else .05,
+                    'max_angular_speed': .60 if interactive else .2}], output='screen'),
             IncludeLaunchDescription(PythonLaunchDescriptionSource(str(launch_dir / 'navigation_launch.py')),
                 launch_arguments={'namespace': ns, 'use_sim_time': 'false', 'params_file': nav,
                                   'autostart': 'false' if managed else 'true',
@@ -83,7 +91,8 @@ def setup(context):
                                          **{key: float(LaunchConfiguration(key).perform(context)) for key in ('hint_std_xy','hint_std_yaw')},
                                          **{key: pose[i] if initialize else float(LaunchConfiguration(key).perform(context)) for i,key in enumerate(('hint_x','hint_y','hint_yaw'))},
                                          'navigation': not localization_only,
-                                         'localization_profile': LaunchConfiguration('localization_profile')}], output='screen'))
+                                         'localization_profile': LaunchConfiguration('localization_profile'),
+                                         'peer_ids': LaunchConfiguration('peer_ids')}], output='screen'))
     return [GroupAction(actions)]
 
 
@@ -92,6 +101,10 @@ def generate_launch_description():
         DeclareLaunchArgument('map', description='Absolute path to the shared saved map YAML'),
         DeclareLaunchArgument('managed_startup', default_value='false', choices=['true', 'false']),
         DeclareLaunchArgument('localization_profile', default_value='strict', choices=['strict','navigation']),
+        DeclareLaunchArgument('peer_ids', default_value='',
+                              description='Comma list of other robots whose bodies are excluded from scan-match scoring'),
+        DeclareLaunchArgument('peer_footprints', default_value='false', choices=['true', 'false'],
+                              description='Costmaps use /<robot>/fleet_map with peer footprints'),
         DeclareLaunchArgument('anchor_yaw', default_value='0.0'),
         DeclareLaunchArgument('initial_hint', default_value='false', choices=['true','false']),
         *[DeclareLaunchArgument(key, default_value=value) for key,value in [('hint_x','0.0'),('hint_y','0.0'),('hint_yaw','0.0'),('hint_std_xy','0.2'),('hint_std_yaw','0.2')]],

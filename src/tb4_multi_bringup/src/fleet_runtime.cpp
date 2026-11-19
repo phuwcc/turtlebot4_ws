@@ -115,6 +115,9 @@ public:
     }
     require_localization_=declare_parameter<bool>("require_localization",false);
     coordinated_goals_=declare_parameter<bool>("coordinated_goals",false);
+    // Nav2 controller plugin for leased MARCO paths (MARCO sim: CorridorFollow RPP).
+    path_controller_=declare_parameter<std::string>("path_controller","FollowPath");
+    if(path_controller_.empty())throw std::invalid_argument("path_controller must name a controller plugin");
     if(coordinated_goals_&&!require_localization_)throw std::invalid_argument("MARCO requires managed localization");
     selected_=declare_parameter<std::string>("selected_robot",robots_.front());
     if (!active(selected_)) throw std::invalid_argument("selected_robot must be active");
@@ -135,7 +138,7 @@ public:
           } else if(coordinated_goals_) {
             states_.at(r).goal_target=*p;states_.at(r).has_goal_target=true;
             RCLCPP_INFO(get_logger(),"RViz goal -> MARCO for %s",r.c_str());
-          } else if(!goal_pose(*p,r)) {
+          } else if(!goal_pose(*p,r,true)) {
             RCLCPP_WARN(get_logger(),"Goal for %s rejected: robot busy, Nav2 unavailable or localization not ready",r.c_str());
           }
         }));
@@ -201,7 +204,7 @@ public:
     subscriptions_.push_back(create_subscription<PoseStamped>("/tb4_view/goal_pose",10,
       [this](PoseStamped::UniquePtr p) {
         if(coordinated_goals_){RCLCPP_WARN(get_logger(),"Use the per-robot MARCO goal tools");return;}
-        if (p->header.frame_id=="map" && valid_pose(p->pose)) goal_pose(*p,selected_);
+        if (p->header.frame_id=="map" && valid_pose(p->pose)) goal_pose(*p,selected_,true);
         else RCLCPP_ERROR(get_logger(),"Goal rejected: use frame map and a finite normalized pose");
       }));
     cancel_service_=create_service<Trigger>("/tb4_view/cancel",
@@ -259,9 +262,14 @@ private:
     state.pose_pub->publish(message);
     RCLCPP_INFO(get_logger(),"Initial pose -> %s",robot.c_str()); return true;
   }
-  bool goal_pose(PoseStamped message,const std::string& robot) {
+  bool goal_pose(PoseStamped message,const std::string& robot,bool preempt=false) {
     auto& state=states_.at(robot);
-    if (state.busy || !state.action->action_server_is_ready() || (require_localization_&&!localized(robot))) return false;
+    // RViz may replace an active NavigateToPose goal: Nav2 preempts it in place and
+    // the old result is ignored via the generation counter. Leased MARCO paths,
+    // pending cancels and goals not yet accepted are never replaced.
+    const bool replace=preempt&&state.busy&&!state.path_mode&&!state.validating&&!state.cancel_requested&&bool(state.goal);
+    if ((state.busy&&!replace) || !state.action->action_server_is_ready() || (require_localization_&&!localized(robot))) return false;
+    if (replace) RCLCPP_INFO(get_logger(),"New RViz goal replaces the active goal of %s",robot.c_str());
     state.path_mode=false;
     state.goal_target=message;state.has_goal_target=true;
     Goal::Goal goal; goal.pose=std::move(message); goal.pose.header.frame_id=state.map; goal.pose.header.stamp=now();
@@ -345,7 +353,7 @@ private:
       if(st.cancel_requested||Clock::now()>st.lease_until||!localized(robot)){path_finished(robot,generation,"canceled");return;}
       try {
         if(!f.get()->is_valid){path_finished(robot,generation,"invalid_path");return;}
-        Follow::Goal goal;goal.path=path;goal.path.header.stamp=now();goal.controller_id="FollowPath";goal.goal_checker_id="general_goal_checker";
+        Follow::Goal goal;goal.path=path;goal.path.header.stamp=now();goal.controller_id=path_controller_;goal.goal_checker_id="general_goal_checker";
         rclcpp_action::Client<Follow>::SendGoalOptions options;
         options.goal_response_callback=[this,robot,generation](FollowHandle::SharedPtr handle) {
           auto& current=states_.at(robot);if(current.generation!=generation)return;
@@ -562,6 +570,7 @@ private:
     marker.text="2D Pose Estimate -> "+selected_;labels.markers.push_back(marker);labels_pub_->publish(labels);
   }
   bool require_localization_{false},coordinated_goals_{false};uint64_t map_revision_{0};
+  std::string path_controller_{"FollowPath"};
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr map_;
   rclcpp::TimerBase::SharedPtr control_timer_;
   double scan_period_{.2};std::map<std::string,Clock::time_point> last_scan_;

@@ -23,6 +23,7 @@ def setup(context):
     socket_enabled = LaunchConfiguration('socket').perform(context) == 'true'
     parameters = {'robot_count': count, 'robot_ids': ','.join(robots),
                   'coordinated_goals': LaunchConfiguration('coordinated_goals').perform(context) == 'true',
+                  'path_controller': LaunchConfiguration('path_controller').perform(context),
                   'require_localization': LaunchConfiguration('require_localization').perform(context) == 'true'}
     if socket_enabled:
         parameters['socket_port'] = int(LaunchConfiguration('socket_port').perform(context))
@@ -65,6 +66,7 @@ def generate_launch_description():
         DeclareLaunchArgument('robot_ids', default_value=os.environ.get('TB4_ROBOT_IDS', '')),
         DeclareLaunchArgument('require_localization', default_value='false', choices=['true', 'false']),
         DeclareLaunchArgument('coordinated_goals', default_value='false', choices=['true','false']),
+        DeclareLaunchArgument('path_controller', default_value='FollowPath'),
         DeclareLaunchArgument('rviz', default_value='true', choices=['true', 'false']),
         DeclareLaunchArgument('socket', default_value='false', choices=['true', 'false']),
         DeclareLaunchArgument('socket_port', default_value='8765'),

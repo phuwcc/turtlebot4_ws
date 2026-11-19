@@ -105,7 +105,7 @@ def execute_batch(actions,mission,port,map_revision,report,interrupted=None):
             status=request({'command':'status'},port)['robots']
             for robot,action in list(active.items()):
                 state=status[robot];position=snapshot['robots'][robot]['pose']
-                if tracking_error(position,action['points'])>tolerance:raise RuntimeError(robot+' left reserved path corridor')
+                if tracking_error(position,action.get('reserved',action['points']))>tolerance:raise RuntimeError(robot+' left reserved path corridor')
                 if state['busy']:
                     try:
                         request({'command':'lease','robot':robot,'owner':owner},port)

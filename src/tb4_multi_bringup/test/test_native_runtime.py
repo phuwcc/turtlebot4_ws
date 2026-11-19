@@ -164,9 +164,13 @@ class NativeRuntimeTest(unittest.TestCase):
             self.wait(lambda:len(goals['robot2'])==1)
             self.assertFalse(app.request(request)['ok'])
             self.assertFalse(app.request({'command':'pose','robot':'robot2','x':0,'y':0})['ok'])
+            # A valid RViz goal replaces the active ordinary goal (Nav2 preemption);
+            # the socket goal above stays rejected while busy, and bad frames never pass.
+            self.wait(lambda:app.status()['robots']['robot2']['accepted'])
             p=PoseStamped();p.header.frame_id='map';p.pose.orientation.w=1.;rviz.publish(p)
+            self.wait(lambda:len(goals['robot2'])==2)
             p.header.frame_id='odom';rviz.publish(p);time.sleep(.15)
-            self.assertEqual(len(goals['robot2']),1)
+            self.assertEqual(len(goals['robot2']),2)
             self.assertTrue(app.request({'command':'cancel','robot':'robot2'})['ok'])
             self.wait(lambda:app.status()['robots']['robot2']['last_result']=='canceled')
             # Each robot owns its own goal; canceling one cannot affect the others.

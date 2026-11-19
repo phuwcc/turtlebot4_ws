@@ -121,8 +121,8 @@ Visualization Manager:
       Buffer Length: 1
     - Class: rviz_default_plugins/Polygon
       Name: robot1 footprint
-      Enabled: false
-      Value: false
+      Enabled: true
+      Value: true
       Topic:
         Value: /tb4_view/robot1/local_costmap/published_footprint
         Depth: 10
@@ -145,8 +145,8 @@ Visualization Manager:
       Use Timestamp: false
     - Class: rviz_default_plugins/Map
       Name: robot1 global_costmap/costmap
-      Enabled: false
-      Value: false
+      Enabled: true
+      Value: true
       Topic:
         Value: /tb4_view/robot1/global_costmap/costmap
         Depth: 1
@@ -261,8 +261,8 @@ Visualization Manager:
       Buffer Length: 1
     - Class: rviz_default_plugins/Polygon
       Name: robot2 footprint
-      Enabled: false
-      Value: false
+      Enabled: true
+      Value: true
       Topic:
         Value: /tb4_view/robot2/local_costmap/published_footprint
         Depth: 10
@@ -285,8 +285,8 @@ Visualization Manager:
       Use Timestamp: false
     - Class: rviz_default_plugins/Map
       Name: robot2 global_costmap/costmap
-      Enabled: false
-      Value: false
+      Enabled: true
+      Value: true
       Topic:
         Value: /tb4_view/robot2/global_costmap/costmap
         Depth: 1
@@ -401,8 +401,8 @@ Visualization Manager:
       Buffer Length: 1
     - Class: rviz_default_plugins/Polygon
       Name: robot3 footprint
-      Enabled: false
-      Value: false
+      Enabled: true
+      Value: true
       Topic:
         Value: /tb4_view/robot3/local_costmap/published_footprint
         Depth: 10
@@ -425,8 +425,8 @@ Visualization Manager:
       Use Timestamp: false
     - Class: rviz_default_plugins/Map
       Name: robot3 global_costmap/costmap
-      Enabled: false
-      Value: false
+      Enabled: true
+      Value: true
       Topic:
         Value: /tb4_view/robot3/global_costmap/costmap
         Depth: 1
@@ -479,6 +479,16 @@ Visualization Manager:
     Value: true
     Topic:
       Value: /tb4_view/marco_coordination
+      Depth: 1
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: rviz_default_plugins/MarkerArray
+    Name: Fleet footprints (peer obstacles)
+    Enabled: true
+    Value: true
+    Topic:
+      Value: /tb4_view/fleet_footprints
       Depth: 1
       History Policy: Keep Last
       Reliability Policy: Reliable

@@ -106,8 +106,8 @@ class Planner:
             raise ValueError('Mission needs 1..8 navigation tasks')
         self.radius=mission.get('robot_radius',.175)+mission.get('safety_margin',.05)+mission.get('tracking_tolerance',.04)
         self.speed=mission.get('speed_mps',.05)
-        if not finite(self.radius) or not .175 <= self.radius <= .6 or not finite(self.speed) or not 0 < self.speed <= .12:
-            raise ValueError('Invalid robot clearance or speed (maximum 0.12m/s)')
+        if not finite(self.radius) or not .175 <= self.radius <= .6 or not finite(self.speed) or not 0 < self.speed <= .25:
+            raise ValueError('Invalid robot clearance or speed (maximum 0.25m/s)')
         if not self.grid or self.grid.message != snapshot['map'] or self.last_radius != self.radius:
             self.grid=Grid(snapshot['map'],self.radius);self.last_radius=self.radius
         self.robots=tuple(sorted(snapshot['robots']))
@@ -199,6 +199,13 @@ class Planner:
         # Protect complete routes, including stationary peer footprints, rather
         # than assuming a simulator's predicted arrival times are exact.
         conflicts=any(self.conflict(routes[a],routes[b],clearance) for i,a in enumerate(routes) for b in list(routes)[i+1:])
+        if conflicts and self._mission.get('nominal_until_contact') and not self._mission.get('intervene') and len(current)>=2:
+            # MARCO ROS execution (three_robot_t/execute.py): every robot first
+            # drives its nominal route; the executor watches predicted swept
+            # contacts and only then stops the robots and requests the MARCO
+            # intervention from the actual conflict poses (mission 'intervene').
+            return self.package_actions(snapshot,[(r,routes[r],current[r]['id']) for r in sorted(current)],
+                {'strategy':'nominal','route_conflict':True},None)
         audit={'strategy':'disjoint_routes'}
         selected=[(r,routes[r],current[r]['id']) for r in current]
         next_intent=None

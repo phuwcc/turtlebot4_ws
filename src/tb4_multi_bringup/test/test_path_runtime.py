@@ -388,7 +388,10 @@ class PathRuntimeTest(unittest.TestCase):
         self.start('localization_supervisor',{'hint':True,'navigation':False,'localization_profile':'navigation'},'/robot2')
         self.wait(lambda:statuses and statuses[-1]['ready'],timeout=18)
         self.assertGreater(statuses[-1]['covariance_xyyaw'][0],.01)
-        self.covariance_override=.03
+        # Navigation accepts up to 0.04 (20cm sigma); beyond that it is not ready.
+        self.covariance_override=.03;time.sleep(.5)
+        self.wait(lambda:statuses[-1]['covariance_xyyaw'][0]>.025 and statuses[-1]['ready'])
+        self.covariance_override=.05
         self.wait(lambda:not statuses[-1]['ready'])
         self.paused=True
         self.wait(lambda:statuses[-1].get('reason') in ('stale_sensors','stale_scan_timestamp'))

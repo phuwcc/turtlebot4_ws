@@ -212,11 +212,27 @@ def multi(args, values, ids):
     print('ROS log: ' + str(directory/'session.log'), flush=True)
     command = script('pc-marco.sh', map_path, 'initial_poses:='+str(poses),
                      'rviz:='+str(not args.no_rviz).lower())
+    if args.rviz_goals or args.marco:
+        # README: RViz goals use the navigation localization profile and Nav2 params;
+        # strict thresholds are for MARCO tests and cancel ordinary goals while driving.
+        # Peer footprints are stamped into each robot's costmap (MARCO fleet_obstacles).
+        command += ['localization_profile:=navigation', 'peer_footprints:=true',
+                    'nav_params_file:='+str(ROOT/'config/navigation/nav2.yaml')]
+    if args.marco:
+        # RViz Goal robot1/robot2 -> MARCO core -> leased FollowPath (robot1 has priority).
+        command += ['coordinated_goals:=true', 'path_controller:=CorridorFollow']
     with (directory/'session.log').open('w') as stream:
         child = subprocess.Popen(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT, start_new_session=True)
         try:
-            wait_navigation(child, ids, args.timeout)
-            print('Hai robot sẵn sàng. MACRO chạy khi nhận mission, có kiểm tra conflict và watchdog.', flush=True)
+            try:
+                wait_navigation(child, ids, args.timeout)
+                print('Hai robot sẵn sàng. MACRO chạy khi nhận mission, có kiểm tra conflict và watchdog.', flush=True)
+            except RuntimeError as error:
+                # RViz goal modes: keep RViz up so the user can fix poses with
+                # 2D Pose Estimate; goals stay gated by localization_supervisor.
+                if mission or not (args.rviz_goals or args.marco) or child.poll() is not None:
+                    raise
+                print('Cảnh báo:', error, 'Giữ RViz để đặt 2D Pose Estimate.', flush=True)
             if mission:
                 mission_run(mission, args.execute, directory)
                 if not args.keep_alive:
@@ -292,6 +308,10 @@ def parser():
     s.add_argument('--no-rviz', action='store_true')
     s.add_argument('--install-service', action='store_true')
     s.add_argument('--timeout', type=float, default=180.)
+    s.add_argument('--rviz-goals', action='store_true',
+                   help='Lái bằng nút Goal trên RViz: localization_profile=navigation + config/navigation/nav2.yaml')
+    s.add_argument('--marco', action='store_true',
+                   help='Goal RViz đi qua MARCO (điều phối xung đột, robot1 ưu tiên); gồm cả --rviz-goals')
     s = sub.add_parser('mission')
     s.add_argument('filename')
     s.add_argument('--execute', action='store_true')

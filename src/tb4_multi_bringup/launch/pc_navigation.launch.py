@@ -30,6 +30,9 @@ def setup(context):
         arguments = {'robot_id': robot, 'map': str(map_path),
                      'managed_startup': LaunchConfiguration('managed_startup'),
                      'localization_profile': LaunchConfiguration('localization_profile'),
+                     'peer_footprints': LaunchConfiguration('peer_footprints'),
+                     'peer_ids': ','.join(r for r in robots if r != robot)
+                                 if LaunchConfiguration('peer_footprints').perform(context) == 'true' else '',
                      'anchor_yaw': LaunchConfiguration('anchor_yaw'),
                      'nav_params_file': LaunchConfiguration('nav_params_file'),
                      'localization_only': LaunchConfiguration('localization_only'),
@@ -44,8 +47,14 @@ def setup(context):
         launch_arguments={'robot_count': str(count), 'robot_ids': ','.join(robots), 'socket': 'true',
                           'require_localization': LaunchConfiguration('managed_startup'),
                           'coordinated_goals': LaunchConfiguration('coordinated_goals'),
+                          'path_controller': LaunchConfiguration('path_controller'),
                           'rviz': LaunchConfiguration('rviz'),
                           'socket_port': LaunchConfiguration('socket_port')}.items()))
+    if LaunchConfiguration('peer_footprints').perform(context) == 'true':
+        from launch_ros.actions import Node
+        actions.append(Node(package='tb4_multi_bringup', executable='fleet_footprints', name='fleet_footprints',
+                            parameters=[{'robot_ids': ','.join(robots), 'map_topic': '/' + robots[0] + '/map'}],
+                            output='screen'))
     if coordinated:
         from launch_ros.actions import Node
         from launch.actions import RegisterEventHandler, EmitEvent
@@ -53,7 +62,7 @@ def setup(context):
         from launch.events import Shutdown
         coordinator=Node(package='tb4_marco_bridge',executable='marco_rviz',name='marco_rviz',
             parameters=[{'robot_ids':','.join(robots),'socket_port':LaunchConfiguration('socket_port'),
-                         'speed_mps':.12,'tracking_tolerance':.08}],output='screen')
+                         'speed_mps':.16,'tracking_tolerance':.08}],output='screen')
         actions += [RegisterEventHandler(OnProcessExit(target_action=coordinator,
             on_exit=[EmitEvent(event=Shutdown(reason='MARCO coordinator exited'))])),coordinator]
     return actions
@@ -66,7 +75,9 @@ def generate_launch_description():
         DeclareLaunchArgument('map'),
         DeclareLaunchArgument('managed_startup', default_value='false', choices=['true', 'false']),
         DeclareLaunchArgument('localization_profile', default_value='strict', choices=['strict','navigation']),
+        DeclareLaunchArgument('peer_footprints', default_value='false', choices=['true', 'false']),
         DeclareLaunchArgument('coordinated_goals', default_value='false', choices=['true','false']),
+        DeclareLaunchArgument('path_controller', default_value='FollowPath'),
         DeclareLaunchArgument('anchor_yaw', default_value='0.0'),
         DeclareLaunchArgument('localization_hints', default_value=''),
         DeclareLaunchArgument('nav_params_file', default_value=str(share() / 'config/common/nav2.yaml')),

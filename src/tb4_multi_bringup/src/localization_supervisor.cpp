@@ -1,5 +1,7 @@
 // PC-only lifecycle/AMCL initialization. Never publishes motor commands.
 #include "global_scan_match.hpp"
+#include <map>
+#include <sstream>
 #include "scan_hit.hpp"
 #include <rclcpp/rclcpp.hpp>
 #include <tf2/buffer_core.h>
@@ -39,9 +41,15 @@ public:
     if(profile!="strict"&&profile!="navigation")throw std::invalid_argument("Unknown localization profile");
     // Normal Nav2 goals tolerate a 15cm position standard deviation; MARCO's
     // guarded path validation retains the original 10cm acquisition limit.
-    max_covariance_xy_=profile=="navigation"?.0225:.01;
-    max_covariance_yaw_=profile=="navigation"?.09:.04;
-    min_scan_match_=profile=="navigation"?.65:.70;
+    // RViz navigation tolerates a 20cm position standard deviation: near a long
+    // wall AMCL is often certain across it but not along it, which flapped
+    // between running/paused at 15cm. Recovery keeps a goal alive up to 30cm while
+    // the scan still matches the map. Live-scan obstacle avoidance is unaffected.
+    const bool interactive=profile=="navigation";
+    max_covariance_xy_=interactive?.04:.01;
+    max_covariance_yaw_=interactive?.09:.04;
+    min_scan_match_=interactive?.65:.70;
+    recover_covariance_xy_=interactive?.09:.04;
     wait_seconds_=declare_parameter<double>("global_timeout",120.0);
     if(!std::isfinite(anchor_yaw_)||!std::isfinite(wait_seconds_)||wait_seconds_<=0)throw std::invalid_argument("Invalid anchor yaw or global timeout");
     loc_=create_client<Manage>("lifecycle_manager_localization/manage_nodes");
@@ -53,6 +61,16 @@ public:
     const auto live=rclcpp::SensorDataQoS();
     hint_sub_=create_subscription<Pose>("initialpose",10,[this](Pose::ConstSharedPtr){phase_at_=Clock::now();quality_started_=false;});
     pose_sub_=create_subscription<Pose>("amcl_pose",rclcpp::QoS(1).transient_local(),[this](Pose::ConstSharedPtr m){pose_=m;});
+    // Peer robots are real but unmapped obstacles: scan returns on their
+    // bodies must not count against map agreement (MARCO peer footprints).
+    {
+      std::stringstream ids(declare_parameter<std::string>("peer_ids",""));
+      peer_radius_=declare_parameter<double>("peer_radius",.25);
+      if(!(peer_radius_>0.&&peer_radius_<.6))throw std::invalid_argument("peer_radius must be within 0..0.6 m");
+      for(std::string id;std::getline(ids,id,',');) if(!id.empty())
+        peer_subs_.push_back(create_subscription<Pose>("/"+id+"/amcl_pose",rclcpp::QoS(1).transient_local(),[this,id](Pose::ConstSharedPtr m){
+          if(m->header.frame_id=="map")peers_[id]={m->pose.pose.position.x,m->pose.pose.position.y,Clock::now()};}));
+    }
     scan_sub_=create_subscription<sensor_msgs::msg::LaserScan>("scan",live,[this](sensor_msgs::msg::LaserScan::ConstSharedPtr m){scan_=m;scan_at_=Clock::now();});
     odom_sub_=create_subscription<nav_msgs::msg::Odometry>("odom",live,[this](nav_msgs::msg::Odometry::ConstSharedPtr){odom_at_=Clock::now();});
     map_sub_=create_subscription<nav_msgs::msg::OccupancyGrid>("map",rclcpp::QoS(1).transient_local(),[this](nav_msgs::msg::OccupancyGrid::ConstSharedPtr m){map_=m;distance_field();});
@@ -88,18 +106,25 @@ private:
       const auto laser=buffer_.lookupTransform("map",scan_->header.frame_id,tf2::TimePointZero).transform;
       const double a=yaw(laser.rotation),oa=yaw(map_->info.origin.orientation),co=std::cos(oa),si=std::sin(oa),res=map_->info.resolution;
       if(!std::isfinite(res)||res<=0)return false;
-      int hits=0,total=0;const int stride=std::max(1,int(scan_->ranges.size()/180));
+      std::vector<std::pair<double,double>> peers;
+      for(const auto& [id,p]:peers_) if(Clock::now()-p.at<2s)peers.emplace_back(p.x,p.y);
+      int hits=0,total=0,peer_points=0;const int stride=std::max(1,int(scan_->ranges.size()/180));
       for(size_t i=0;i<scan_->ranges.size();i+=stride) {
         const double r=scan_->ranges[i];if(!std::isfinite(r)||r<scan_->range_min||r>=scan_->range_max)continue;
         const double angle=scan_->angle_min+i*scan_->angle_increment+a;
         const double dx=laser.translation.x+r*std::cos(angle)-map_->info.origin.position.x;
         const double dy=laser.translation.y+r*std::sin(angle)-map_->info.origin.position.y;
+        const double mx=laser.translation.x+r*std::cos(angle),my=laser.translation.y+r*std::sin(angle);
+        bool on_peer=false;
+        for(const auto& p:peers) if(std::hypot(mx-p.first,my-p.second)<=peer_radius_){on_peer=true;break;}
+        if(on_peer){++peer_points;continue;}
         const int x=std::floor((co*dx+si*dy)/res),y=std::floor((-si*dx+co*dy)/res);++total;
         if(tb4::near_occupied_cell(map_->data,int(map_->info.width),int(map_->info.height),x,y,res,.15))++hits;
       }
       if(has_hint_&&!hint_verified_&&std::hypot(body.transform.translation.x-hint_x_,body.transform.translation.y-hint_y_)>std::max(.15,2*hint_std_xy_)){status["reason"]="outside_initial_hint_region";return false;}
       const double score=total?double(hits)/total:0;
       status["scan_match_fraction"]=score;
+      if(peer_points)status["scan_peer_points"]=peer_points;
       const auto& cov=pose_->pose.covariance;
       status["covariance_xyyaw"]={cov[0],cov[7],cov[35]};
       status["pose"]={body.transform.translation.x,body.transform.translation.y,yaw(body.transform.rotation)};
@@ -178,8 +203,8 @@ private:
       if(!ok&&status.value("reason",std::string())=="amcl_not_converged"&&
           status.contains("covariance_xyyaw")&&status.value("scan_match_fraction",0.)>=min_scan_match_) {
         const auto& c=status["covariance_xyyaw"];
-        recovering=c[0].get<double>()>=0.&&c[0].get<double>()<=.04&&
-                   c[1].get<double>()>=0.&&c[1].get<double>()<=.04&&
+        recovering=c[0].get<double>()>=0.&&c[0].get<double>()<=recover_covariance_xy_&&
+                   c[1].get<double>()>=0.&&c[1].get<double>()<=recover_covariance_xy_&&
                    c[2].get<double>()>=0.&&c[2].get<double>()<=.09;
       }
       status["recovering"]=recovering&&phase_=="running";
@@ -214,7 +239,9 @@ private:
     if(last_phase_!=phase_){RCLCPP_INFO(get_logger(),"Localization state: %s",phase_.c_str());last_phase_=phase_;}
   }
   bool has_hint_{false},hint_verified_{false};double hint_x_{0},hint_y_{0},hint_yaw_{0},hint_std_xy_{.2},hint_std_yaw_{.2};
-  double max_covariance_xy_{.01},max_covariance_yaw_{.04},min_scan_match_{.70};
+  struct Peer{double x,y;Clock::time_point at;};
+  std::map<std::string,Peer> peers_;std::vector<rclcpp::Subscription<Pose>::SharedPtr> peer_subs_;double peer_radius_{.25};
+  double max_covariance_xy_{.01},max_covariance_yaw_{.04},min_scan_match_{.70},recover_covariance_xy_{.04};
   bool bad_quality_{false};Clock::time_point bad_since_;
   Json search_audit_=nullptr;bool assisted_{false};Clock::time_point last_search_;
   uint64_t generation_{0};

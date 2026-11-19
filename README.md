@@ -43,9 +43,25 @@ Chế độ `localization_only:=true` chỉ định vị, chưa nhận goal navi
 Khi lái bằng goal RViz, thêm `localization_profile:=navigation` vào lệnh khởi động
 PC để dùng kiểm tra AMCL phù hợp navigation thông thường. Mặc định `strict`
 giữ các ngưỡng định vị của bài kiểm thử MACRO.
-Profile `config/navigation/nav2.yaml` dành cho goal RViz: quay theo hướng đường
-trước khi tiến, tối đa 0,12 m/s và 0,50 rad/s. Dùng cùng
+Profile `config/navigation/nav2.yaml` dành cho goal RViz/MARCO: quay theo hướng
+đường trước khi tiến, tối đa 0,16 m/s và 0,60 rad/s (profile controller ROS của
+MARCO), inflation nhỏ 0,25 m (cost scaling 10). Dùng cùng
 `localization_profile:=navigation`; profile MACRO vẫn giữ tốc độ kiểm thử riêng.
+
+```bash
+# Goal RViz đi thẳng Nav2 (mỗi robot độc lập, đổi goal giữa chừng được)
+bash multi_robot.bash --poses config/marco/initial_poses.local.yaml --rviz-goals
+# Goal RViz đi qua MARCO (điều phối xung đột, robot1 ưu tiên)
+bash multi_robot.bash --poses config/marco/initial_poses.local.yaml --marco
+```
+
+Cả hai chế độ bật `peer_footprints:=true`: node C++ `fleet_footprints` (bản
+native của `MACRO/src/simulations/ros2/fleet_obstacles.py`) vẽ footprint tròn
+0,171 m + 0,01 m của robot kia vào `/robotN/fleet_map` cho costmap; AMCL vẫn dùng
+map gốc. RViz hiện vòng footprint, footprint costmap và global costmap (inflation).
+MARCO chỉ lập kế hoạch khi mỗi robot cách vật cản trên map hơn ~0,34 m
+(0,175 thân + 0,05 an toàn + 0,08 bám path); nếu báo "footprint overlaps
+unknown/occupied" thì đưa robot ra chỗ thoáng hơn trước.
 
 Thêm `coordinated_goals:=true` khi mở PC navigation để đưa hai nút Goal qua
 MARCO thay vì gửi NavigateToPose trực tiếp. Robot1 có ưu tiên cao hơn robot2;

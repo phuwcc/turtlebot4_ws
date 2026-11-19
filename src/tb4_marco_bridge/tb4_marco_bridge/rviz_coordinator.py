@@ -1,6 +1,7 @@
 """Live RViz goals -> unmodified MARCO core -> leased Nav2 FollowPath actions."""
 import json
 import fcntl
+import sys
 import math
 import os
 from pathlib import Path
@@ -15,6 +16,7 @@ from std_msgs.msg import String
 from visualization_msgs.msg import Marker, MarkerArray
 
 from .cli import Worker, request, ready, execute_batch, ReplanRequested
+from .smoothing import smooth_points
 
 
 class RvizCoordinator(Node):
@@ -26,10 +28,19 @@ class RvizCoordinator(Node):
         self.port=self.declare_parameter('socket_port',8765).value
         default=Path(__file__).resolve().parents[3]/'MACRO'
         self.root=Path(self.declare_parameter('marco_root',os.environ.get('MARCO_ROOT',str(default))).value)
-        self.speed=float(self.declare_parameter('speed_mps',.12).value)
+        self.speed=float(self.declare_parameter('speed_mps',.16).value)
         self.tolerance=float(self.declare_parameter('tracking_tolerance',.08).value)
-        if not 0<self.speed<=.12 or not .04<=self.tolerance<=.10:
+        if not 0<self.speed<=.25 or not .04<=self.tolerance<=.10:
             raise ValueError('Invalid coordinated speed/tracking tolerance')
+        # Corner rounding after the MARCO core; 0 disables. Must leave most of
+        # the tracking corridor (checked against the reserved MARCO path).
+        self.smooth_deviation=float(self.declare_parameter('smooth_deviation',.03).value)
+        # MARCO execute.py DEMO_TRIGGER_HORIZON_S default.
+        self.trigger_horizon=float(self.declare_parameter('trigger_horizon_s',3.).value)
+        if not 0<self.trigger_horizon<=10:raise ValueError('trigger_horizon_s must be within 0..10 s')
+        self.predicted_contacts=None
+        if not 0<=self.smooth_deviation<=self.tolerance/2:
+            raise ValueError('smooth_deviation must be within 0..tracking_tolerance/2')
         self.directory=Path(self.declare_parameter('log_directory',str(Path.cwd()/'log/pc/marco_rviz')).value)
         self.directory.mkdir(parents=True,exist_ok=True)
         default_lock=Path(os.environ.get('XDG_STATE_HOME',str(Path.home()/'.local/state')))/'tb4_multi_robot/pc/marco.lock'
@@ -57,6 +68,27 @@ class RvizCoordinator(Node):
             self.revision+=1;self.goals[robot]={'pose':[p.x,p.y,yaw],'revision':self.revision}
             self.changed_at=time.monotonic()
         self.get_logger().info('MARCO goal queued for '+robot)
+
+    def contact(self,actions,report,hits):
+        """MARCO swept-contact trigger (three_robot_t/swept_trigger.predicted_contacts)."""
+        if self.predicted_contacts is None:
+            sys.path.insert(0,str(self.root/'src'))
+            from simulations.ros2.three_robot_t.swept_trigger import predicted_contacts
+            self.predicted_contacts=predicted_contacts
+        snapshot=request({'command':'snapshot'},self.port)
+        poses={r:snapshot['robots'][r]['pose'] for r in self.robots}
+        finished={e['robot'] for e in report if e.get('event')=='completed'}
+        routes={r:[poses[r][:2]] for r in self.robots}   # idle robots hold position
+        speeds={r:0. for r in self.robots}
+        for a in actions:
+            if a['robot'] in finished:continue
+            routes[a['robot']]=[p[:2] for p in a.get('reserved',a['points'])];speeds[a['robot']]=self.speed
+        pairs=[(a,b) for i,a in enumerate(self.robots) for b in self.robots[i+1:]]
+        found=self.predicted_contacts(poses,routes,pairs,speeds,horizon_s=self.trigger_horizon)
+        if found:
+            hits[:]=found
+            self.get_logger().info('MARCO contact trigger: '+json.dumps(found))
+        return bool(found)
 
     def set_state(self,phase,detail,active=()):
         with self.lock:self.phase=phase;self.detail=detail;self.active=list(active)
@@ -110,7 +142,7 @@ class RvizCoordinator(Node):
                 try:
                     if self.worker is None:self.worker=Worker(self.root,self.directory/'worker.log')
                     mission={'priority_order':self.robots,'speed_mps':self.speed,'tracking_tolerance':self.tolerance,
-                        'robot_radius':.175,'safety_margin':.05,'action_timeout_s':180.,
+                        'robot_radius':.175,'safety_margin':.05,'action_timeout_s':180.,'nominal_until_contact':True,'intervene':False,
                         'tasks':[{'id':int(r[-1]),'goal':g['pose'],'candidates':[r],'depends_on':[]} for r,g in sorted(goals.items())]}
                     self.set_state('planning','Planning; robot1 has priority')
                     assignment=self.worker.call({'command':'assign','snapshot':snapshot,'mission':mission})
@@ -123,6 +155,9 @@ class RvizCoordinator(Node):
                         batch=self.worker.call({'command':'next','snapshot':snapshot,'mission':mission,
                             'assignment':assignment,'completed':completed,'intent':intent})
                         intent=batch.get('intent')
+                        for action in batch['actions']:
+                            action['reserved']=action['points']
+                            action['points']=smooth_points(action['points'],self.smooth_deviation)
                         with (self.directory/'plans.jsonl').open('a') as stream:
                             stream.write(json.dumps({'revision':revision,'mission':mission,'batch':batch})+'\n')
                         if not batch['actions']:
@@ -130,8 +165,29 @@ class RvizCoordinator(Node):
                             self.set_state('idle','Goals completed');break
                         for action in batch['actions']:
                             request({'command':'preview','robot':action['robot'],'points':action['points']},self.port)
-                        self.set_state('executing',batch['audit']['strategy'],[a['robot'] for a in batch['actions']])
-                        done=execute_batch(batch['actions'],mission,self.port,map_revision,[],lambda:self.interrupted(revision))
+                        strategy=batch['audit']['strategy']
+                        self.set_state('executing',strategy,[a['robot'] for a in batch['actions']])
+                        report=[];hits=[]
+                        watch=(lambda:self.interrupted(revision) or self.contact(batch['actions'],report,hits)) if strategy=='nominal' else (lambda:self.interrupted(revision))
+                        try:
+                            done=execute_batch(batch['actions'],mission,self.port,map_revision,report,watch)
+                        except ReplanRequested:
+                            if not hits or self.interrupted(revision):raise
+                            # MARCO trigger: robots were stopped by execute_batch; let them
+                            # settle, then plan the intervention from the conflict poses.
+                            done=[e['task'] for e in report if e.get('event')=='completed' and e.get('task') is not None]
+                            self.set_state('waiting','Contact predicted '+'/'.join(hits[0]['robots'])+
+                                ' (%.2f m in %.1f s); MARCO intervention'%(hits[0]['predicted_separation_m'],hits[0]['interval_s'][1]))
+                            self.stop.wait(1.)
+                            for _ in range(25):
+                                if not any(s['busy'] for s in request({'command':'status'},self.port)['robots'].values()):break
+                                self.stop.wait(.2)
+                            else:raise RuntimeError('Robots did not stop after the contact trigger')
+                            self.stop.wait(.5)   # MARCO settle time before planning
+                            mission['intervene']=True;intent=None
+                        else:
+                            # Intervention finished: remaining routes run nominally again.
+                            if mission['intervene'] and intent is None:mission['intervene']=False
                         completed+=done
                         with self.lock:
                             for r,goal in goals.items():
