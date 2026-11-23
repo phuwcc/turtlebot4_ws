@@ -23,3 +23,7 @@ journalctl -u tb4-hardware.service -n 50 --no-pager
 bash run.bash check
 nano config/marco/initial_poses.local.yaml
 ```
+
+Tham số EKF và AMCL nằm trong `src/tb4_multi_bringup/config/common/`.
+AMCL nạp occupancy map gồm YAML và ảnh bản đồ.
+[Hướng dẫn quét và kiểm tra định vị](../docs/REAL_ROBOT.md)

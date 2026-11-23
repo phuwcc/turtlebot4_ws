@@ -3,6 +3,7 @@ import copy
 import json
 import math
 from pathlib import Path
+import sys
 import unittest
 
 from tb4_marco_bridge.planning import Planner
@@ -10,6 +11,8 @@ from tb4_marco_bridge.planning import Planner
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = ROOT / 'config/marco/testcases'
+sys.path.insert(0, str(ROOT / 'scripts'))
+from capture_marco_swap import swap_mission
 
 
 def scenario(name):
@@ -35,6 +38,36 @@ def scenario(name):
 
 
 class DocumentedScenarioTest(unittest.TestCase):
+    def test_live_pose_swap_yields_to_robot1_and_keeps_captured_goals(self):
+        state = scenario('09_head_on_1m')
+        state['ok'] = True
+        for robot in state['robots'].values():
+            robot.update(localized=True, odom_fresh=True, busy=False)
+        initial = copy.deepcopy(state['robots'])
+        mission = swap_mission(state)
+        planner = Planner(ROOT / 'MACRO')
+        assignment = planner.assign(state, mission)
+        completed, intent = [], None
+        yielded = False
+        for _ in range(32):
+            batch = planner.next_batch(state, mission, assignment, completed, intent)
+            intent = batch.get('intent')
+            if not batch['actions']:
+                self.assertEqual(batch['reason'], 'completed')
+                break
+            for action in batch['actions']:
+                if action['robot'] == 'robot2' and action['task'] is None and not completed:
+                    yielded = True
+                state['robots'][action['robot']]['pose'] = action['points'][-1]
+                if action['task'] is not None:
+                    completed.append(action['task'])
+        else:
+            self.fail('Swap did not finish within the batch limit')
+        self.assertTrue(yielded)
+        self.assertEqual(completed, [1, 2])
+        self.assertEqual(state['robots']['robot1']['pose'], initial['robot2']['pose'])
+        self.assertEqual(state['robots']['robot2']['pose'], initial['robot1']['pose'])
+
     def test_fixed_robot1_priority_and_idle_robot_protection(self):
         for name in ('04_crossing','05_head_on','06_idle_blocker','09_head_on_1m'):
             with self.subTest(name=name):

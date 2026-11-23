@@ -1,4 +1,4 @@
-"""Native path ownership/lease/permission and managed AMCL tests, isolated DDS."""
+"""Native path ownership/lease/permission and AMCL and EKF readiness tests, isolated DDS."""
 import os
 os.environ.update(ROS_DOMAIN_ID='177',ROS_LOCALHOST_ONLY='1',ROS_SUPER_CLIENT='False',RMW_IMPLEMENTATION='rmw_fastrtps_cpp')
 for k in ('ROS_DISCOVERY_SERVER','FASTRTPS_DEFAULT_PROFILES_FILE','FASTDDS_DEFAULT_PROFILES_FILE','CYCLONEDDS_URI','ROS_NAMESPACE'):os.environ.pop(k,None)
@@ -11,12 +11,12 @@ from rclpy.qos import QoSProfile,DurabilityPolicy,qos_profile_sensor_data
 from rclpy.action import ActionServer,CancelResponse
 from geometry_msgs.msg import TransformStamped,PoseStamped,PoseWithCovarianceStamped,Twist,TwistStamped
 from std_msgs.msg import Header,String
+from std_srvs.srv import Empty
 from nav_msgs.msg import Odometry,OccupancyGrid
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import Imu,LaserScan
 from tf2_msgs.msg import TFMessage
 from nav2_msgs.action import FollowPath,NavigateToPose
 from nav2_msgs.srv import IsPathValid,ManageLifecycleNodes
-from std_srvs.srv import Empty
 from native_process import NativeProcess
 
 class PathRuntimeTest(unittest.TestCase):
@@ -24,6 +24,8 @@ class PathRuntimeTest(unittest.TestCase):
         rclpy.init();self.node=Node('path_test_sensors');self.executor=MultiThreadedExecutor(num_threads=6);self.executor.add_node(self.node)
         self.thread=threading.Thread(target=self.executor.spin,daemon=True);self.thread.start();self.apps=[]
         self.latched=QoSProfile(depth=1,durability=DurabilityPolicy.TRANSIENT_LOCAL);self.keep=[];self.paused=False;self.sensor_x={};self.covariance_override=None
+        self.odom_paused = False
+        self.pose_paused = False
     def tearDown(self):
         for app in self.apps:app.close()
         self.executor.shutdown(timeout_sec=3);self.thread.join(timeout=3);self.node.destroy_node();rclpy.shutdown()
@@ -37,17 +39,22 @@ class PathRuntimeTest(unittest.TestCase):
         app=NativeProcess(name,params,ns);self.apps.append(app)
         if app.port:app.wait_ready()
         return app
-    def sensors(self,robot,pose_quality=True,publish_loc=True):
+    def sensors(self,robot,pose_quality=True,publish_loc=True,publish_map=True):
         prefix='/'+robot
         tf=self.node.create_publisher(TFMessage,prefix+'/tf',100)
         odom=self.node.create_publisher(Odometry,prefix+'/odom',qos_profile_sensor_data)
+        nav_tf=self.node.create_publisher(TFMessage,prefix+'/navigation/tf',100)
+        wheel=self.node.create_publisher(Odometry,prefix+'/navigation/wheel_odom',qos_profile_sensor_data)
+        filtered=self.node.create_publisher(Odometry,prefix+'/odometry/filtered',qos_profile_sensor_data)
+        imu=self.node.create_publisher(Imu,prefix+'/navigation/imu',qos_profile_sensor_data)
         scan=self.node.create_publisher(LaserScan,prefix+'/scan',qos_profile_sensor_data)
         loc=self.node.create_publisher(String,prefix+'/localization_status',self.latched)
-        amcl=self.node.create_publisher(PoseWithCovarianceStamped,prefix+'/amcl_pose',self.latched)
+        pose=self.node.create_publisher(PoseWithCovarianceStamped,prefix+'/pose',self.latched)
         grid=self.node.create_publisher(OccupancyGrid,prefix+'/map',self.latched)
         m=OccupancyGrid();m.header.frame_id='map';m.info.resolution=.05;m.info.width=m.info.height=81
         m.info.origin.position.x=m.info.origin.position.y=-2.025;m.info.origin.orientation.w=1.
-        m.data=[100 if x in (0,80) or y in (0,80) else 0 for y in range(81) for x in range(81)];grid.publish(m)
+        m.data=[100 if x in (0,80) or y in (0,80) else 0 for y in range(81) for x in range(81)]
+        if publish_map:grid.publish(m)
         self.quality=pose_quality;self.loc_ready=True;self.loc_recovering=False
         def publish():
             if self.paused:return
@@ -55,16 +62,24 @@ class PathRuntimeTest(unittest.TestCase):
             a=TransformStamped();a.header.stamp=stamp;a.header.frame_id='map';a.child_frame_id='odom';a.transform.rotation.w=1.
             x=self.sensor_x.get(robot,0.)
             b=TransformStamped();b.header.stamp=stamp;b.header.frame_id='odom';b.child_frame_id='base_link';b.transform.rotation.w=1.;b.transform.translation.x=x
-            tf.publish(TFMessage(transforms=[a,b]));o=Odometry();o.header.stamp=stamp;o.header.frame_id='odom';o.child_frame_id='base_link';o.pose.pose.orientation.w=1.;o.pose.pose.position.x=x;odom.publish(o)
+            tf.publish(TFMessage(transforms=[a,b]));o=Odometry();o.header.stamp=stamp;o.header.frame_id='odom';o.child_frame_id='base_link';o.pose.pose.orientation.w=1.;o.pose.pose.position.x=x
+            nav_tf.publish(TFMessage(transforms=[a,b]))
+            if not self.odom_paused:
+                odom.publish(o)
+                wheel.publish(o)
+            filtered.publish(o)
+            body_imu=Imu();body_imu.header.stamp=stamp;body_imu.header.frame_id='imu';imu.publish(body_imu)
             s=LaserScan();s.header.stamp=stamp;s.header.frame_id='base_link';s.angle_min=-math.pi;s.angle_increment=2*math.pi/72;s.range_min=.1;s.range_max=8.
             s.ranges=[min(((2-x) if math.cos(v)>0 else (2+x))/max(abs(math.cos(v)),1e-9),2/max(abs(math.sin(v)),1e-9)) for v in (s.angle_min+i*s.angle_increment for i in range(72))];scan.publish(s)
             p=PoseWithCovarianceStamped();p.header.frame_id='map';p.header.stamp=stamp;p.pose.pose.orientation.w=1.;p.pose.pose.position.x=x
             p.pose.covariance[0]=p.pose.covariance[7]=p.pose.covariance[35]=.001 if self.quality else 1.
             if self.covariance_override is not None:
                 p.pose.covariance[0]=p.pose.covariance[7]=self.covariance_override
-            amcl.publish(p)
+            if not self.pose_paused:
+                pose.publish(p)
             if publish_loc:loc.publish(String(data=json.dumps({'ready':self.loc_ready,'recovering':self.loc_recovering})))
-        timer=self.node.create_timer(.05,publish);self.keep += [tf,odom,scan,loc,amcl,grid,timer]
+        timer=self.node.create_timer(.05,publish);self.keep += [tf,odom,nav_tf,wheel,filtered,imu,scan,loc,pose,grid,timer]
+        return grid,m
 
     def test_path_validation_lease_and_permission(self):
         self.sensors('robot1');self.valid=True;self.goals=[];self.cancels=0;group=ReentrantCallbackGroup()
@@ -81,6 +96,7 @@ class PathRuntimeTest(unittest.TestCase):
         self.keep += [service,action]
         app=self.start('socket_control',{'robot_count':1,'require_localization':True})
         self.wait(lambda:app.request({'command':'snapshot'})['robots']['robot1']['localized'])
+        self.assertEqual(app.request({'command':'snapshot'})['robots']['robot1']['velocity'], [0., 0.])
         self.wait(lambda:app.status()['robots']['robot1']['path_ready'])
         outputs=[];sub=self.node.create_subscription(TwistStamped,'/robot1/remote_cmd_vel',outputs.append,qos_profile_sensor_data)
         stamp=self.start('remote_velocity',{'mode':'stamp','require_permission':True},'/robot1')
@@ -106,61 +122,45 @@ class PathRuntimeTest(unittest.TestCase):
         self.wait(lambda:self.cancels==2)
         self.wait(lambda:outputs[-1].twist.linear.x==0)
 
-    def test_global_amcl_and_origin_anchor_gate_navigation(self):
-        for robot,anchor in [('robot1',True),('robot2',False)]:
-            self.paused=False;self.sensors(robot,pose_quality=anchor,publish_loc=False)
-            commands=[];global_calls=[];anchors=[];group=ReentrantCallbackGroup()
-            def manager(req,res):commands.append(req.command);res.success=True;return res
-            def empty(req,res):return res
-            def globalize(req,res):global_calls.append(True);return res
-            self.keep += [self.node.create_service(ManageLifecycleNodes,'/'+robot+'/lifecycle_manager_localization/manage_nodes',manager,callback_group=group),
-                self.node.create_service(ManageLifecycleNodes,'/'+robot+'/lifecycle_manager_navigation/manage_nodes',manager,callback_group=group),
-                self.node.create_service(Empty,'/'+robot+'/reinitialize_global_localization',globalize,callback_group=group),
-                self.node.create_service(Empty,'/'+robot+'/request_nomotion_update',empty,callback_group=group),
-                self.node.create_subscription(PoseWithCovarianceStamped,'/'+robot+'/initialpose',anchors.append,10)]
-            statuses=[];self.keep.append(self.node.create_subscription(String,'/'+robot+'/localization_status',lambda m:statuses.append(json.loads(m.data)),self.latched))
-            app=self.start('localization_supervisor',{'anchor':anchor,'navigation':True},'/'+robot)
-            self.wait(lambda:any(s['phase']=='localizing' for s in statuses),timeout=15)
-            if anchor:
-                self.wait(lambda:bool(anchors));self.assertEqual(anchors[-1].pose.pose.position.x,0.);self.assertEqual(anchors[-1].pose.pose.position.y,0.)
-            else:
-                self.assertTrue(global_calls);time.sleep(1);self.assertFalse(any(s['ready'] for s in statuses));self.quality=True
-            self.wait(lambda:any(s['ready'] for s in statuses),timeout=12)
-            self.assertGreaterEqual(commands.count(ManageLifecycleNodes.Request.STARTUP),2)
-            self.paused=True
-            self.wait(lambda:statuses[-1]['ready'] is False)
-            self.wait(lambda:ManageLifecycleNodes.Request.PAUSE in commands)
-            app.close();self.apps.remove(app)
-
-    def test_stationary_localization_recovers_after_search_timeout(self):
-        self.sensors('robot1',publish_loc=False);statuses=[];updates=[];commands=[];group=ReentrantCallbackGroup()
-        def manager(req,res):commands.append(req.command);res.success=True;return res
-        def update(req,res):updates.append(time.monotonic());return res
-        self.keep += [self.node.create_service(ManageLifecycleNodes,'/robot1/lifecycle_manager_localization/manage_nodes',manager,callback_group=group),
-            self.node.create_service(ManageLifecycleNodes,'/robot1/lifecycle_manager_navigation/manage_nodes',manager,callback_group=group),
-            self.node.create_service(Empty,'/robot1/request_nomotion_update',update,callback_group=group),
-            self.node.create_subscription(PoseWithCovarianceStamped,'/robot1/initialpose',lambda m:None,10),
-            self.node.create_subscription(String,'/robot1/localization_status',lambda m:statuses.append(json.loads(m.data)),self.latched)]
-        self.start('localization_supervisor',{'anchor':True,'navigation':True,'global_timeout':.5},'/robot1')
-        self.wait(lambda:statuses and statuses[-1]['ready'],timeout=18)
-        self.quality=False
-        self.wait(lambda:not statuses[-1]['ready'])
-        self.quality=True
-        self.wait(lambda:statuses[-1]['ready'],timeout=1.5)
-        self.covariance_override=.02
-        self.wait(lambda:statuses[-1].get('recovering',False))
-        time.sleep(2.5)
-        self.assertEqual(statuses[-1]['phase'],'running')
-        self.assertFalse(statuses[-1]['ready'])
-        self.covariance_override=None
-        self.wait(lambda:statuses[-1]['ready'],timeout=1.5)
-        self.quality=False
-        self.wait(lambda:statuses[-1]['phase']=='paused')
-        time.sleep(.7);count=len(updates)
-        self.wait(lambda:len(updates)>=count+2,timeout=4)
-        self.quality=True
-        self.wait(lambda:statuses[-1]['ready'],timeout=7)
-        self.assertIn(ManageLifecycleNodes.Request.RESUME,commands)
+    def test_map_and_initial_pose_gate_navigation(self):
+        map_pub, grid = self.sensors('robot1', publish_loc=False, publish_map=False)
+        statuses, commands, pose_updates = [], [], []
+        def manager(req, res):
+            commands.append(req.command)
+            res.success = True
+            return res
+        def refresh(req, res):
+            pose_updates.append(True)
+            self.pose_paused = False
+            return res
+        self.keep += [
+            self.node.create_service(ManageLifecycleNodes, '/robot1/lifecycle_manager_navigation/manage_nodes', manager),
+            self.node.create_service(Empty, '/robot1/request_nomotion_update', refresh),
+            self.node.create_subscription(String, '/robot1/localization_status',
+                                          lambda m: statuses.append(json.loads(m.data)), self.latched),
+        ]
+        reseed = self.node.create_publisher(PoseWithCovarianceStamped, '/robot1/initialpose', 10)
+        self.start('localization_supervisor', {'navigation': True}, '/robot1')
+        self.wait(lambda: statuses and statuses[-1].get('reason') == 'waiting_for_reference_map')
+        map_pub.publish(grid)
+        self.wait(lambda: statuses[-1].get('reason') == 'waiting_for_initial_pose')
+        self.assertEqual(commands, [])
+        self.wait(lambda: reseed.get_subscription_count() > 0)
+        seed = PoseWithCovarianceStamped()
+        seed.header.frame_id = 'map'
+        seed.pose.pose.orientation.w = 1.
+        reseed.publish(seed)
+        self.wait(lambda: statuses[-1]['ready'])
+        self.assertEqual(commands, [ManageLifecycleNodes.Request.STARTUP])
+        baseline = len(pose_updates)
+        self.pose_paused = True
+        self.wait(lambda: len(pose_updates) > baseline and statuses[-1]['ready'])
+        self.paused = True
+        self.wait(lambda: not statuses[-1]['ready'])
+        self.wait(lambda: ManageLifecycleNodes.Request.PAUSE in commands)
+        self.paused = False
+        self.wait(lambda: statuses[-1]['ready'])
+        self.assertIn(ManageLifecycleNodes.Request.RESUME, commands)
 
     def test_navigation_noise_stops_commands_without_losing_goal(self):
         self.sensors('robot1');goals=[];group=ReentrantCallbackGroup()
@@ -324,77 +324,65 @@ class PathRuntimeTest(unittest.TestCase):
         allowed[0]=False
         self.wait(lambda:outputs[-1].twist.linear.x==0. and outputs[-1].twist.angular.z==0.)
 
-    def test_neighbor_hint_is_a_prior_not_a_forced_transform(self):
-        self.sensors('robot2',publish_loc=False);anchors=[];statuses=[];global_calls=[];group=ReentrantCallbackGroup()
-        def manager(req,res):res.success=True;return res
-        def empty(req,res):return res
-        def globalize(req,res):global_calls.append(True);return res
-        self.keep += [self.node.create_service(ManageLifecycleNodes,'/robot2/lifecycle_manager_localization/manage_nodes',manager,callback_group=group),
-            self.node.create_service(Empty,'/robot2/reinitialize_global_localization',globalize,callback_group=group),
-            self.node.create_service(Empty,'/robot2/request_nomotion_update',empty,callback_group=group),
-            self.node.create_subscription(PoseWithCovarianceStamped,'/robot2/initialpose',anchors.append,10),
-            self.node.create_subscription(String,'/robot2/localization_status',lambda m:statuses.append(json.loads(m.data)),self.latched)]
-        app=self.start('localization_supervisor',{'anchor':False,'navigation':False,'hint':True,'hint_x':0.,'hint_y':.5,'hint_yaw':0.,'hint_std_xy':.2,'hint_std_yaw':.2},'/robot2')
-        self.wait(lambda:bool(anchors),timeout=15)
-        self.assertAlmostEqual(anchors[-1].pose.pose.position.y,.5)
-        self.assertAlmostEqual(anchors[-1].pose.covariance[0],.04)
-        self.assertEqual(global_calls,[])
-        self.wait(lambda:any(s.get('reason')=='outside_initial_hint_region' for s in statuses))
+    def watch_supervisor(self, robot='robot2', **parameters):
+        statuses = []
+        self.keep.append(self.node.create_subscription(
+            String, f'/{robot}/localization_status', lambda m: statuses.append(json.loads(m.data)), self.latched))
+        self.start('localization_supervisor', {'initial_pose_known': True, 'navigation': False, **parameters}, '/'+robot)
+        return statuses
+
+    def test_hint_is_a_prior_not_a_forced_transform(self):
+        self.sensors('robot2', publish_loc=False)
+        statuses = self.watch_supervisor(hint_y=.5, hint_std_xy=.2)
+        self.wait(lambda: statuses and statuses[-1].get('reason') == 'outside_initial_hint_region')
         self.assertFalse(statuses[-1]['ready'])
 
-    def test_failed_navigation_start_does_not_reset_valid_amcl(self):
-        self.sensors('robot1',publish_loc=False);local_commands=[];statuses=[];group=ReentrantCallbackGroup()
-        def local(req,res):local_commands.append(req.command);res.success=True;return res
-        def nav(req,res):res.success=False;return res
-        def empty(req,res):return res
-        self.keep += [self.node.create_service(ManageLifecycleNodes,'/robot1/lifecycle_manager_localization/manage_nodes',local,callback_group=group),
-            self.node.create_service(ManageLifecycleNodes,'/robot1/lifecycle_manager_navigation/manage_nodes',nav,callback_group=group),
-            self.node.create_service(Empty,'/robot1/request_nomotion_update',empty,callback_group=group),
-            self.node.create_subscription(PoseWithCovarianceStamped,'/robot1/initialpose',lambda m:None,10),
-            self.node.create_subscription(String,'/robot1/localization_status',lambda m:statuses.append(json.loads(m.data)),self.latched)]
-        app=self.start('localization_supervisor',{'anchor':True,'navigation':True},'/robot1')
-        self.wait(lambda:any(s['phase']=='nav_lifecycle_failed' for s in statuses),timeout=18)
+    def test_failed_navigation_start_blocks_motion(self):
+        self.sensors('robot1', publish_loc=False)
+        calls = []
+        def nav(req, res):
+            calls.append(req.command)
+            res.success = False
+            return res
+        self.keep.append(self.node.create_service(
+            ManageLifecycleNodes, '/robot1/lifecycle_manager_navigation/manage_nodes', nav))
+        statuses = self.watch_supervisor('robot1', navigation=True)
+        self.wait(lambda: statuses and statuses[-1]['phase'] == 'nav_lifecycle_failed')
         self.assertFalse(statuses[-1]['ready'])
-        self.assertEqual(local_commands,[ManageLifecycleNodes.Request.STARTUP])
+        self.assertEqual(calls, [ManageLifecycleNodes.Request.STARTUP])
 
     def test_converged_robot_can_navigate_beyond_initial_hint(self):
-        self.sensors('robot2',publish_loc=False);statuses=[];group=ReentrantCallbackGroup()
-        def local(req,res):res.success=True;return res
-        def empty(req,res):return res
-        self.keep += [self.node.create_service(ManageLifecycleNodes,'/robot2/lifecycle_manager_localization/manage_nodes',local,callback_group=group),
-            self.node.create_service(Empty,'/robot2/request_nomotion_update',empty,callback_group=group),
-            self.node.create_subscription(PoseWithCovarianceStamped,'/robot2/initialpose',lambda m:None,10),
-            self.node.create_subscription(String,'/robot2/localization_status',lambda m:statuses.append(json.loads(m.data)),self.latched)]
-        self.start('localization_supervisor',{'anchor':False,'navigation':False,'hint':True,'hint_x':0.,'hint_y':0.,'hint_std_xy':.2},'/robot2')
-        self.wait(lambda:statuses and statuses[-1]['ready'],timeout=18)
-        self.sensor_x['robot2']=.55
-        self.wait(lambda:statuses[-1].get('pose',[0])[0]>.5)
-        self.wait(lambda:statuses[-1]['ready'])
-        self.assertNotEqual(statuses[-1].get('reason'),'outside_initial_hint_region')
-        self.covariance_override=-1e-14
-        self.wait(lambda:statuses[-1].get('covariance_xyyaw',[1])[0]<0 and statuses[-1]['ready'])
-        self.covariance_override=-.001
-        self.wait(lambda:statuses[-1].get('covariance_xyyaw',[1])[0]<-.0001 and not statuses[-1]['ready'])
+        self.sensors('robot2', publish_loc=False)
+        statuses = self.watch_supervisor()
+        self.wait(lambda: statuses and statuses[-1]['ready'])
+        self.sensor_x['robot2'] = .55
+        self.wait(lambda: statuses[-1].get('pose', [0])[0] > .5 and statuses[-1]['ready'])
+        self.assertNotEqual(statuses[-1].get('reason'), 'outside_initial_hint_region')
+        self.covariance_override = -1e-14
+        self.wait(lambda: statuses[-1].get('covariance_xyyaw', [1])[0] < 0 and statuses[-1]['ready'])
+        self.covariance_override = -.001
+        self.wait(lambda: statuses[-1].get('covariance_xyyaw', [1])[0] < -.0001 and not statuses[-1]['ready'])
 
     def test_rviz_navigation_covariance_profile(self):
-        self.sensors('robot2',publish_loc=False);statuses=[];group=ReentrantCallbackGroup()
-        self.covariance_override=.015
-        def local(req,res):res.success=True;return res
-        def empty(req,res):return res
-        self.keep += [self.node.create_service(ManageLifecycleNodes,'/robot2/lifecycle_manager_localization/manage_nodes',local,callback_group=group),
-            self.node.create_service(Empty,'/robot2/request_nomotion_update',empty,callback_group=group),
-            self.node.create_subscription(PoseWithCovarianceStamped,'/robot2/initialpose',lambda m:None,10),
-            self.node.create_subscription(String,'/robot2/localization_status',lambda m:statuses.append(json.loads(m.data)),self.latched)]
-        self.start('localization_supervisor',{'hint':True,'navigation':False,'localization_profile':'navigation'},'/robot2')
-        self.wait(lambda:statuses and statuses[-1]['ready'],timeout=18)
-        self.assertGreater(statuses[-1]['covariance_xyyaw'][0],.01)
-        # Navigation accepts up to 0.04 (20cm sigma); beyond that it is not ready.
-        self.covariance_override=.03;time.sleep(.5)
-        self.wait(lambda:statuses[-1]['covariance_xyyaw'][0]>.025 and statuses[-1]['ready'])
-        self.covariance_override=.05
-        self.wait(lambda:not statuses[-1]['ready'])
-        self.paused=True
-        self.wait(lambda:statuses[-1].get('reason') in ('stale_sensors','stale_scan_timestamp'))
+        self.sensors('robot2', publish_loc=False)
+        self.covariance_override = .015
+        statuses = self.watch_supervisor(localization_profile='navigation')
+        self.wait(lambda: statuses and statuses[-1]['ready'])
+        self.assertGreater(statuses[-1]['covariance_xyyaw'][0], .01)
+        self.odom_paused = True
+        self.wait(lambda: statuses[-1].get('reason') == 'stale_sensors')
+        self.assertGreater(statuses[-1]['odom_receipt_age_s'], .5)
+        self.assertLess(statuses[-1]['scan_receipt_age_s'], .7)
         self.assertFalse(statuses[-1]['ready'])
+        self.odom_paused = False
+        self.wait(lambda: statuses[-1]['ready'])
+        self.covariance_override = .03
+        self.wait(lambda: statuses[-1]['covariance_xyyaw'][0] > .025 and statuses[-1]['ready'])
+        self.covariance_override = .05
+        self.wait(lambda: not statuses[-1]['ready'])
+        self.paused = True
+        self.wait(lambda: statuses[-1].get('reason') in ('stale_sensors', 'stale_scan_timestamp'))
+        self.assertFalse(statuses[-1]['ready'])
+        self.assertTrue({'scan_stamp_age_s', 'scan_receipt_age_s', 'odom_receipt_age_s'} <= statuses[-1].keys())
 
 if __name__=='__main__':unittest.main()

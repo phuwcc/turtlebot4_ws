@@ -2,7 +2,7 @@
 // For every robot it republishes the shared map with the *other* robots' round
 // footprints stamped as occupied, on /<robot>/fleet_map. Nav2 costmaps (static
 // layer) read that map, so planners and controllers keep clear of peers even
-// when the peer is outside the LiDAR view. AMCL keeps the clean /<robot>/map.
+// when the peer is outside the LiDAR view. The reference map remains clean.
 // It also draws every robot's footprint in RViz (/tb4_view/fleet_footprints).
 #include <algorithm>
 #include <chrono>
@@ -41,7 +41,7 @@ public:
     map_sub_ = create_subscription<Grid>(map_topic, latched, [this](Grid::ConstSharedPtr m) {
       map_ = m; for (auto& entry : published_) entry.second.clear(); });
     for (const auto& r : robots_) {
-      pose_subs_.push_back(create_subscription<Pose>("/" + r + "/amcl_pose", latched,
+      pose_subs_.push_back(create_subscription<Pose>("/" + r + "/pose", 10,
         [this, r](Pose::ConstSharedPtr m) {
           if (m->header.frame_id == "map" && std::isfinite(m->pose.pose.position.x) && std::isfinite(m->pose.pose.position.y))
             poses_[r] = {m->pose.pose.position.x, m->pose.pose.position.y};

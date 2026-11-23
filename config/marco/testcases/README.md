@@ -23,3 +23,7 @@ if [[ "$tb4_case" != 08_no_escape ]]; then
 fi
 # Ctrl+C để hủy mission
 ```
+
+## Đổi chỗ đối đầu từ pose hiện tại
+
+Bài đổi chỗ từ pose thật với robot1 được ưu tiên có hướng dẫn chụp A/B, xem preview và chạy riêng. [Task 2 trong README chính](../../../README.md#task-2--hai-robot-đổi-chỗ-đối-đầu)

@@ -1,0 +1,35 @@
+{
+  "priority_robot": "robot1",
+  "max_localization_replans": 2,
+  "speed_mps": 0.05,
+  "robot_radius": 0.175,
+  "safety_margin": 0.05,
+  "tracking_tolerance": 0.04,
+  "action_timeout_s": 240,
+  "tasks": [
+    {
+      "id": 1,
+      "candidates": [
+        "robot1"
+      ],
+      "goal": [
+        -1.4784436225891113,
+        1.749334692955017,
+        1.5416305503969265
+      ],
+      "depends_on": []
+    },
+    {
+      "id": 2,
+      "candidates": [
+        "robot2"
+      ],
+      "goal": [
+        -1.471875548362732,
+        2.643583297729492,
+        1.6048963449546136
+      ],
+      "depends_on": []
+    }
+  ]
+}

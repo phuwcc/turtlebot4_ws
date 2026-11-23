@@ -1,0 +1,26 @@
+{
+  "description": "Hai TurtleBot tới vùng xanh trên room_real, khoảng cách hai tâm đích 0.60 m",
+  "priority_order": ["robot1", "robot2"],
+  "robot_radius": 0.175,
+  "safety_margin": 0.05,
+  "tracking_tolerance": 0.06,
+  "smooth_deviation_m": 0.02,
+  "speed_mps": 0.05,
+  "action_timeout_s": 180,
+  "tasks": [
+    {
+      "id": 1,
+      "label": "robot1 → điểm sâu trong vùng xanh",
+      "goal": [-1.235, 2.465, 1.57],
+      "candidates": ["robot1"],
+      "depends_on": []
+    },
+    {
+      "id": 2,
+      "label": "robot2 → điểm gần trong vùng xanh",
+      "goal": [-1.235, 1.865, 1.57],
+      "candidates": ["robot2"],
+      "depends_on": []
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 #pragma once
-// Bounded, read-only coarse-to-fine scan matching used only to seed AMCL.
+// Bounded, read-only coarse-to-fine scan matching for map geometry tests.
 // A low score or ambiguous second mode produces no seed, never a fake TF.
 #include <algorithm>
 #include <cstdint>

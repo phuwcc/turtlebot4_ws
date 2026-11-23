@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""One namespaced AMCL/Nav2 stack, fake sensors, planning-only, isolated DDS."""
+"""One namespaced AMCL, EKF and Nav2 stack in isolated DDS."""
 import json
 import argparse
 import math
 import os
 from pathlib import Path
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -21,7 +22,7 @@ if args.localization_only and not args.pc:
 identity=args.robot_id
 prefix='/'+identity
 domain=(172 if identity == 'robot1' else 175) if args.pc else {'robot1':168, 'robot2':169, 'robot3':170}[identity]
-if args.localization_only:domain=176
+if args.localization_only:domain=174
 os.environ.update(ROS_DOMAIN_ID=str(domain), ROS_LOCALHOST_ONLY='1',
                   RMW_IMPLEMENTATION='rmw_fastrtps_cpp', ROS_SUPER_CLIENT='False')
 for key in ('TB4_ROBOT_IDS', 'TB4_DISCOVERY_IDS', 'ROS_DISCOVERY_SERVER', 'FASTRTPS_DEFAULT_PROFILES_FILE', 'FASTDDS_DEFAULT_PROFILES_FILE', 'CYCLONEDDS_URI', 'ROS_NAMESPACE'):
@@ -34,7 +35,7 @@ from nav2_msgs.action import ComputePathToPose
 from nav_msgs.msg import Odometry
 from rclpy.action import ActionClient
 from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import Imu, LaserScan
 from tf2_msgs.msg import TFMessage
 
 root = Path(__file__).resolve().parents[1]
@@ -50,25 +51,32 @@ image = bytearray(254 if 0<x<99 and 0<y<99 else 0 for y in range(100) for x in r
                              'negate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.25\n')
 rclpy.init(args=[]); n=rclpy.create_node('navigation_test_sensors')
 odom_pub=n.create_publisher(Odometry,prefix+'/odom',qos_profile_sensor_data)
+imu_pub=n.create_publisher(Imu,prefix+'/imu',qos_profile_sensor_data)
 scan_pub=n.create_publisher(LaserScan,prefix+'/scan',qos_profile_sensor_data)
 tf_pub=n.create_publisher(TFMessage,prefix+'/tf',20)
 static_pub=n.create_publisher(TFMessage,prefix+'/tf_static',
     QoSProfile(depth=1,durability=DurabilityPolicy.TRANSIENT_LOCAL))
 t=TransformStamped();t.header.frame_id='base_link';t.child_frame_id='rplidar_link';t.transform.rotation.w=1.
-static_pub.publish(TFMessage(transforms=[t]))
+imu_tf=TransformStamped();imu_tf.header.frame_id='base_link';imu_tf.child_frame_id='imu_link';imu_tf.transform.rotation.w=1.
+static_pub.publish(TFMessage(transforms=[t,imu_tf]))
 
 
 def sensors():
     stamp=n.get_clock().now().to_msg()
     odom=Odometry();odom.header.stamp=stamp;odom.header.frame_id='odom';odom.child_frame_id='base_link'
     odom.pose.pose.orientation.w=1.;odom_pub.publish(odom)
+    imu=Imu();imu.header.stamp=stamp;imu.header.frame_id='imu';imu_pub.publish(imu)
     t=TransformStamped();t.header=odom.header;t.child_frame_id='base_link';t.transform.rotation.w=1.
     tf_pub.publish(TFMessage(transforms=[t]))
     scan=LaserScan();scan.header.stamp=stamp;scan.header.frame_id='rplidar_link'
     scan.angle_min=-math.pi;scan.angle_increment=2*math.pi/180;scan.angle_max=-math.pi+179*scan.angle_increment
     scan.range_min=.15;scan.range_max=12.;scan.scan_time=.1
-    scan.ranges=[min(4.9/max(abs(math.cos(-math.pi+i*scan.angle_increment)),1e-6),
-                     4.9/max(abs(math.sin(-math.pi+i*scan.angle_increment)),1e-6)) for i in range(180)]
+    for i in range(180):
+        angle=-math.pi+i*scan.angle_increment
+        dx,dy=math.cos(angle),math.sin(angle)
+        rx=(4.9 if dx>0 else -4.9)/dx if abs(dx)>1e-6 else 1e6
+        ry=(4.9 if dy>0 else -4.9)/dy if abs(dy)>1e-6 else 1e6
+        scan.ranges.append(min(rx,ry))
     scan_pub.publish(scan)
 
 
@@ -84,8 +92,11 @@ if args.localization_only:names=['amcl','map_server']
 clients={name:n.create_client(GetState,prefix+'/'+name+'/get_state') for name in names}
 planner=ActionClient(n,ComputePathToPose,prefix+'/compute_path_to_pose')
 stream=(logs/'navigation.log').open('w')
+with socket.socket() as listener:
+    listener.bind(('127.0.0.1', 0))
+    socket_port=listener.getsockname()[1]
 command = (['ros2','launch','tb4_multi_bringup','pc_navigation.launch.py', 'robot_count:=1',
-    'robot_ids:='+identity, 'rviz:=false', 'socket_port:=18765', 'map:='+str(logs/'room.yaml')] if args.pc else
+    'robot_ids:='+identity, 'rviz:=false', 'socket_port:='+str(socket_port), 'map:='+str(logs/'room.yaml')] if args.pc else
     ['ros2','launch','tb4_multi_bringup','navigation.launch.py','robot_id:='+identity,
     'map:='+str(logs/'room.yaml'),'initialize_pose:=true','initial_x:=0.0','initial_y:=0.0','initial_yaw:=0.0'])
 if args.localization_only:command.append('localization_only:=true')
@@ -95,19 +106,24 @@ p=subprocess.Popen(command,
 result={'test_domain':domain,'robot_id':identity}
 try:
     if args.pc:
-        import socket
         def task(request):
-            with socket.create_connection(('127.0.0.1',18765),timeout=4) as connection:
+            with socket.create_connection(('127.0.0.1',socket_port),timeout=4) as connection:
                 connection.sendall((json.dumps(request)+'\n').encode())
                 return json.loads(connection.makefile('rb').readline())
     deadline=time.monotonic()+65
     states={}
+    seeded=False
     while time.monotonic()<deadline:
         assert p.poll() is None,'Navigation launch exited'
         pump(2)
-        if args.pc:
+        if args.pc and not seeded:
             try:
-                task({'command':'pose','robot':identity,'x':0.,'y':0.,'yaw':0.})
+                if clients['amcl'].service_is_ready():
+                    state = clients['amcl'].call_async(GetState.Request())
+                    end = time.monotonic()+2
+                    while time.monotonic()<end and not state.done():pump(.05)
+                    if state.done() and state.result() and state.result().current_state.label=='active':
+                        seeded=task({'command':'pose','robot':identity,'x':0.,'y':0.,'yaw':0.})['ok']
             except OSError:
                 pass
         if not all(c.service_is_ready() for c in clients.values()):continue
@@ -120,6 +136,10 @@ try:
     assert states and all(s=='active' for s in states.values()),'Not all lifecycle nodes active: '+str(states)
     pump(1)  # Let the final lifecycle bond complete before testing and stopping the stack.
     if args.localization_only:
+        deadline=time.monotonic()+20
+        while time.monotonic()<deadline and not task({'command':'status'})['robots'][identity]['localized']:
+            pump(.1)
+        assert task({'command':'status'})['robots'][identity]['localized']
         pump(2)
         assert not planner.server_is_ready(), 'Planner started in localization-only mode'
         assert not task({'command':'status'})['robots'][identity]['nav_ready']
@@ -132,10 +152,21 @@ try:
         (logs/'result.json').write_text(json.dumps(result,indent=2))
         sys.exit(0)
     assert planner.server_is_ready(),'Namespaced planner unavailable'
+    filtered_consumers = {e.node_name for e in n.get_subscriptions_info_by_topic(prefix+'/odometry/filtered')}
+    assert 'controller_server' in filtered_consumers, filtered_consumers
+    assert 'controller_server' not in {e.node_name for e in n.get_subscriptions_info_by_topic(prefix+'/odom')}
+    assert ('amcl',prefix) in n.get_node_names_and_namespaces()
+    assert all(name != 'slam_toolbox' for name, _ in n.get_node_names_and_namespaces())
     if args.pc:
         assert task({'command':'status'})['robots'][identity]['nav_ready']
         assert task({'command':'pose','robot':identity,'x':0.,'y':0.,'yaw':0.})['ok']
-        pump(4)
+        pump(.4)
+        deadline=time.monotonic()+35
+        while time.monotonic()<deadline:
+            state=task({'command':'status'})['robots'][identity]
+            if state['localized'] and state['nav_ready']:break
+            pump(.2)
+        else:raise AssertionError('AMCL/Nav2 did not recover after pose reset')
         result['pc_socket']=True
     publishers={e.node_name for e in n.get_publishers_info_by_topic(prefix+'/pc_cmd_vel')}
     assert {'velocity_smoother','behavior_server'} <= publishers, publishers
@@ -182,4 +213,4 @@ finally:
     if p.poll() is None:os.killpg(p.pid,signal.SIGINT)
     try:p.wait(timeout=18)
     except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGTERM);p.wait(timeout=5)
-    stream.close();n.destroy_node();rclpy.shutdown()
+    stream.close();n.destroy_node();rclpy.try_shutdown()

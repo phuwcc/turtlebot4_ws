@@ -1,2 +1,2 @@
-# Let robots without an anchor use global AMCL localization and scan matching.
+# Use RViz 2D Pose Estimate to initialize robots without saved poses.
 {}

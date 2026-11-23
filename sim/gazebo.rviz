@@ -1,0 +1,73 @@
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Fixed Frame: map
+    Background Color: 48; 60; 62
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Luoi 10 cm
+      Enabled: true
+      Cell Size: 0.1
+      Plane Cell Count: 70
+      Color: 165; 178; 178
+      Alpha: 0.48
+      Reference Frame: map
+      Offset:
+        X: 2.125
+        Y: 1.475
+        Z: 0.045
+    - Class: rviz_default_plugins/Map
+      Name: Hanh lang chu T
+      Enabled: false
+      Topic:
+        Value: /sim/map
+        Durability Policy: Transient Local
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Walls, A B C, MARCO paths
+      Enabled: true
+      Topic:
+        Value: /sim/fleet
+    - Class: rviz_default_plugins/RobotModel
+      Name: TurtleBot4 robot1
+      Enabled: true
+      Visual Enabled: true
+      Collision Enabled: false
+      Description Source: Topic
+      Description Topic:
+        Value: /robot1/robot_description
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+      TF Prefix: robot1
+    - Class: rviz_default_plugins/RobotModel
+      Name: TurtleBot4 robot2
+      Enabled: true
+      Visual Enabled: true
+      Collision Enabled: false
+      Description Source: Topic
+      Description Topic:
+        Value: /robot2/robot_description
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+      TF Prefix: robot2
+    - Class: rviz_default_plugins/RobotModel
+      Name: TurtleBot4 robot3
+      Enabled: true
+      Visual Enabled: true
+      Collision Enabled: false
+      Description Source: Topic
+      Description Topic:
+        Value: /robot3/robot_description
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+      TF Prefix: robot3
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Scale: 180
+      X: 2.125
+      Y: 1.475
+Window Geometry:
+  Width: 1440
+  Height: 960
+  X: 20
+  Y: 30

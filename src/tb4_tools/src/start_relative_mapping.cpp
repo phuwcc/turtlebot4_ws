@@ -81,8 +81,8 @@ private:
     if (now - graph_checked_ >= 1s) {
       graph_checked_ = now;
       for (const auto & name : get_node_names()) {
-        if (name == "/slam_toolbox" || name == "/amcl") {
-          fail("Stop the existing SLAM/AMCL session first."); return;
+        if (name == "/slam_toolbox") {
+          fail("Stop the existing SLAM session first."); return;
         }
       }
     }

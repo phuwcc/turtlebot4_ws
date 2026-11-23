@@ -7,9 +7,8 @@ export ROS_SUPER_CLIENT=False
 export ROS_LOG_DIR="${tb4_workspace}/log/slam"
 
 if pgrep -f '^/[^ ]*/lib/slam_toolbox/[^ ]*slam_toolbox_node([[:space:]]|$)' > /dev/null ||
-  pgrep -f '^/[^ ]*/lib/tb4_tools/start_relative_mapping([[:space:]]|$)' > /dev/null ||
-  pgrep -f '^/[^ ]*/lib/nav2_amcl/amcl([[:space:]]|$)' > /dev/null; then
-  echo 'SLAM, mapping origin, or AMCL is already running. Stop that session first.' >&2
+  pgrep -f '^/[^ ]*/lib/tb4_tools/start_relative_mapping([[:space:]]|$)' > /dev/null; then
+  echo 'SLAM or mapping origin is already running. Stop that session first.' >&2
   exit 1
 fi
 

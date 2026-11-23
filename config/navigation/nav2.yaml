@@ -182,6 +182,7 @@ local_costmap:
       plugins:
       - static_layer
       - voxel_layer
+      - inflation_layer
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         cost_scaling_factor: 10.0
@@ -226,6 +227,7 @@ global_costmap:
       # live obstacles and peer bodies are handled in the local costmap.
       plugins:
       - static_layer
+      - inflation_layer
       obstacle_layer:
         plugin: nav2_costmap_2d::ObstacleLayer
         enabled: true

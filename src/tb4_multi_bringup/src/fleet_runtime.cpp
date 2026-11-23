@@ -114,7 +114,9 @@ public:
         throw std::invalid_argument("robot_ids contains an unknown robot");
     }
     require_localization_=declare_parameter<bool>("require_localization",false);
+    const bool navigation_tf=declare_parameter<bool>("navigation_tf",false);
     coordinated_goals_=declare_parameter<bool>("coordinated_goals",false);
+    show_path_goals_=declare_parameter<bool>("show_path_goals",false);
     // Nav2 controller plugin for leased MARCO paths (MARCO sim: CorridorFollow RPP).
     path_controller_=declare_parameter<std::string>("path_controller","FollowPath");
     if(path_controller_.empty())throw std::invalid_argument("path_controller must name a controller plugin");
@@ -151,7 +153,7 @@ public:
           if (p.get_type()!=rclcpp::ParameterType::PARAMETER_STRING || !active(p.as_string())) {
             result.successful=false; result.reason="selected_robot must be active"; return result;
           }
-        } else if (p.get_name()=="coordinated_goals" || p.get_name()=="robot_count" || p.get_name()=="robot_ids" || p.get_name()=="require_localization" || p.get_name()=="visualization_scan_hz" ||
+        } else if (p.get_name()=="coordinated_goals" || p.get_name()=="robot_count" || p.get_name()=="robot_ids" || p.get_name()=="require_localization" || p.get_name()=="navigation_tf" || p.get_name()=="visualization_scan_hz" ||
                    ends_with(p.get_name(),".map_frame") || ends_with(p.get_name(),".base_frame")) {
           result.successful=false; result.reason="Frame settings require restarting the launch"; return result;
         }
@@ -161,7 +163,7 @@ public:
       return result;
     });
     for(const auto& r:robots_) {
-      subscriptions_.push_back(create_subscription<nav_msgs::msg::Odometry>("/"+r+"/odom",rclcpp::SensorDataQoS(),[this,r](nav_msgs::msg::Odometry::ConstSharedPtr m){auto& s=states_.at(r);s.odom=m;s.odom_at=Clock::now();}));
+      subscriptions_.push_back(create_subscription<nav_msgs::msg::Odometry>("/"+r+(navigation_tf?"/odometry/filtered":"/odom"),rclcpp::SensorDataQoS(),[this,r](nav_msgs::msg::Odometry::ConstSharedPtr m){auto& s=states_.at(r);s.odom=m;s.odom_at=Clock::now();}));
       subscriptions_.push_back(create_subscription<std_msgs::msg::String>("/"+r+"/localization_status",rclcpp::QoS(1).transient_local(),[this,r](std_msgs::msg::String::ConstSharedPtr m){try{auto value=Json::parse(m->data);if(value.is_object()){states_.at(r).localization=value;states_.at(r).localization_at=Clock::now();}}catch(const std::exception&){} }));
       subscriptions_.push_back(create_subscription<nav_msgs::msg::OccupancyGrid>("/"+r+"/map",rclcpp::QoS(1).transient_local(),[this](nav_msgs::msg::OccupancyGrid::ConstSharedPtr m){if(uint64_t(m->info.width)*m->info.height<=4000000&&m->data.size()==size_t(m->info.width)*m->info.height){map_=m;++map_revision_;}}));
     }
@@ -172,12 +174,13 @@ public:
     static_pub_=create_publisher<TF>("/tb4_view/tf_static",latched);
     labels_pub_=create_publisher<visualization_msgs::msg::MarkerArray>("/tb4_view/labels",latched);
     for (const auto& r:robots_) {
-      auto tf_sub=create_subscription<TF>("/"+r+"/tf",rclcpp::QoS(100).best_effort(),
+      const auto tf_namespace="/"+r+(navigation_tf?"/navigation":"");
+      auto tf_sub=create_subscription<TF>(tf_namespace+"/tf",rclcpp::QoS(100).best_effort(),
         [this,r](TF::UniquePtr message) {
           for(const auto& t:message->transforms)try{states_.at(r).buffer->setTransform(t,"hardware",false);}catch(const tf2::TransformException&){}
           adapt(*message,r); tf_pub_->publish(std::move(message)); });
       subscriptions_.push_back(tf_sub);
-      auto static_sub=create_subscription<TF>("/"+r+"/tf_static",rclcpp::QoS(100).transient_local(),
+      auto static_sub=create_subscription<TF>(tf_namespace+"/tf_static",rclcpp::QoS(100).transient_local(),
         [this,r](TF::UniquePtr message) {
           for(const auto& t:message->transforms)try{states_.at(r).buffer->setTransform(t,"hardware",true);}catch(const tf2::TransformException&){}
           adapt(*message,r);
@@ -189,7 +192,7 @@ public:
       subscriptions_.push_back(static_sub);
       relay<sensor_msgs::msg::LaserScan>(r,"scan",rclcpp::QoS(1).best_effort());
       relay<nav_msgs::msg::OccupancyGrid>(r,"map",latched);
-      relay<InitialPose>(r,"amcl_pose",live);
+      relay<InitialPose>(r,"pose",live);
       relay<nav_msgs::msg::Path>(r,"plan",live);
       relay<nav_msgs::msg::Path>(r,"local_plan",live);
       relay<nav_msgs::msg::OccupancyGrid>(r,"global_costmap/costmap",latched);
@@ -408,8 +411,14 @@ private:
     if(command=="snapshot") {
       Json result={{"ok",true},{"robots",Json::object()},{"map_revision",map_revision_}};
       for(const auto& r:robots_) {
-        auto& st=states_.at(r);Json entry={{"pose",current_pose(r)},{"localization",st.localization},{"localized",localized(r)},
-          {"odom_fresh",Clock::now()-st.odom_at<500ms},{"busy",st.busy}};
+        auto& st=states_.at(r);
+        const bool odom_fresh=st.odom&&Clock::now()-st.odom_at<500ms;
+        Json entry={{"pose",current_pose(r)},{"localization",st.localization},{"localized",localized(r)},
+          {"odom_fresh",odom_fresh},{"busy",st.busy}};
+        if(odom_fresh) {
+          const auto& twist=st.odom->twist.twist;
+          entry["velocity"]={std::hypot(twist.linear.x,twist.linear.y),twist.angular.z};
+        }
         result["robots"][r]=entry;
       }
       if(request.value("include_map",false)&&map_) {
@@ -440,7 +449,12 @@ private:
     if(command=="clear_preview") {nav_msgs::msg::Path empty;empty.header.frame_id=state.map;state.preview->publish(empty);return {{"ok",true}};}
     if(command=="path"||command=="preview") {
       const auto path=parse_path(request,robot);
-      if(command=="preview"){state.preview->publish(path);return {{"ok",true}};}
+      if(command=="preview"){
+        if(show_path_goals_&&request.contains("task")&&!request["task"].is_null()){
+          state.goal_target=path.poses.back();state.has_goal_target=true;
+        }
+        state.preview->publish(path);return {{"ok",true}};
+      }
       if(!require_localization_)return {{"ok",false},{"reason","managed_startup_required"}};
       if(state.busy)return {{"ok",false},{"reason","robot_busy"}};
       if(!localized(robot))return {{"ok",false},{"reason","localization_unavailable"}};
@@ -550,7 +564,7 @@ private:
       marker.color.r=COLORS[color][0];marker.color.g=COLORS[color][1];marker.color.b=COLORS[color][2];marker.color.a=1.;
       marker.text=robot+(robot==selected_ ? " [SELECTED]" : "")+(require_localization_?(localized(robot)?" [READY]":" [LOCALIZING]"):"");labels.markers.push_back(marker);
       const auto& state=states_.at(robot);
-      if(state.has_goal_target&&!coordinated_goals_) {
+      if(state.has_goal_target&&(!coordinated_goals_||show_path_goals_)) {
         marker.header.frame_id="map";marker.ns="navigation_goals";
         marker.type=visualization_msgs::msg::Marker::ARROW;
         marker.pose=state.goal_target.pose;marker.pose.position.z=.08;
@@ -569,7 +583,7 @@ private:
     marker.color.r=COLORS[color][0];marker.color.g=COLORS[color][1];marker.color.b=COLORS[color][2];marker.color.a=1.;
     marker.text="2D Pose Estimate -> "+selected_;labels.markers.push_back(marker);labels_pub_->publish(labels);
   }
-  bool require_localization_{false},coordinated_goals_{false};uint64_t map_revision_{0};
+  bool require_localization_{false},coordinated_goals_{false},show_path_goals_{false};uint64_t map_revision_{0};
   std::string path_controller_{"FollowPath"};
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr map_;
   rclcpp::TimerBase::SharedPtr control_timer_;

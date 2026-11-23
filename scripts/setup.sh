@@ -5,7 +5,8 @@ tb4_repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 tb4_role="${1:-}"
 case "$tb4_role" in
   pc) tb4_packages=(ros-humble-rviz2 ros-humble-nav2-bringup ros-humble-navigation2
-                   ros-humble-slam-toolbox ros-humble-turtlebot4-description) ;;
+                   ros-humble-slam-toolbox ros-humble-robot-localization ros-humble-turtlebot4-description
+                   python3-dev pybind11-dev) ;;
   robot) tb4_packages=(ros-humble-turtlebot4-bringup ros-humble-create3-republisher) ;;
   *) echo 'Usage: bash scripts/setup.sh pc|robot [--refresh]' >&2; exit 2 ;;
 esac

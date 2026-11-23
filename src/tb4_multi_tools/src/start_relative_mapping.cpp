@@ -94,8 +94,8 @@ private:
       graph_checked_ = now;
       for (const auto & name : get_node_names()) {
         const auto prefix = std::string(get_namespace()) == "/" ? "/" : std::string(get_namespace()) + "/";
-        if (name == prefix + "slam_toolbox" || name == prefix + "amcl") {
-          fail("Stop the existing SLAM/AMCL session first."); return;
+        if (name == prefix + "slam_toolbox") {
+          fail("Stop the existing SLAM session first."); return;
         }
       }
     }

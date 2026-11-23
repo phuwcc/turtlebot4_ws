@@ -2,13 +2,14 @@
 """Real MARCO core, synthetic maps. No ROS nodes or physical robot commands."""
 import sys
 sys.dont_write_bytecode=True
+import itertools
 import json
 import math
 from pathlib import Path
 import subprocess
 import unittest
 from tb4_marco_bridge.planning import Planner,Grid
-from tb4_marco_bridge.cli import Worker,tracking_error,execute_batch
+from tb4_marco_bridge.cli import Worker,tracking_error,execute_batch,wait_for_fleet
 from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -98,5 +99,39 @@ class MarcoPlanningTest(unittest.TestCase):
                 if terminal=='succeeded':self.assertEqual(execute_batch([action],{},1,1,[]),[1])
                 else:
                     with self.assertRaises(RuntimeError):execute_batch([action],{},1,1,[])
+
+    def test_wait_for_fleet_after_a_localization_pause(self):
+        state = {'pose': [0., 0., 0.], 'localized': True, 'odom_fresh': True, 'busy': False}
+        readings = []
+
+        def rpc(value, port):
+            if value['command'] == 'status':
+                return {'robots': {'robot1': {'path_ready': True}}}
+            readings.append(value)
+            if len(readings) == 1:
+                return {'robots': {'robot1': {**state, 'localized': False}}}
+            return {'robots': {'robot1': state}, 'map': room()}
+
+        with patch('tb4_marco_bridge.cli.request', side_effect=rpc), \
+                patch('tb4_marco_bridge.cli.time.monotonic', side_effect=itertools.count(step=.5)), \
+                patch('tb4_marco_bridge.cli.time.sleep'):
+            result = wait_for_fleet(8765, paths_required=True)
+        self.assertEqual(result['map'], room())
+        self.assertTrue(readings[-1]['include_map'])
+        self.assertGreater(len(readings), 2)
+
+    def test_parked_peer_uses_measured_centre_across_cell_boundary(self):
+        grid = {'width': 81, 'height': 81, 'resolution': .05,
+                'origin': [-2.025, -2.025, 0.], 'data': [0] * (81 * 81)}
+        state = {'map': grid, 'robots': {'robot1': {'pose': [0., .5749, 0.]},
+                                         'robot2': {'pose': [0., -1., math.pi / 2]}}}
+        mission = {'priority_order': ['robot1', 'robot2'], 'tracking_tolerance': .06,
+                   'tasks': [{'id': 1, 'goal': [0., .60, 0.], 'candidates': ['robot1']},
+                             {'id': 2, 'goal': [0., 0., 0.], 'candidates': ['robot2']}]}
+        assignment = self.planner.assign(state, mission)
+        batch = self.planner.next_batch(state, mission, assignment, [1])
+        self.assertEqual(batch['audit']['strategy'], 'fixed_priority_detour')
+        self.assertEqual([action['robot'] for action in batch['actions']], ['robot2'])
+        self.assertEqual(batch['actions'][0]['points'][-1][:2], [0., 0.])
 
 if __name__=='__main__':unittest.main()

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 590" role="img" aria-labelledby="title">
+  <title id="title">Single-lane T junction, robot1 at A, robot2 at B, robot3 at C</title>
+  <rect width="850" height="590" fill="#283241"/>
+  <path d="M20 20 H830 V150 H490 V570 H360 V150 H20 Z" fill="#eef2f7"/>
+  <g stroke="#a7b4c4" stroke-width="2" stroke-dasharray="7 7" fill="none">
+    <path d="M95 85 H755 M425 85 V495"/>
+  </g>
+  <g font-family="sans-serif" font-size="24" text-anchor="middle" fill="white">
+    <circle cx="95" cy="85" r="35" fill="#1559b7"/><text x="95" y="93">A</text>
+    <circle cx="755" cy="85" r="35" fill="#9b4318"/><text x="755" y="93">B</text>
+    <circle cx="425" cy="495" r="35" fill="#20734d"/><text x="425" y="503">C</text>
+    <text x="95" y="185">robot1</text>
+    <text x="755" y="185">robot2</text>
+    <text x="560" y="503">robot3</text>
+    <text x="587" y="345">0.65 m</text>
+  </g>
+</svg>

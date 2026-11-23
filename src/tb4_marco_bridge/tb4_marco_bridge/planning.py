@@ -66,9 +66,18 @@ class Grid:
         self.cells = {(x,y) for y in range(h) for x in range(w) if (x,y) not in forbidden}
         self.cos, self.sin = math.cos(self.origin[2]), math.sin(self.origin[2])
 
-    def cell(self, pose):
+    def cell_coordinates(self, pose):
         x,y = pose[0]-self.origin[0], pose[1]-self.origin[1]
-        return math.floor((self.cos*x+self.sin*y)/self.res), math.floor((-self.sin*x+self.cos*y)/self.res)
+        return (self.cos*x+self.sin*y)/self.res, (-self.sin*x+self.cos*y)/self.res
+
+    def cell(self, pose):
+        return tuple(map(math.floor, self.cell_coordinates(pose)))
+
+    def continuous_cell(self, pose):
+        # MACRO indexes cell centres at integers. Keep a parked peer's measured
+        # centre precise even when its pose straddles a grid boundary.
+        x,y = self.cell_coordinates(pose)
+        return x-.5, y-.5
 
     def world(self, cell):
         x,y = (cell[0]+.5)*self.res, (cell[1]+.5)*self.res
@@ -193,9 +202,22 @@ class Planner:
             else:
                 rid=priority;goal=self.goals[str(tid)][0];task_id=tid;next_intent=None
             route=self.algorithms._astar_around_robot_bodies(self.grid.cells,self.positions[rid],goal,
-                robot_centres=[p for r,p in self.positions.items() if r!=rid],clearance_cells=clearance)
+                robot_centres=[self.grid.continuous_cell(state['pose']) for name,state in snapshot['robots'].items()
+                               if self.ids[name]!=rid],clearance_cells=clearance)
             if route is None:raise RuntimeError('Committed clearance/priority path is no longer feasible')
             return self.package_actions(snapshot,[(rid,route,task_id)],{'strategy':'committed_clearance' if remaining else 'committed_priority'},next_intent)
+        if self.priority_order and len(current)==1:
+            rid=next(iter(current));robot=self.names[rid]
+            fixed=self.priority_order[:self.priority_order.index(robot)]
+            if fixed:
+                task=current[rid]
+                route=self.algorithms._astar_around_robot_bodies(self.grid.cells,self.positions[rid],
+                    self.goals[task['object']][0],
+                    robot_centres=[self.grid.continuous_cell(state['pose']) for name,state in snapshot['robots'].items()
+                                   if name!=robot],clearance_cells=clearance)
+                if route is None:raise RuntimeError('No route without displacing the higher-priority robot')
+                return self.package_actions(snapshot,[(rid,route,task['id'])],
+                    {'strategy':'fixed_priority_detour','priority_robot':rid,'held_robots':[self.ids[r] for r in fixed]},None)
         # Protect complete routes, including stationary peer footprints, rather
         # than assuming a simulator's predicted arrival times are exact.
         conflicts=any(self.conflict(routes[a],routes[b],clearance) for i,a in enumerate(routes) for b in list(routes)[i+1:])
@@ -225,17 +247,6 @@ class Planner:
                 # above it in the order must never be moved aside for a peer.
                 priority_args={'priority_robot_ids':[self.ids[active_priority]],
                     'fixed_robot_ids':[self.ids[r] for r in self.priority_order[:self.priority_order.index(active_priority)]]}
-                if len(current)==1 and priority_args['fixed_robot_ids']:
-                    # Once robot1 has finished, keep its footprint reserved.
-                    # The lower-priority robot must route around it rather than
-                    # asking the relocation search to evict it from its goal.
-                    rid=self.ids[active_priority];task=current[rid]
-                    route=self.algorithms._astar_around_robot_bodies(self.grid.cells,self.positions[rid],
-                        self.goals[task['object']][0],robot_centres=[p for r,p in self.positions.items() if r!=rid],
-                        clearance_cells=clearance)
-                    if route is None:raise RuntimeError('No route without displacing the higher-priority robot')
-                    return self.package_actions(snapshot,[(rid,route,task['id'])],
-                        {'strategy':'fixed_priority_detour','priority_robot':rid,'held_robots':priority_args['fixed_robot_ids']},None)
             plan=self.coordinator.search_relocation_plan(robots=states,dag_robots=states,tasks=tasks,
                 task_status={t['id']:'completed' if t['id'] in completed else 'pending' for t in tasks},objects=objects,
                 navigation_cells=self.grid.cells,robot_radius=radius,grid_size=self.grid.res,
@@ -266,7 +277,8 @@ class Planner:
         clearance=2*self.dynamic_radius()/self.grid.res
         physical=2*(self._mission.get('robot_radius',.175)+self._mission.get('tracking_tolerance',.04))+.02
         for rid,route,tid in selected:
-            peers=[p for r,p in self.positions.items() if r!=rid and r not in {s[0] for s in selected}]
+            peers=[self.grid.continuous_cell(state['pose']) for name,state in snapshot['robots'].items()
+                   if self.ids[name] not in {item[0] for item in selected}]
             for peer in peers:
                 previous=math.dist(route[0],peer);cleared=previous>clearance
                 for cell in route[1:]:

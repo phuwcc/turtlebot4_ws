@@ -26,6 +26,9 @@ int main() {
   assert(tb4::near_occupied_cell(diagonal,7,7,0,3,.05,.15));
   assert(!tb4::near_occupied_cell(diagonal,7,7,0,2,.05,.15));
   assert(!tb4::near_occupied_cell(diagonal,7,7,-1,3,.05,.15));
+  diagonal[3*7]=100;
+  assert(tb4::near_occupied_cell(diagonal,7,7,-1,3,.05,.15));
+  diagonal[3*7]=0;
   diagonal[3*7+3]=-1;
   assert(!tb4::near_occupied_cell(diagonal,7,7,1,1,.05,.15));
   const int w=81;std::vector<int8_t> cells(w*w,0);

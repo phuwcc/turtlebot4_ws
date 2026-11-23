@@ -52,7 +52,7 @@ Visualization Manager:
       Enabled: true
       Value: true
       Topic:
-        Value: /tb4_view/robot1/amcl_pose
+        Value: /tb4_view/robot1/pose
         Depth: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
@@ -192,7 +192,7 @@ Visualization Manager:
       Enabled: true
       Value: true
       Topic:
-        Value: /tb4_view/robot2/amcl_pose
+        Value: /tb4_view/robot2/pose
         Depth: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
@@ -332,7 +332,7 @@ Visualization Manager:
       Enabled: true
       Value: true
       Topic:
-        Value: /tb4_view/robot3/amcl_pose
+        Value: /tb4_view/robot3/pose
         Depth: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort

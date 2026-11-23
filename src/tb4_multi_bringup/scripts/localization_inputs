@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""Adapt Create 3 data to the PC navigation TF tree."""
+import math
+import signal
+
+import rclpy
+from nav_msgs.msg import Odometry
+from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
+from rclpy.signals import SignalHandlerOptions
+from rclpy.time import Time
+from sensor_msgs.msg import Imu
+from tf2_msgs.msg import TFMessage
+
+
+class LocalizationInputs(Node):
+    def __init__(self):
+        super().__init__('localization_inputs')
+        self.raw_base = self.declare_parameter('raw_base_frame', 'base_link').value
+        self.raw_odom = self.declare_parameter('raw_odom_frame', 'odom').value
+        self.map_frame = self.declare_parameter('map_frame', 'map').value
+        namespace = self.get_namespace().strip('/')
+        self.frames = {frame: f'{namespace}/{frame}' for frame in (self.raw_base, self.raw_odom)}
+        self.gyro_frame = self.declare_parameter('gyro_frame', 'imu_link').value
+        self.wheel_variance = self.declare_parameter('wheel_velocity_variance', 0.).value
+        self.gyro_variance = self.declare_parameter('gyro_velocity_variance', 0.).value
+        if not all(math.isfinite(v) and v > 0 for v in (self.wheel_variance, self.gyro_variance)):
+            raise ValueError('Create 3 covariance defaults must be positive and finite')
+
+        static = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self.static_frames = {}
+        self.static_tf = self.create_publisher(TFMessage, 'navigation/tf_static', static)
+        self.dynamic_tf = self.create_publisher(TFMessage, 'navigation/tf', 30)
+        self.wheel = self.create_publisher(Odometry, 'navigation/wheel_odom', 10)
+        self.imu = self.create_publisher(Imu, 'navigation/imu', 10)
+        self.create_subscription(TFMessage, 'tf', self.on_tf, qos_profile_sensor_data)
+        self.create_subscription(TFMessage, 'tf_static', self.on_static_tf,
+                                 QoSProfile(depth=32, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+        self.create_subscription(Odometry, 'odom', self.on_wheel, qos_profile_sensor_data)
+        self.create_subscription(Imu, 'imu', self.on_imu, qos_profile_sensor_data)
+
+    def body_transforms(self, msg):
+        for tf in msg.transforms:
+            parent, child = tf.header.frame_id, tf.child_frame_id
+            if parent in (self.raw_odom, self.map_frame) or child in (self.raw_odom, self.raw_base, self.map_frame):
+                continue
+            tf.header.frame_id = self.frames.get(parent, parent)
+            tf.child_frame_id = self.frames.get(child, child)
+            yield tf
+
+    def on_tf(self, msg):
+        transforms = list(self.body_transforms(msg))
+        if transforms:
+            self.dynamic_tf.publish(TFMessage(transforms=transforms))
+
+    def on_static_tf(self, msg):
+        transforms = list(self.body_transforms(msg))
+        if transforms:
+            self.static_frames.update((tf.child_frame_id, tf) for tf in transforms)
+            self.static_tf.publish(TFMessage(transforms=list(self.static_frames.values())))
+
+    def on_wheel(self, msg):
+        variance = msg.twist.covariance[0]
+        if (msg.header.frame_id != self.raw_odom or msg.child_frame_id != self.raw_base
+                or not self.fresh(msg.header.stamp)
+                or not math.isfinite(msg.twist.twist.linear.x) or not math.isfinite(variance) or variance < 0):
+            return
+        msg.header.frame_id = self.frames[self.raw_odom]
+        msg.child_frame_id = self.frames[self.raw_base]
+        if variance == 0:
+            msg.twist.covariance[0] = self.wheel_variance
+        self.wheel.publish(msg)
+
+    def on_imu(self, msg):
+        covariance = msg.angular_velocity_covariance
+        velocity = msg.angular_velocity
+        if (msg.header.frame_id != 'imu' or covariance[0] == -1 or not self.fresh(msg.header.stamp)
+                or not all(math.isfinite(v) for v in (velocity.x, velocity.y, velocity.z, *covariance))
+                or any(covariance[i] < 0 for i in (0, 4, 8))):
+            return
+        for i in (0, 4, 8):
+            if covariance[i] == 0:
+                covariance[i] = self.gyro_variance
+        gyro = Imu()
+        gyro.header = msg.header
+        gyro.header.frame_id = self.gyro_frame
+        gyro.angular_velocity = velocity
+        gyro.angular_velocity_covariance = covariance
+        gyro.orientation_covariance[0] = -1.
+        gyro.linear_acceleration_covariance[0] = -1.
+        self.imu.publish(gyro)
+
+    def fresh(self, stamp):
+        age = (self.get_clock().now() - Time.from_msg(stamp)).nanoseconds / 1e9
+        return -.1 <= age <= .5
+
+
+def main():
+    rclpy.init(signal_handler_options=SignalHandlerOptions.NO)
+    stopping = False
+
+    def stop(*_):
+        nonlocal stopping
+        stopping = True
+
+    for signum in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(signum, stop)
+    node = LocalizationInputs()
+    try:
+        while rclpy.ok() and not stopping:
+            rclpy.spin_once(node, timeout_sec=.2)
+    finally:
+        node.destroy_node()
+        rclpy.try_shutdown()
+
+
+if __name__ == '__main__':
+    main()

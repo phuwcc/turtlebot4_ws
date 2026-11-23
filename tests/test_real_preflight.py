@@ -68,6 +68,8 @@ class RealPreflightTest(unittest.TestCase):
         result, report = self.run_helper()
         self.assertEqual(result.returncode, 0, result.stderr+result.stdout)
         self.assertTrue(report['ready']);self.assertEqual(report['wheels_enabled'], {'robot1': True})
+        self.assertTrue(report['drive_ready'])
+        self.assertEqual(report['docked'], {'robot1': False})
 
     def test_old_timestamps_rejected_despite_continuing_messages(self):
         self.settings['stale'] = True
@@ -79,6 +81,8 @@ class RealPreflightTest(unittest.TestCase):
         self.settings.update(wheels=False, battery=.1)
         result, report = self.run_helper(3)
         self.assertEqual(result.returncode, 1)
+        self.assertFalse(report['drive_ready'])
+        self.assertEqual(report['wheels_enabled'], {'robot1': False})
         self.assertTrue(any('wheels disabled' in v for v in report['errors']))
         self.assertTrue(any('battery low' in v for v in report['errors']))
 

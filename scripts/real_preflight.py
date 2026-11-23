@@ -64,10 +64,30 @@ def main():
                     if time.monotonic() - received > 3:
                         errors.append(robot + ': stale wheel status')
                     elif args.require_undocked and not m.wheels_enabled:
-                        errors.append(robot + ': wheels disabled/E-stop; release E-stop on the robot before driving')
+                        errors.append(robot + ': wheels disabled/E-stop. Khi lối đi trống, nhả E-Stop tại robot rồi kiểm tra lại.')
                 if kind == 'map' and (not m.info.width or not m.info.height or not m.data):
                     errors.append(robot + ': empty map')
         return errors
+    def report(ready, errors=()):
+        now = time.monotonic()
+        battery_percent, docked, wheels_enabled = {}, {}, {}
+        for robot in args.robots:
+            battery = seen.get((robot, 'battery_state'))
+            dock = seen.get((robot, 'dock_status'))
+            wheels = seen.get((robot, 'wheel_status'))
+            battery_percent[robot] = (round(battery[1].percentage * 100, 1)
+                                      if battery and now - battery[0] <= 10
+                                      and math.isfinite(battery[1].percentage) else None)
+            docked[robot] = dock[1].is_docked if dock else None
+            wheels_enabled[robot] = wheels[1].wheels_enabled if wheels and now - wheels[0] <= 3 else None
+        result = {'ready': ready, 'robots': args.robots, 'battery_percent': battery_percent,
+                  'docked': docked, 'wheels_enabled': wheels_enabled,
+                  'drive_ready': ready and all(docked[r] is False and wheels_enabled[r] is True
+                                              for r in args.robots)}
+        if not ready:
+            result['errors'] = list(errors) or ['Sensor readings did not stabilize']
+        print(json.dumps(result, ensure_ascii=False), flush=True)
+
     try:
         deadline = time.monotonic() + args.timeout
         stable = None
@@ -77,11 +97,9 @@ def main():
             errors = problems()
             stable = None if errors else (stable or time.monotonic())
             if stable is not None and time.monotonic() - stable >= 2:
-                print(json.dumps({'ready': True, 'robots': args.robots,
-                    'battery_percent': {r: round(seen[r, 'battery_state'][1].percentage * 100, 1) for r in args.robots},
-                    'wheels_enabled': {r: seen[r, 'wheel_status'][1].wheels_enabled for r in args.robots}}), flush=True)
+                report(True)
                 return 0
-        print(json.dumps({'ready': False, 'errors': errors}), flush=True)
+        report(False, errors)
         return 1
     finally:
         node.destroy_node()

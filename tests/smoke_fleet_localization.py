@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Two real AMCL stacks and URDF publishers; synthetic sensors, isolated DDS.
+"""Two AMCL/EKF stacks and URDF publishers in isolated DDS.
 
 Checks startup poses, RViz's complete prefixed model TF and subsequent pose resets.
 No navigation goals or motor commands are sent.
@@ -10,6 +10,7 @@ import math
 import os
 from pathlib import Path
 import signal
+import socket
 import subprocess
 import time
 import xml.etree.ElementTree as ET
@@ -17,7 +18,8 @@ import xml.etree.ElementTree as ET
 os.environ.update(ROS_DOMAIN_ID='176', ROS_LOCALHOST_ONLY='1',
                   RMW_IMPLEMENTATION='rmw_fastrtps_cpp', ROS_SUPER_CLIENT='False')
 for key in ('ROS_DISCOVERY_SERVER', 'FASTRTPS_DEFAULT_PROFILES_FILE',
-            'FASTDDS_DEFAULT_PROFILES_FILE', 'CYCLONEDDS_URI', 'ROS_NAMESPACE'):
+            'FASTDDS_DEFAULT_PROFILES_FILE', 'CYCLONEDDS_URI', 'ROS_NAMESPACE',
+            'TB4_ROBOT_IDS', 'TB4_DISCOVERY_IDS'):
     os.environ.pop(key, None)
 
 import rclpy
@@ -25,7 +27,7 @@ import yaml
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import JointState, LaserScan
+from sensor_msgs.msg import Imu, JointState, LaserScan
 from std_msgs.msg import String
 from tf2_msgs.msg import TFMessage
 from tf2_ros import Buffer, TransformListener
@@ -54,6 +56,11 @@ node = rclpy.create_node('fleet_localization_test', cli_args=[
 buffer = Buffer()
 listener = TransformListener(buffer, node)
 processes, streams, publishers, visual_links, descriptions, subscriptions = [], [], {}, {}, {}, []
+filtered, tf_parents = {}, {}
+velocity = {robot: (0., 0.) for robot in positions}
+with socket.socket() as probe:
+    probe.bind(('127.0.0.1', 0))
+    socket_port = probe.getsockname()[1]
 
 
 def start(command, filename):
@@ -70,10 +77,17 @@ def sensors():
         odom = Odometry()
         odom.header.stamp, odom.header.frame_id = stamp, 'odom'
         odom.child_frame_id, odom.pose.pose.orientation.w = 'base_link', 1.0
+        odom.pose.pose.position.x = x
+        odom.twist.twist.linear.x = velocity[robot][0]
         pubs['odom'].publish(odom)
+        imu = Imu()
+        imu.header.stamp, imu.header.frame_id = stamp, 'imu'
+        imu.angular_velocity.z = velocity[robot][1]
+        pubs['imu'].publish(imu)
         transform = TransformStamped()
         transform.header = odom.header
         transform.child_frame_id, transform.transform.rotation.w = 'base_link', 1.0
+        transform.transform.translation.x = x
         pubs['tf'].publish(TFMessage(transforms=[transform]))
         joints = JointState()
         joints.header.stamp = stamp
@@ -104,6 +118,25 @@ def wait_for(predicate, timeout=65):
     raise AssertionError('Timed out; inspect ' + str(logs))
 
 
+def gateway(**request):
+    try:
+        with socket.create_connection(('127.0.0.1', socket_port), timeout=2) as connection:
+            connection.sendall((json.dumps(request) + '\n').encode())
+            return json.loads(connection.makefile('rb').readline())
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def fleet_ready():
+    states = gateway(command='snapshot').get('robots', {})
+    return set(states) == set(positions) and all(state['localized'] for state in states.values())
+
+
+def record_tf(msg):
+    for tf in msg.transforms:
+        tf_parents.setdefault(tf.child_frame_id, set()).add(tf.header.frame_id)
+
+
 try:
     from rclpy.qos import QoSProfile, DurabilityPolicy, qos_profile_sensor_data
     latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
@@ -121,15 +154,20 @@ try:
                '--params-file', str(params)], robot + '_model.log')
         publishers[robot] = {topic: node.create_publisher(kind, '/' + robot + '/' + topic, qos)
             for topic, kind, qos in [('odom', Odometry, qos_profile_sensor_data),
+                                     ('imu', Imu, qos_profile_sensor_data),
                                      ('scan', LaserScan, qos_profile_sensor_data),
                                      ('tf', TFMessage, 20), ('joint_states', JointState, 10)]}
         publishers[robot]['joints'] = [joint.attrib['name'] for joint in model.findall('joint')
                                       if joint.attrib['type'] != 'fixed' and joint.find('mimic') is None]
         subscriptions.append(node.create_subscription(String, '/' + robot + '/robot_description',
             lambda msg, r=robot: descriptions.__setitem__(r, msg.data), latched))
+        subscriptions.append(node.create_subscription(Odometry, f'/{robot}/odometry/filtered',
+            lambda msg, r=robot: filtered.__setitem__(r, msg), qos_profile_sensor_data))
+        subscriptions.append(node.create_subscription(TFMessage, f'/{robot}/navigation/tf',
+                                                       record_tf, qos_profile_sensor_data))
     timer = node.create_timer(0.1, sensors)
     start(['ros2', 'launch', 'tb4_multi_bringup', 'pc_navigation.launch.py', 'robot_count:=2',
-           'rviz:=' + str(args.rviz).lower(), 'socket_port:=18766', 'map:=' + str(logs / 'room.yaml'),
+           'rviz:=' + str(args.rviz).lower(), 'socket_port:=' + str(socket_port), 'map:=' + str(logs / 'room.yaml'),
            'initial_poses:=' + str(logs / 'poses.yaml')], 'navigation.log')
 
     def complete_trees():
@@ -138,25 +176,43 @@ try:
             for robot in positions for link in visual_links[robot])
 
     wait_for(complete_trees)
+    wait_for(fleet_ready)
     locations = {robot: buffer.lookup_transform('map', robot + '/base_link',
                  rclpy.time.Time()).transform.translation.x for robot in positions}
     for robot, x in positions.items():
         assert abs(locations[robot] - x) < 0.35, (robot, locations)
+        assert filtered[robot].header.frame_id == f'{robot}/odom'
+        assert filtered[robot].child_frame_id == f'{robot}/base_link'
+        assert tf_parents[f'{robot}/odom'] == {'map'}
+        assert tf_parents[f'{robot}/base_link'] == {f'{robot}/odom'}
+        tf_publishers = node.get_publishers_info_by_topic(f'/{robot}/navigation/tf')
+        names = [endpoint.node_name for endpoint in tf_publishers]
+        for authority in ('amcl', 'ekf_filter_node', 'localization_inputs'):
+            assert names.count(authority) == 1, (robot, names)
+        assert not {'create3_repub', 'robot_state_publisher'} & set(names), (robot, names)
+    assert 'base_link' not in tf_parents and 'odom' not in tf_parents
+    assert all(name != 'slam_toolbox' for name, _ in node.get_node_names_and_namespaces())
+    velocity['robot1'] = (.06, .15)
+    wait_for(lambda: filtered['robot1'].twist.twist.linear.x > .04
+             and filtered['robot1'].twist.twist.angular.z > .1, timeout=8)
+    velocity['robot1'] = (0., 0.)
+    wait_for(lambda: abs(filtered['robot1'].twist.twist.linear.x) < .01
+             and abs(filtered['robot1'].twist.twist.angular.z) < .02, timeout=8)
+    for robot in positions:
         assert any(endpoint.node_name == 'amcl' for endpoint in
                    node.get_subscriptions_info_by_topic('/' + robot + '/initialpose'))
     # Reset an automatically initialized robot through the same gateway used by RViz.
-    import socket
     positions['robot2'] = 2.0
-    with socket.create_connection(('127.0.0.1', 18766), timeout=4) as connection:
-        connection.sendall(b'{"command":"pose","robot":"robot2","x":2.0,"y":0.0,"yaw":0.0}\n')
-        response = json.loads(connection.makefile('rb').readline())
+    response = gateway(command='pose', robot='robot2', x=2., y=0., yaw=0.)
     assert response['ok'], response
     wait_for(lambda: abs(buffer.lookup_transform('map', 'robot2/base_link',
              rclpy.time.Time()).transform.translation.x - 2.0) < 0.35, timeout=20)
+    wait_for(fleet_ready, timeout=20)
     assert abs(buffer.lookup_transform('map', 'robot1/base_link',
                rclpy.time.Time()).transform.translation.x - locations['robot1']) < 0.15
     result = {'robots': locations, 'visual_links_with_tf': {
-        r: len(links) for r, links in visual_links.items()}, 'manual_reset_after_auto_init': True}
+        r: len(links) for r, links in visual_links.items()}, 'manual_reset_after_auto_init': True,
+        'marco_global_poses_ready': True, 'navigation_tf_authorities_checked': True, 'fused_wheel_and_gyro': True}
     (logs / 'result.json').write_text(json.dumps(result, indent=2))
     print(json.dumps(result, indent=2), flush=True)
     if args.rviz:
@@ -176,4 +232,4 @@ finally:
     for stream in streams:
         stream.close()
     node.destroy_node()
-    rclpy.shutdown()
+    rclpy.try_shutdown()

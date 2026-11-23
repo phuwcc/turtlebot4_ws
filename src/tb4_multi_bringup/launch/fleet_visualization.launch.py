@@ -21,17 +21,20 @@ def setup(context):
     robots = active_robots(count, ids)
     validate_discovery(os.environ.get('ROS_DISCOVERY_SERVER'), count, ids, os.environ.get('TB4_DISCOVERY_IDS'))
     socket_enabled = LaunchConfiguration('socket').perform(context) == 'true'
+    navigation_tf = LaunchConfiguration('navigation_tf').perform(context) == 'true'
     parameters = {'robot_count': count, 'robot_ids': ','.join(robots),
                   'coordinated_goals': LaunchConfiguration('coordinated_goals').perform(context) == 'true',
+                  'show_path_goals': LaunchConfiguration('show_path_goals').perform(context) == 'true',
                   'path_controller': LaunchConfiguration('path_controller').perform(context),
-                  'require_localization': LaunchConfiguration('require_localization').perform(context) == 'true'}
+                  'require_localization': LaunchConfiguration('require_localization').perform(context) == 'true',
+                  'navigation_tf': navigation_tf}
     if socket_enabled:
         parameters['socket_port'] = int(LaunchConfiguration('socket_port').perform(context))
     for robot in robots:
         with (share() / 'config/robots' / (robot + '.yaml')).open() as stream:
             frames = yaml.safe_load(stream)['frames']
         parameters[robot + '.map_frame'] = frames['map']
-        parameters[robot + '.base_frame'] = frames['base']
+        parameters[robot + '.base_frame'] = robot + '/' + frames['base'] if navigation_tf else frames['base']
     with (share() / 'config/fleet.rviz').open() as stream:
         view = rviz_for_count(yaml.safe_load(stream), count, ids)
     with tempfile.NamedTemporaryFile(mode='w', prefix='tb4_fleet_', suffix='.rviz', delete=False) as stream:
@@ -65,7 +68,9 @@ def generate_launch_description():
                               choices=['1', '2', '3'], description='Number of active robots (robot1..robotN)'),
         DeclareLaunchArgument('robot_ids', default_value=os.environ.get('TB4_ROBOT_IDS', '')),
         DeclareLaunchArgument('require_localization', default_value='false', choices=['true', 'false']),
+        DeclareLaunchArgument('navigation_tf', default_value='false', choices=['true', 'false']),
         DeclareLaunchArgument('coordinated_goals', default_value='false', choices=['true','false']),
+        DeclareLaunchArgument('show_path_goals', default_value='false', choices=['true','false']),
         DeclareLaunchArgument('path_controller', default_value='FollowPath'),
         DeclareLaunchArgument('rviz', default_value='true', choices=['true', 'false']),
         DeclareLaunchArgument('socket', default_value='false', choices=['true', 'false']),

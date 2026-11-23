@@ -1,0 +1,7 @@
+<library path="marco_rviz_tools">
+<class name="tb4_multi_bringup/Robot1Goal" type="tb4_multi_bringup::Robot1Goal" base_class_type="rviz_common::Tool"><description>Stage robot1 goal for MARCO.</description></class>
+<class name="tb4_multi_bringup/Robot2Goal" type="tb4_multi_bringup::Robot2Goal" base_class_type="rviz_common::Tool"><description>Stage robot2 goal for MARCO.</description></class>
+<class name="tb4_multi_bringup/Preview" type="tb4_multi_bringup::Preview" base_class_type="rviz_common::Tool"><description>Preview both staged goals.</description></class>
+<class name="tb4_multi_bringup/Execute" type="tb4_multi_bringup::Execute" base_class_type="rviz_common::Tool"><description>Execute previewed mission through MARCO.</description></class>
+<class name="tb4_multi_bringup/Cancel" type="tb4_multi_bringup::Cancel" base_class_type="rviz_common::Tool"><description>Cancel current MARCO operation.</description></class>
+</library>

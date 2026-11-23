@@ -8,7 +8,7 @@ nano config/marco/mission.local.json
 ```
 
 ```bash
-# Mở hardware + AMCL/Nav2 + RViz; kiểm tra pose hai robot
+# Mở hardware + AMCL/EKF/Nav2 + RViz; kiểm tra pose hai robot
 bash multi_robot.bash --map maps/room_real.yaml --poses config/marco/initial_poses.local.yaml
 ```
 

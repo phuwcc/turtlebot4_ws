@@ -1,0 +1,8 @@
+# Bản đồ dùng cho bài thử vùng xanh. Ô xám 205 trong PGM là vùng chưa quét.
+image: ../../maps/room_real.pgm
+mode: trinary
+resolution: 0.05
+origin: [-3.86, -4.46, 0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.19

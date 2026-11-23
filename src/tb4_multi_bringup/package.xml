@@ -15,8 +15,11 @@
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>nav2_bringup</exec_depend>
+  <exec_depend>nav2_amcl</exec_depend>
   <exec_depend>nav2_common</exec_depend>
   <exec_depend>nav2_rotation_shim_controller</exec_depend>
+  <exec_depend>robot_localization</exec_depend>
+  <exec_depend>slam_toolbox</exec_depend>
   <exec_depend>tb4_multi_tools</exec_depend>
   <exec_depend>turtlebot4_bringup</exec_depend>
   <exec_depend>turtlebot4_description</exec_depend>

@@ -45,7 +45,8 @@ def main():
 
     import rclpy
     from rclpy.qos import qos_profile_sensor_data, QoSProfile, DurabilityPolicy
-    from sensor_msgs.msg import LaserScan
+    from sensor_msgs.msg import Imu, LaserScan
+    from geometry_msgs.msg import PoseWithCovarianceStamped
     from nav_msgs.msg import Odometry, OccupancyGrid
     from lifecycle_msgs.srv import GetState
     from rcl_interfaces.srv import GetParameters
@@ -64,7 +65,7 @@ def main():
         ages[topic] = round(node.get_clock().now().nanoseconds * 1e-9 - stamp, 3)
 
     for robot in ('robot1', 'robot2', 'robot3'):
-        for suffix, kind in [('scan', LaserScan), ('odom', Odometry)]:
+        for suffix, kind in [('scan', LaserScan), ('odom', Odometry), ('imu', Imu)]:
             topic = '/' + robot + '/' + suffix
             subscriptions.append(node.create_subscription(kind, topic,
                 lambda m, t=topic: received(t, m), qos_profile_sensor_data))
@@ -74,7 +75,11 @@ def main():
         subscriptions.append(node.create_subscription(OccupancyGrid, topic,
             lambda m, t=topic: received(t, m),
             QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)))
-        for name in ('map_server', 'amcl', 'controller_server', 'planner_server', 'bt_navigator'):
+        for suffix, kind in [('pose', PoseWithCovarianceStamped), ('odometry/filtered', Odometry)]:
+            topic = '/' + robot + '/' + suffix
+            subscriptions.append(node.create_subscription(kind, topic,
+                lambda m, t=topic: received(t, m), qos_profile_sensor_data))
+        for name in ('map_server', 'amcl', 'controller_server', 'planner_server'):
             client = node.create_client(GetState, '/' + robot + '/' + name + '/get_state')
             clients.append(client)
             service_pending.append((robot + '/' + name, client, GetState.Request()))
@@ -100,10 +105,10 @@ def main():
                     futures[key] = client.call_async(request)
         print('Dữ liệu nhận được: ' + json.dumps(counts, sort_keys=True))
         print('Độ trễ timestamp scan/odom (giây): ' + json.dumps(ages, sort_keys=True))
-        missing = [f'/{r}/{t}' for r in robots for t in ('scan', 'odom') if not counts.get(f'/{r}/{t}')]
+        missing = [f'/{r}/{t}' for r in robots for t in ('scan', 'odom', 'imu') if not counts.get(f'/{r}/{t}')]
         failures = []
         for robot in robots:
-            for suffix in ('scan', 'odom'):
+            for suffix in ('scan', 'odom', 'imu'):
                 topic = '/' + robot + '/' + suffix
                 if topic in ages and not -.1 <= ages[topic] <= 1.:
                     print('TIMESTAMP KHÔNG HỢP LỆ: ' + topic + ': ' + str(ages[topic]) + ' giây')
@@ -123,20 +128,21 @@ def main():
                     failures.append(key)
         if not args.preflight:
             for robot in robots:
-                topic = '/' + robot + '/map'
-                if not counts.get(topic):
-                    print('THIẾU MAP: ' + topic)
-                    failures.append(topic)
+                for suffix in ('map', 'odometry/filtered', 'pose'):
+                    topic = '/' + robot + '/' + suffix
+                    if not counts.get(topic):
+                        print('THIẾU DỮ LIỆU ĐỊNH VỊ: ' + topic)
+                        failures.append(topic)
         if failures:
             print('NAVIGATION CHƯA SẴN SÀNG: ' + ', '.join(failures))
-            print('Nếu map_server/AMCL chưa active, xử lý lifecycle/service trước khi đặt 2D Pose Estimate.')
+            print('Kiểm tra lifecycle của map_server và AMCL, dữ liệu EKF và pose đầu trong RViz.')
         if missing:
             print('THIẾU DỮ LIỆU: ' + ', '.join(missing))
             detected = [r for r in ('robot1', 'robot2', 'robot3') if counts.get('/' + r + '/scan')]
             print('Hardware đang thấy: ' + (', '.join(detected) or 'không có'))
             print('Kiểm tra robot đã chọn, IP/discovery server ID và robot-start.sh trên đúng Pi.')
             return 1
-        print('Scan/odom có dữ liệu cho các robot đã chọn.')
+        print('Scan, odom và IMU có dữ liệu cho các robot đã chọn.')
         return 1 if failures else 0
     finally:
         node.destroy_node()

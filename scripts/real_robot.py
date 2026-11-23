@@ -5,6 +5,7 @@ import fcntl
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import json
+import math
 import os
 from pathlib import Path
 import shlex
@@ -92,7 +93,10 @@ def preflight(ids, values, map_ready=False, undocked=False, timeout=45):
         args.append('--map-ready')
     if undocked:
         args.append('--require-undocked')
-    checked(ros_command(args), env={**os.environ, **values}, timeout=timeout+15)
+    try:
+        checked(ros_command(args), env={**os.environ, **values}, timeout=timeout+15)
+    except subprocess.CalledProcessError as error:
+        raise RuntimeError('Kiểm tra trước khi chạy chưa đạt. Xem trạng thái từng robot ở trên.') from error
 
 
 def require_pc():
@@ -180,6 +184,27 @@ def mission_run(path, execute, directory):
         checked(script('marco.sh', 'run', path, '--execute', '--out', directory/'execution.json'))
 
 
+def marco_mission_nav_params(mission_path, directory):
+    import yaml
+
+    mission = json.loads(mission_path.read_text())
+    speed = mission.get('speed_mps', .05)
+    if type(speed) not in (int, float) or not math.isfinite(speed) or not 0 < speed <= .16:
+        raise ValueError('Mission MARCO thật cần speed_mps trong (0, 0.16].')
+    parameters = yaml.safe_load((ROOT/'config/navigation/nav2.yaml').read_text())
+    controller = parameters['controller_server']['ros__parameters']['CorridorFollow']
+    controller['desired_linear_vel'] = speed
+    controller['rotate_to_heading_min_angle'] = .15
+    for key in ('regulated_linear_scaling_min_speed', 'min_approach_linear_velocity'):
+        controller[key] = min(controller[key], speed)
+    smoother = parameters['velocity_smoother']['ros__parameters']
+    smoother['max_velocity'][0] = speed
+    smoother['min_velocity'][0] = max(smoother['min_velocity'][0], -speed)
+    output = directory/'nav2.yaml'
+    output.write_text(yaml.safe_dump(parameters, sort_keys=False))
+    return output
+
+
 def multi(args, values, ids):
     require_pc()
     from pc_diagnose import validate_map
@@ -216,11 +241,17 @@ def multi(args, values, ids):
         # README: RViz goals use the navigation localization profile and Nav2 params;
         # strict thresholds are for MARCO tests and cancel ordinary goals while driving.
         # Peer footprints are stamped into each robot's costmap (MARCO fleet_obstacles).
+        nav_params = (marco_mission_nav_params(mission, directory) if args.marco and mission
+                      else ROOT/'config/navigation/nav2.yaml')
         command += ['localization_profile:=navigation', 'peer_footprints:=true',
-                    'nav_params_file:='+str(ROOT/'config/navigation/nav2.yaml')]
+                    'nav_params_file:='+str(nav_params)]
     if args.marco:
         # RViz Goal robot1/robot2 -> MARCO core -> leased FollowPath (robot1 has priority).
         command += ['coordinated_goals:=true', 'path_controller:=CorridorFollow']
+        if mission:
+            # The CLI owns mission leases when a file is supplied. Keep RViz
+            # visible and accept paths through the same MARCO-only gateway.
+            command.append('marco_rviz_goals:=false')
     with (directory/'session.log').open('w') as stream:
         child = subprocess.Popen(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT, start_new_session=True)
         try:
@@ -291,6 +322,8 @@ def parser():
     for name in ('check', 'hardware', 'stop'):
         s = sub.add_parser(name)
         s.add_argument('robot', nargs='?', choices=('robot1', 'robot2', 'robot3', 'all'), default='all')
+        if name == 'check':
+            s.add_argument('--drive', action='store_true', help='Kiểm tra đã rời dock và bánh xe đã bật; không gửi lệnh chạy')
         if name == 'hardware':
             s.add_argument('--install-service', action='store_true', help='Cài/bật hardware tự chạy sau reboot trên Pi')
     s = sub.add_parser('mapping')
@@ -377,7 +410,7 @@ def main(argv=None):
             start_hardware(selected, values, getattr(args, 'install_service', False), read_only=args.mode == 'check')
             require_pc()
             env = values if selected == ids else environment_for_robot(values, selected[0])
-            preflight(selected, env)
+            preflight(selected, env, undocked=getattr(args, 'drive', False))
     return 0
 
 
