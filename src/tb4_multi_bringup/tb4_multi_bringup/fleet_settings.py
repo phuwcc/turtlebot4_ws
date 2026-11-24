@@ -1,6 +1,7 @@
 """Pure configuration helpers shared by the fleet launch and its tests."""
 from copy import deepcopy
 import ipaddress
+import os
 import math
 from pathlib import Path
 
@@ -76,6 +77,51 @@ def validate_discovery(value, count, selected=None, server_ids=None):
     except ValueError as error:
         raise ValueError('Invalid ROS_DISCOVERY_SERVER: ' + str(error) +
                          '. Run: bash scripts/pc-configure.sh') from error
+
+
+
+PC_HUB_ID = 3
+PC_HUB_PORT = 11888
+
+
+def robot_discovery_servers():
+    """Pi discovery server list; a PC session may have pointed ROS_DISCOVERY_SERVER at its hub."""
+    return os.environ.get('TB4_ROBOT_DISCOVERY_SERVER', os.environ.get('ROS_DISCOVERY_SERVER'))
+
+
+def discovery_hub_xml(value, port=PC_HUB_PORT):
+    """Fast DDS profile for a PC-local discovery server linked to every Pi server.
+
+    PC nodes then discover each other over localhost and only this one
+    participant exchanges discovery with the robots over Wi-Fi. Pi server i
+    is ``fastdds discovery -i i``, whose GUID prefix is 44.53.<i>.5f.45.50.52.4f.53.49.4d.41.
+    """
+    remotes = []
+    for index, server in enumerate(value.split(';')):
+        if not server:
+            continue
+        address, server_port = server.rsplit(':', 1)
+        remotes.append(
+            f'          <RemoteServer prefix="44.53.{index:02x}.5f.45.50.52.4f.53.49.4d.41">\n'
+            f'            <metatrafficUnicastLocatorList><locator><udpv4><address>{address}</address>'
+            f'<port>{int(server_port)}</port></udpv4></locator></metatrafficUnicastLocatorList>\n'
+            '          </RemoteServer>')
+    if not remotes:
+        raise ValueError('No robot discovery servers for the PC hub')
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<dds><profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">\n'
+            '  <participant profile_name="tb4_pc_discovery_hub" is_default_profile="true">\n'
+            f'    <rtps><prefix>44.53.{PC_HUB_ID:02x}.5f.45.50.52.4f.53.49.4d.41</prefix><builtin>\n'
+            '      <discovery_config><discoveryProtocol>SERVER</discoveryProtocol><discoveryServersList>\n'
+            + '\n'.join(remotes) +
+            '\n      </discoveryServersList></discovery_config>\n'
+            '      <metatrafficUnicastLocatorList><locator><udpv4><address>0.0.0.0</address>'
+            f'<port>{int(port)}</port></udpv4></locator></metatrafficUnicastLocatorList>\n'
+            '    </builtin></rtps>\n  </participant>\n</profiles></dds>\n')
+
+
+def discovery_hub_client(port=PC_HUB_PORT):
+    return ';' * PC_HUB_ID + f'127.0.0.1:{int(port)};'
 
 
 def rviz_for_count(template, count, selected=None):

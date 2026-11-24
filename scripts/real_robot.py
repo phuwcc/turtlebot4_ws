@@ -257,7 +257,7 @@ def multi(args, values, ids):
         try:
             try:
                 wait_navigation(child, ids, args.timeout)
-                print('Hai robot sẵn sàng. MACRO chạy khi nhận mission, có kiểm tra conflict và watchdog.', flush=True)
+                print(str(len(ids)) + ' robot sẵn sàng. MACRO chạy khi nhận mission, có kiểm tra conflict và watchdog.', flush=True)
             except RuntimeError as error:
                 # RViz goal modes: keep RViz up so the user can fix poses with
                 # 2D Pose Estimate; goals stay gated by localization_supervisor.

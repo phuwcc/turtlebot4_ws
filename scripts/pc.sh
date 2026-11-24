@@ -50,6 +50,38 @@ case "$tb4_mode" in
   nav)
     tb4_map="${1:-$tb4_repo/maps/room_real.yaml}"; if (( $# )); then shift; fi
     python3 "$tb4_repo/scripts/pc_diagnose.py" --preflight --map "$tb4_map"
+    if [[ "${TB4_PC_DISCOVERY_HUB:-1}" == 1 ]]; then
+      # PC-local discovery hub linked to every Pi server: PC nodes discover each
+      # other on localhost and only the hub talks discovery over Wi-Fi (three
+      # robots otherwise flooded office Wi-Fi). Pi servers learn PC nodes through
+      # the hub and are only told they are gone while the hub is alive, so a
+      # detached keeper holds the hub 30 s past the launch (> participant lease)
+      # instead of leaving ghost publishers that block the one-writer guards.
+      tb4_hub_port=11888
+      for ((tb4_i=0; tb4_i<45; tb4_i++)); do
+        ss -lun 2>/dev/null | grep -q ":$tb4_hub_port " || break
+        (( tb4_i == 0 )) && echo 'Đợi discovery hub của phiên trước kết thúc (tối đa 45 giây)...'
+        sleep 1
+      done
+      if ss -lun 2>/dev/null | grep -q ":$tb4_hub_port "; then
+        echo "Cổng $tb4_hub_port vẫn bận; dừng fast-discovery-server cũ trước." >&2; exit 1
+      fi
+      mkdir -p "$ROS_LOG_DIR"
+      tb4_hub_xml="$tb4_state/discovery_hub.xml"
+      python3 -c 'import os,sys
+from tb4_multi_bringup.fleet_settings import discovery_hub_xml
+open(sys.argv[1],"w").write(discovery_hub_xml(os.environ["ROS_DISCOVERY_SERVER"]))' "$tb4_hub_xml"
+      setsid bash -c 'fast-discovery-server -x "$1" >"$2" 2>&1 & hub=$!
+        while kill -0 "$3" 2>/dev/null && kill -0 "$hub" 2>/dev/null; do sleep 1; done
+        sleep 30; kill "$hub" 2>/dev/null; wait "$hub" 2>/dev/null' \
+        _ "$tb4_hub_xml" "$ROS_LOG_DIR/discovery_hub.log" "$$" </dev/null >/dev/null 2>&1 &
+      for ((tb4_i=0; tb4_i<20; tb4_i++)); do
+        ss -lun 2>/dev/null | grep -q ":$tb4_hub_port " && break; sleep .25
+      done
+      export TB4_ROBOT_DISCOVERY_SERVER="$ROS_DISCOVERY_SERVER"
+      ROS_DISCOVERY_SERVER="$(python3 -c 'from tb4_multi_bringup.fleet_settings import discovery_hub_client; print(discovery_hub_client())')"
+      export ROS_DISCOVERY_SERVER
+    fi
     exec ros2 launch tb4_multi_bringup pc_navigation.launch.py \
       "robot_count:=$TB4_ROBOT_COUNT" "map:=$tb4_map" "$@" ;;
   mapping|teleop)

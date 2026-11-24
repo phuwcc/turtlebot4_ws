@@ -113,7 +113,14 @@ class Planner:
     def prepare(self, snapshot, mission):
         if not isinstance(mission,dict) or not isinstance(mission.get('tasks'),list) or not 0 < len(mission['tasks']) <= 8:
             raise ValueError('Mission needs 1..8 navigation tasks')
-        self.radius=mission.get('robot_radius',.175)+mission.get('safety_margin',.05)+mission.get('tracking_tolerance',.04)
+        # MARCO mode passes MACRO's own coordination radius (marco_geometry.ROBOT_RADIUS,
+        # 0.22 m in the ROS/grid simulations). Without it, fall back to the
+        # conservative adapter composition used by CLI missions.
+        self.marco_radius=mission.get('coordination_radius')
+        if self.marco_radius is not None:
+            self.radius=self.marco_radius
+        else:
+            self.radius=mission.get('robot_radius',.175)+mission.get('safety_margin',.05)+mission.get('tracking_tolerance',.04)
         self.speed=mission.get('speed_mps',.05)
         if not finite(self.radius) or not .175 <= self.radius <= .6 or not finite(self.speed) or not 0 < self.speed <= .25:
             raise ValueError('Invalid robot clearance or speed (maximum 0.25m/s)')
@@ -198,12 +205,21 @@ class Planner:
             remaining=intent.get('relocations',[])
             if remaining:
                 step=remaining[0];rid=step['robot'];goal=tuple(step['destination']);task_id=None
+                planned=step.get('path')
                 next_intent={**intent,'relocations':remaining[1:]}
             else:
                 rid=priority;goal=self.goals[str(tid)][0];task_id=tid;next_intent=None
-            route=self.algorithms._astar_around_robot_bodies(self.grid.cells,self.positions[rid],goal,
-                robot_centres=[self.grid.continuous_cell(state['pose']) for name,state in snapshot['robots'].items()
-                               if self.ids[name]!=rid],clearance_cells=clearance)
+                planned=intent.get('priority_path')
+            # MACRO executes the paths of the selected MARCO plan. Reuse them while
+            # the robot still starts where the plan expects; replan only after drift.
+            start=self.positions[rid]
+            if planned and math.dist(planned[0],start)<=1.5 and tuple(planned[-1])==goal:
+                route=[tuple(c) for c in planned]
+                if route[0]!=start:route=[start]+route
+            else:
+                route=self.algorithms._astar_around_robot_bodies(self.grid.cells,start,goal,
+                    robot_centres=[self.grid.continuous_cell(state['pose']) for name,state in snapshot['robots'].items()
+                                   if self.ids[name]!=rid],clearance_cells=clearance)
             if route is None:raise RuntimeError('Committed clearance/priority path is no longer feasible')
             return self.package_actions(snapshot,[(rid,route,task_id)],{'strategy':'committed_clearance' if remaining else 'committed_priority'},next_intent)
         if self.priority_order and len(current)==1:
@@ -215,19 +231,28 @@ class Planner:
                     self.goals[task['object']][0],
                     robot_centres=[self.grid.continuous_cell(state['pose']) for name,state in snapshot['robots'].items()
                                    if name!=robot],clearance_cells=clearance)
-                if route is None:raise RuntimeError('No route without displacing the higher-priority robot')
-                return self.package_actions(snapshot,[(rid,route,task['id'])],
-                    {'strategy':'fixed_priority_detour','priority_robot':rid,'held_robots':[self.ids[r] for r in fixed]},None)
+                if route is not None:
+                    return self.package_actions(snapshot,[(rid,route,task['id'])],
+                        {'strategy':'fixed_priority_detour','priority_robot':rid,'held_robots':[self.ids[r] for r in fixed]},None)
+                if all(r in fixed for r in self.robots if r!=robot):
+                    raise RuntimeError('No route without displacing the higher-priority robot')
+                # An idle lower-priority robot (MACRO three_robot_t R3) blocks the
+                # way: let the MARCO relocation search move it, holding `fixed`.
+                blocked_by_idle=True
+            else:blocked_by_idle=False
+        else:blocked_by_idle=False
         # Protect complete routes, including stationary peer footprints, rather
         # than assuming a simulator's predicted arrival times are exact.
-        conflicts=any(self.conflict(routes[a],routes[b],clearance) for i,a in enumerate(routes) for b in list(routes)[i+1:])
+        conflicts=blocked_by_idle or any(self.conflict(routes[a],routes[b],clearance) for i,a in enumerate(routes) for b in list(routes)[i+1:])
         if conflicts and self._mission.get('nominal_until_contact') and not self._mission.get('intervene') and len(current)>=2:
             # MARCO ROS execution (three_robot_t/execute.py): every robot first
             # drives its nominal route; the executor watches predicted swept
             # contacts and only then stops the robots and requests the MARCO
             # intervention from the actual conflict poses (mission 'intervene').
+            # Idle robots hold position and take part in that swept trigger, so
+            # a route passing a parked idle robot is not rejected up front.
             return self.package_actions(snapshot,[(r,routes[r],current[r]['id']) for r in sorted(current)],
-                {'strategy':'nominal','route_conflict':True},None)
+                {'strategy':'nominal','route_conflict':True},None,guard_peers=False)
         audit={'strategy':'disjoint_routes'}
         selected=[(r,routes[r],current[r]['id']) for r in current]
         next_intent=None
@@ -261,24 +286,34 @@ class Planner:
                 step=relocations[0];selected=[(step['robot_id'],step['path'],None)]
                 priority=plan['priority_robot']
                 next_intent={'priority':priority,'task':current[priority]['id'],
-                    'relocations':[{'robot':item['robot_id'],'destination':list(item['path'][-1])} for item in relocations[1:]]}
+                    'relocations':[{'robot':item['robot_id'],'destination':list(item['path'][-1]),
+                                    'path':[list(c) for c in item['path']]} for item in relocations[1:]],
+                    'priority_path':[list(c) for c in plan['preferred_paths'].get(priority,[])]}
             else:
                 rid=plan['priority_robot'];selected=[(rid,plan['preferred_paths'][rid],current[rid]['id'])]
         return self.package_actions(snapshot,selected,audit,next_intent)
 
     def dynamic_radius(self):
+        if self.marco_radius is not None:
+            return self.radius  # identical clearance to MACRO's planner and executor
         # Static inflation already includes cell area. For peer paths account for
         # residual grid quantization without charging the same margin twice.
         # The exact metric segment audit below independently enforces physical clearance.
         return self.radius+max(0.,math.sqrt(.5)*self.grid.res-self._mission.get('safety_margin',.05)+.01)
 
-    def package_actions(self,snapshot,selected,audit,intent):
+    def package_actions(self,snapshot,selected,audit,intent,guard_peers=True):
         actions=[]
         clearance=2*self.dynamic_radius()/self.grid.res
-        physical=2*(self._mission.get('robot_radius',.175)+self._mission.get('tracking_tolerance',.04))+.02
+        physical=(2*self.radius if self.marco_radius is not None else
+                  2*(self._mission.get('robot_radius',.175)+self._mission.get('tracking_tolerance',.04))+.02)
         for rid,route,tid in selected:
-            peers=[self.grid.continuous_cell(state['pose']) for name,state in snapshot['robots'].items()
-                   if self.ids[name] not in {item[0] for item in selected}]
+            # Nominal MARCO batches are guarded at run time by the swept-contact
+            # trigger instead of these static held-peer checks.
+            # In MARCO mode check against the same cells MARCO planned with, so a
+            # sub-cell pose offset cannot veto a plan MARCO already verified.
+            peers=[(self.positions[self.ids[name]] if self.marco_radius is not None else self.grid.continuous_cell(state['pose']))
+                   for name,state in snapshot['robots'].items()
+                   if guard_peers and self.ids[name] not in {item[0] for item in selected}]
             for peer in peers:
                 previous=math.dist(route[0],peer);cleared=previous>clearance
                 for cell in route[1:]:
@@ -289,7 +324,7 @@ class Planner:
             name=self.names[rid];goal=self.goals[str(tid)][1] if tid is not None else None
             points=self.grid.points(route,snapshot['robots'][name]['pose'],goal)
             for other,state in snapshot['robots'].items():
-                if other==name or self.ids[other] in {v[0] for v in selected}:continue
+                if not guard_peers or other==name or self.ids[other] in {v[0] for v in selected}:continue
                 p=state['pose']
                 for a,b in zip(points,points[1:]):
                     dx,dy=b[0]-a[0],b[1]-a[1];denom=dx*dx+dy*dy

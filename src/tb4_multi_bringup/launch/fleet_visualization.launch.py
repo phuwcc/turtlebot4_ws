@@ -12,14 +12,14 @@ from launch.events import Shutdown
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from tb4_multi_bringup.configuration import share, pc_service_profile
-from tb4_multi_bringup.fleet_settings import active_robots, rviz_for_count, validate_discovery
+from tb4_multi_bringup.fleet_settings import active_robots, rviz_for_count, validate_discovery, robot_discovery_servers
 
 
 def setup(context):
     count = int(LaunchConfiguration('robot_count').perform(context))
     ids = LaunchConfiguration('robot_ids').perform(context)
     robots = active_robots(count, ids)
-    validate_discovery(os.environ.get('ROS_DISCOVERY_SERVER'), count, ids, os.environ.get('TB4_DISCOVERY_IDS'))
+    validate_discovery(robot_discovery_servers(), count, ids, os.environ.get('TB4_DISCOVERY_IDS'))
     socket_enabled = LaunchConfiguration('socket').perform(context) == 'true'
     navigation_tf = LaunchConfiguration('navigation_tf').perform(context) == 'true'
     parameters = {'robot_count': count, 'robot_ids': ','.join(robots),

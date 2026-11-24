@@ -23,8 +23,9 @@ class RvizCoordinator(Node):
     def __init__(self):
         super().__init__('marco_rviz')
         self.robots=self.declare_parameter('robot_ids','robot1,robot2').value.split(',')
-        if self.robots!=['robot1','robot2']:
-            raise ValueError('RViz MARCO currently requires robot1,robot2')
+        # MARCO fixed priority follows the ID order: robot1 > robot2 > robot3.
+        if self.robots not in (['robot1','robot2'],['robot1','robot2','robot3']):
+            raise ValueError('RViz MARCO requires robot1,robot2[,robot3]')
         self.port=self.declare_parameter('socket_port',8765).value
         default=Path(__file__).resolve().parents[3]/'MACRO'
         self.root=Path(self.declare_parameter('marco_root',os.environ.get('MARCO_ROOT',str(default))).value)
@@ -39,6 +40,11 @@ class RvizCoordinator(Node):
         self.trigger_horizon=float(self.declare_parameter('trigger_horizon_s',3.).value)
         if not 0<self.trigger_horizon<=10:raise ValueError('trigger_horizon_s must be within 0..10 s')
         self.predicted_contacts=None
+        # Coordination clearance comes from MACRO itself (same radius as the
+        # swept trigger and the ROS/grid simulations), not from adapter margins.
+        sys.path.insert(0,str(self.root/'src'))
+        from simulations.ros2.marco_geometry import ROBOT_RADIUS
+        self.coordination_radius=float(ROBOT_RADIUS)
         if not 0<=self.smooth_deviation<=self.tolerance/2:
             raise ValueError('smooth_deviation must be within 0..tracking_tolerance/2')
         self.directory=Path(self.declare_parameter('log_directory',str(Path.cwd()/'log/pc/marco_rviz')).value)
@@ -72,7 +78,6 @@ class RvizCoordinator(Node):
     def contact(self,actions,report,hits):
         """MARCO swept-contact trigger (three_robot_t/swept_trigger.predicted_contacts)."""
         if self.predicted_contacts is None:
-            sys.path.insert(0,str(self.root/'src'))
             from simulations.ros2.three_robot_t.swept_trigger import predicted_contacts
             self.predicted_contacts=predicted_contacts
         snapshot=request({'command':'snapshot'},self.port)
@@ -111,9 +116,10 @@ class RvizCoordinator(Node):
             m.pose.position.x=x;m.pose.position.y=y;m.pose.position.z=z;m.pose.orientation.w=1.
             m.scale.z=.16;m.color.r,m.color.g,m.color.b=color;m.color.a=1.;m.text=text
             array.markers.append(m)
-        label(0,'MARCO: robot1 > robot2 | '+status['detail'],0.,-.95,.2,(1.,1.,1.))
+        label(0,'MARCO: '+' > '.join(self.robots)+' | '+status['detail'],0.,-.95,.2,(1.,1.,1.))
+        colors={'robot1':(.2,.8,1.),'robot2':(1.,.55,.1),'robot3':(.4,1.,.3)}
         for index,(robot,goal) in enumerate(status['goals'].items(),1):
-            pose=goal['pose'];color=(.2,.8,1.) if robot=='robot1' else (1.,.55,.1)
+            pose=goal['pose'];color=colors[robot]
             suffix='moving' if robot in status['active'] else 'waiting'
             label(index,'Goal '+robot+' ['+suffix+']',pose[0],pose[1],.35,color)
             arrow=Marker();arrow.header.frame_id='map';arrow.header.stamp=self.get_clock().now().to_msg()
@@ -142,7 +148,7 @@ class RvizCoordinator(Node):
                 try:
                     if self.worker is None:self.worker=Worker(self.root,self.directory/'worker.log')
                     mission={'priority_order':self.robots,'speed_mps':self.speed,'tracking_tolerance':self.tolerance,
-                        'robot_radius':.175,'safety_margin':.05,'action_timeout_s':180.,'nominal_until_contact':True,'intervene':False,
+                        'robot_radius':.175,'safety_margin':.05,'coordination_radius':self.coordination_radius,'action_timeout_s':180.,'nominal_until_contact':True,'intervene':False,
                         'tasks':[{'id':int(r[-1]),'goal':g['pose'],'candidates':[r],'depends_on':[]} for r,g in sorted(goals.items())]}
                     self.set_state('planning','Planning; robot1 has priority')
                     assignment=self.worker.call({'command':'assign','snapshot':snapshot,'mission':mission})

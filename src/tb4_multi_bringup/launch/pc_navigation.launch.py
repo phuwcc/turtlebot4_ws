@@ -7,7 +7,8 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, Opaq
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from tb4_multi_bringup.configuration import share
-from tb4_multi_bringup.fleet_settings import active_robots, startup_poses, validate_discovery, localization_hints
+from tb4_multi_bringup.fleet_settings import (active_robots, startup_poses, validate_discovery, localization_hints,
+                                              robot_discovery_servers)
 
 
 def setup(context):
@@ -16,17 +17,20 @@ def setup(context):
     robots = active_robots(count, ids)
     coordinated=LaunchConfiguration('coordinated_goals').perform(context)=='true'
     interactive_marco = coordinated and LaunchConfiguration('marco_rviz_goals').perform(context) == 'true'
-    if coordinated and (robots!=('robot1','robot2') or LaunchConfiguration('localization_only').perform(context)=='true'):
-        raise ValueError('RViz MARCO requires robot1,robot2 with navigation')
+    if coordinated and (robots not in (('robot1','robot2'),('robot1','robot2','robot3'))
+                        or LaunchConfiguration('localization_only').perform(context)=='true'):
+        raise ValueError('RViz MARCO requires robot1,robot2[,robot3] with navigation')
     hints = localization_hints(LaunchConfiguration('localization_hints').perform(context), count, ids, float(LaunchConfiguration('anchor_yaw').perform(context)))
     poses = startup_poses(LaunchConfiguration('initial_poses').perform(context), count, ids)
-    validate_discovery(os.environ.get('ROS_DISCOVERY_SERVER'), count, ids,
-                       os.environ.get('TB4_DISCOVERY_IDS'))
+    robot_servers = robot_discovery_servers()
+    validate_discovery(robot_servers, count, ids, os.environ.get('TB4_DISCOVERY_IDS'))
     map_path = Path(LaunchConfiguration('map').perform(context)).expanduser().resolve()
     if not map_path.is_file():
         raise ValueError('Map missing on PC: ' + str(map_path))
     directory = share() / 'launch'
     actions = []
+    # The PC discovery hub is owned by scripts/pc.sh (nav), which keeps it alive
+    # past this launch so the Pi servers learn that PC nodes are gone.
     for robot in robots:
         arguments = {'robot_id': robot, 'map': str(map_path),
                      'localization_profile': LaunchConfiguration('localization_profile'),
@@ -34,7 +38,10 @@ def setup(context):
                      'peer_ids': ','.join(r for r in robots if r != robot)
                                  if LaunchConfiguration('peer_footprints').perform(context) == 'true' else '',
                      'nav_params_file': LaunchConfiguration('nav_params_file'),
-                     'path_only': str(coordinated and not interactive_marco).lower(),
+                     # MARCO (CLI or RViz) only drives FollowPath + is_path_valid. The full
+                     # Nav2 stack adds four DDS participants per robot whose discovery
+                     # traffic saturated office Wi-Fi with three robots.
+                     'path_only': str(coordinated).lower(),
                      'localization_only': LaunchConfiguration('localization_only'),
                      'initialize_pose': 'true' if robot in poses else 'false'}
         arguments.update(poses.get(robot, {}))
