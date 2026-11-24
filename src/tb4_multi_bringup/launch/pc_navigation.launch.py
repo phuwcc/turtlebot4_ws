@@ -17,9 +17,8 @@ def setup(context):
     robots = active_robots(count, ids)
     coordinated=LaunchConfiguration('coordinated_goals').perform(context)=='true'
     interactive_marco = coordinated and LaunchConfiguration('marco_rviz_goals').perform(context) == 'true'
-    if coordinated and (robots not in (('robot1','robot2'),('robot1','robot2','robot3'))
-                        or LaunchConfiguration('localization_only').perform(context)=='true'):
-        raise ValueError('RViz MARCO requires robot1,robot2[,robot3] with navigation')
+    if coordinated and (len(robots) < 2 or LaunchConfiguration('localization_only').perform(context)=='true'):
+        raise ValueError('MARCO requires at least two robots with navigation')
     hints = localization_hints(LaunchConfiguration('localization_hints').perform(context), count, ids, float(LaunchConfiguration('anchor_yaw').perform(context)))
     poses = startup_poses(LaunchConfiguration('initial_poses').perform(context), count, ids)
     robot_servers = robot_discovery_servers()
@@ -70,7 +69,11 @@ def setup(context):
         from launch.events import Shutdown
         coordinator=Node(package='tb4_marco_bridge',executable='marco_rviz',name='marco_rviz',
             parameters=[{'robot_ids':','.join(robots),'socket_port':LaunchConfiguration('socket_port'),
-                         'speed_mps':.16,'tracking_tolerance':.08}],output='screen')
+                         'speed_mps':.16,
+                         # Max path deviation before abort; with safety_margin 0.015 a robot
+                         # passing a held peer keeps >= ~6 cm body gap in the worst case.
+                         'tracking_tolerance':.06,'safety_margin':.015,
+                         'mission_file':LaunchConfiguration('marco_mission')}],output='screen')
         actions += [RegisterEventHandler(OnProcessExit(target_action=coordinator,
             on_exit=[EmitEvent(event=Shutdown(reason='MARCO coordinator exited'))])),coordinator]
     return actions
@@ -84,6 +87,8 @@ def generate_launch_description():
         DeclareLaunchArgument('localization_profile', default_value='strict', choices=['strict','navigation']),
         DeclareLaunchArgument('peer_footprints', default_value='false', choices=['true', 'false']),
         DeclareLaunchArgument('coordinated_goals', default_value='false', choices=['true','false']),
+        DeclareLaunchArgument('marco_mission', default_value='',
+                              description='MACRO-style mission JSON (objects + task DAG) run by the MARCO coordinator'),
         DeclareLaunchArgument('marco_rviz_goals', default_value='true', choices=['true','false'],
                               description='Start the RViz goal coordinator when using MARCO'),
         DeclareLaunchArgument('path_controller', default_value='FollowPath'),

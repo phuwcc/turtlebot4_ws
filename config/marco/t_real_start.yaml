@@ -1,6 +1,6 @@
-# Bố trí chữ T trên maps/t_real.yaml (quét 2026-11-23 18:20), đo bằng so khớp scan LiDAR với map.
-# Tọa độ tính bằng mét, yaw tính bằng radian. Quét lại map hoặc dời robot thì phải đo lại file này.
-# robot1 ở A (đầu trái), robot2 ở B (đầu phải), robot3 idle trong nhánh, quay về ngã ba.
-robot1: {x: -0.042, y: -0.001, yaw: 0.052}
-robot2: {x: 1.583, y: 0.249, yaw: -2.976}
-robot3: {x: 0.733, y: 0.987, yaw: -1.475}
+# Bố trí chữ T trên maps/t_real.yaml (quét 2026-11-23 18:20). Tọa độ mét, yaw radian.
+# robot1 ở A (đầu trái, quay sang phải), robot2 ở B (đầu phải, quay sang trái),
+# robot3 idle trong nhánh trên, quay về ngã ba. robot3 cần y khoảng 0.99 (>= 0.95).
+robot1: {x: 0.09, y: 0.00, yaw: 0.0}
+robot2: {x: 1.58, y: 0.25, yaw: -3.0}
+robot3: {x: 0.73, y: 0.99, yaw: -1.48}

@@ -1,0 +1,15 @@
+{
+  "description": "MACRO-style task DAG on maps/t_real.yaml. robot1 carries a kit from A to the station at B and switches the station on (tasks 1->2->3). robot2 fetches a tool at A (task 4, no successors). robot3 has no task (idle support robot). robot1's active task has the longer downstream chain, so MACRO's dag_aware ordering gives robot1 the smaller slack and the priority branch; nothing forces it.",
+  "speed_mps": 0.16,
+  "objects": [
+    {"name": "kit", "pose": [0.09, 0.0, 0.0]},
+    {"name": "tool", "pose": [0.09, 0.0, 3.14159]},
+    {"name": "station", "pose": [1.58, 0.25, 0.0]}
+  ],
+  "tasks": [
+    {"id": 1, "candidate": ["robot1"], "action": "pick", "object": "kit", "duration": 2.0, "node": []},
+    {"id": 2, "candidate": ["robot1"], "action": "place", "object": "kit", "target": "station", "duration": 2.0, "node": [1]},
+    {"id": 3, "candidate": ["robot1"], "action": "toggle_on", "object": "station", "duration": 4.0, "node": [2]},
+    {"id": 4, "candidate": ["robot2"], "action": "pick", "object": "tool", "duration": 1.0, "node": []}
+  ]
+}

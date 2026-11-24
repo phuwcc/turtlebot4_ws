@@ -16,6 +16,7 @@ from std_msgs.msg import String
 from visualization_msgs.msg import Marker, MarkerArray
 
 from .cli import Worker, request, ready, execute_batch, ReplanRequested
+from .planning import robot_index
 from .smoothing import smooth_points
 
 
@@ -23,14 +24,21 @@ class RvizCoordinator(Node):
     def __init__(self):
         super().__init__('marco_rviz')
         self.robots=self.declare_parameter('robot_ids','robot1,robot2').value.split(',')
-        # MARCO fixed priority follows the ID order: robot1 > robot2 > robot3.
-        if self.robots not in (['robot1','robot2'],['robot1','robot2','robot3']):
-            raise ValueError('RViz MARCO requires robot1,robot2[,robot3]')
+        # Any fleet of robotN IDs; MARCO itself picks the priority branch (dag_aware).
+        if len(set(self.robots))!=len(self.robots) or not self.robots or any(robot_index(r)<1 for r in self.robots):
+            raise ValueError('robot_ids must be unique robotN names')
+        # Optional MACRO-style mission (objects + task DAG). When set, the
+        # coordinator runs it once the fleet is ready instead of waiting for clicks.
+        mission_file=self.declare_parameter('mission_file','').value
+        self.file_mission=json.loads(Path(mission_file).read_text()) if mission_file else None
+        self.file_done=False
+        if self.file_mission is not None and not isinstance(self.file_mission.get('tasks'),list):
+            raise ValueError('mission_file needs a tasks list')
         self.port=self.declare_parameter('socket_port',8765).value
         default=Path(__file__).resolve().parents[3]/'MACRO'
         self.root=Path(self.declare_parameter('marco_root',os.environ.get('MARCO_ROOT',str(default))).value)
         self.speed=float(self.declare_parameter('speed_mps',.16).value)
-        self.tolerance=float(self.declare_parameter('tracking_tolerance',.08).value)
+        self.tolerance=float(self.declare_parameter('tracking_tolerance',.06).value)
         if not 0<self.speed<=.25 or not .04<=self.tolerance<=.10:
             raise ValueError('Invalid coordinated speed/tracking tolerance')
         # Corner rounding after the MARCO core; 0 disables. Must leave most of
@@ -44,7 +52,12 @@ class RvizCoordinator(Node):
         # swept trigger and the ROS/grid simulations), not from adapter margins.
         sys.path.insert(0,str(self.root/'src'))
         from simulations.ros2.marco_geometry import ROBOT_RADIUS
-        self.coordination_radius=float(ROBOT_RADIUS)
+        # Small safety layer on top of MACRO's radius (0.22 m = body 0.175 + 0.045).
+        # One value drives MARCO planning, the swept trigger and the bridge's
+        # last-line peer guard, so they never disagree.
+        self.safety_margin=float(self.declare_parameter('safety_margin',.015).value)
+        if not 0<=self.safety_margin<=.05:raise ValueError('safety_margin must be within 0..0.05 m')
+        self.coordination_radius=float(ROBOT_RADIUS)+self.safety_margin
         if not 0<=self.smooth_deviation<=self.tolerance/2:
             raise ValueError('smooth_deviation must be within 0..tracking_tolerance/2')
         self.directory=Path(self.declare_parameter('log_directory',str(Path.cwd()/'log/pc/marco_rviz')).value)
@@ -89,7 +102,7 @@ class RvizCoordinator(Node):
             if a['robot'] in finished:continue
             routes[a['robot']]=[p[:2] for p in a.get('reserved',a['points'])];speeds[a['robot']]=self.speed
         pairs=[(a,b) for i,a in enumerate(self.robots) for b in self.robots[i+1:]]
-        found=self.predicted_contacts(poses,routes,pairs,speeds,horizon_s=self.trigger_horizon)
+        found=self.predicted_contacts(poses,routes,pairs,speeds,horizon_s=self.trigger_horizon,radius_m=self.coordination_radius)
         if found:
             hits[:]=found
             self.get_logger().info('MARCO contact trigger: '+json.dumps(found))
@@ -104,7 +117,7 @@ class RvizCoordinator(Node):
 
     def publish_status(self):
         with self.lock:
-            status={'phase':self.phase,'detail':self.detail,'priority_order':self.robots,
+            status={'phase':self.phase,'detail':self.detail,'priority':'MARCO dag_aware',
                     'active':list(self.active),'goals':dict(self.goals),'revision':self.revision}
         self.status_pub.publish(String(data=json.dumps(status,allow_nan=False)))
         temporary=self.directory/'status.tmp'
@@ -116,10 +129,10 @@ class RvizCoordinator(Node):
             m.pose.position.x=x;m.pose.position.y=y;m.pose.position.z=z;m.pose.orientation.w=1.
             m.scale.z=.16;m.color.r,m.color.g,m.color.b=color;m.color.a=1.;m.text=text
             array.markers.append(m)
-        label(0,'MARCO: '+' > '.join(self.robots)+' | '+status['detail'],0.,-.95,.2,(1.,1.,1.))
+        label(0,'MARCO (dag_aware) | '+status['detail'],0.,-.95,.2,(1.,1.,1.))
         colors={'robot1':(.2,.8,1.),'robot2':(1.,.55,.1),'robot3':(.4,1.,.3)}
         for index,(robot,goal) in enumerate(status['goals'].items(),1):
-            pose=goal['pose'];color=colors[robot]
+            pose=goal['pose'];color=colors.get(robot,(.9,.9,.2))
             suffix='moving' if robot in status['active'] else 'waiting'
             label(index,'Goal '+robot+' ['+suffix+']',pose[0],pose[1],.35,color)
             arrow=Marker();arrow.header.frame_id='map';arrow.header.stamp=self.get_clock().now().to_msg()
@@ -135,7 +148,8 @@ class RvizCoordinator(Node):
         try:
             while not self.stop.wait(.15):
                 with self.lock:goals=dict(self.goals);revision=self.revision;changed=self.changed_at
-                if not goals or revision==blocked or time.monotonic()-changed<.35:continue
+                pending_file=self.file_mission is not None and not self.file_done
+                if (not goals and not pending_file) or revision==blocked or time.monotonic()-changed<.35:continue
                 try:
                     snapshot=request({'command':'snapshot','include_map':True},self.port)
                     ready(snapshot)
@@ -147,10 +161,13 @@ class RvizCoordinator(Node):
                     self.set_state('waiting',str(error));self.stop.wait(1.);continue
                 try:
                     if self.worker is None:self.worker=Worker(self.root,self.directory/'worker.log')
-                    mission={'priority_order':self.robots,'speed_mps':self.speed,'tracking_tolerance':self.tolerance,
+                    mission={'speed_mps':self.speed,'tracking_tolerance':self.tolerance,
                         'robot_radius':.175,'safety_margin':.05,'coordination_radius':self.coordination_radius,'action_timeout_s':180.,'nominal_until_contact':True,'intervene':False,
-                        'tasks':[{'id':int(r[-1]),'goal':g['pose'],'candidates':[r],'depends_on':[]} for r,g in sorted(goals.items())]}
-                    self.set_state('planning','Planning; robot1 has priority')
+                        'tasks':[{'id':robot_index(r),'goal':g['pose'],'candidates':[r],'depends_on':[]} for r,g in sorted(goals.items())]}
+                    if pending_file and not goals:
+                        # MACRO scenario: objects + task DAG; durations drive DAG slack.
+                        mission.update(objects=self.file_mission.get('objects',[]),tasks=self.file_mission['tasks'])
+                    self.set_state('planning','Planning (MARCO chooses the priority branch)')
                     assignment=self.worker.call({'command':'assign','snapshot':snapshot,'mission':mission})
                     base_map=snapshot['map'];map_revision=snapshot['map_revision'];completed=[];intent=None
                     for _ in range(32):
@@ -168,7 +185,7 @@ class RvizCoordinator(Node):
                             stream.write(json.dumps({'revision':revision,'mission':mission,'batch':batch})+'\n')
                         if not batch['actions']:
                             if batch.get('reason')!='completed':raise RuntimeError('Task graph cannot progress')
-                            self.set_state('idle','Goals completed');break
+                            self.file_done=self.file_done or (pending_file and not goals);self.set_state('idle','Goals completed');break
                         for action in batch['actions']:
                             request({'command':'preview','robot':action['robot'],'points':action['points']},self.port)
                         strategy=batch['audit']['strategy']
@@ -197,7 +214,7 @@ class RvizCoordinator(Node):
                         completed+=done
                         with self.lock:
                             for r,goal in goals.items():
-                                if int(r[-1]) in done and self.goals.get(r,{}).get('revision')==goal['revision']:
+                                if robot_index(r) in done and self.goals.get(r,{}).get('revision')==goal['revision']:
                                     del self.goals[r]
                     else:raise RuntimeError('MARCO intervention limit exceeded')
                 except ReplanRequested:

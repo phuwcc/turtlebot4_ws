@@ -23,6 +23,13 @@ def load_core(root):
     return importlib.import_module('core')
 
 
+def robot_index(name):
+    """Fleet robot IDs are robotN with N >= 1."""
+    if not isinstance(name,str) or not name.startswith('robot') or not name[5:].isdigit() or int(name[5:])<1:
+        raise ValueError('Unsupported robot identifier: '+repr(name))
+    return int(name[5:])
+
+
 @dataclass
 class RobotState:
     """Simulator-independent snapshot consumed by MACRO's coordination core."""
@@ -107,12 +114,18 @@ class Planner:
         from core.coordination import planner, relocation_search
         self.algorithms, self.coordinator = planner, relocation_search
         self.conflict=relocation_search._path_conflict
-        self.RobotState=RobotState
+        # Use MACRO's own robot snapshot type so every core/standalone routine
+        # (local resolution timing, release refiner) sees the attributes it expects.
+        try:
+            from simulations.standalone.app import RobotState as MacroRobotState
+            self.RobotState=MacroRobotState
+        except ImportError:
+            self.RobotState=RobotState
         self.grid=None
 
     def prepare(self, snapshot, mission):
-        if not isinstance(mission,dict) or not isinstance(mission.get('tasks'),list) or not 0 < len(mission['tasks']) <= 8:
-            raise ValueError('Mission needs 1..8 navigation tasks')
+        if not isinstance(mission,dict) or not isinstance(mission.get('tasks'),list) or not 0 < len(mission['tasks']) <= 16:
+            raise ValueError('Mission needs 1..16 tasks')
         # MARCO mode passes MACRO's own coordination radius (marco_geometry.ROBOT_RADIUS,
         # 0.22 m in the ROS/grid simulations). Without it, fall back to the
         # conservative adapter composition used by CLI missions.
@@ -126,33 +139,64 @@ class Planner:
             raise ValueError('Invalid robot clearance or speed (maximum 0.25m/s)')
         if not self.grid or self.grid.message != snapshot['map'] or self.last_radius != self.radius:
             self.grid=Grid(snapshot['map'],self.radius);self.last_radius=self.radius
-        self.robots=tuple(sorted(snapshot['robots']))
+        self.robots=tuple(sorted(snapshot['robots'],key=robot_index))
         self.priority_order=mission.get('priority_order')
         if self.priority_order is not None and (not isinstance(self.priority_order,list) or
                 len(self.priority_order)!=len(self.robots) or set(self.priority_order)!=set(self.robots)):
             raise ValueError('priority_order must list every active robot exactly once')
-        if not self.robots or any(r not in ('robot1','robot2','robot3') for r in self.robots):
-            raise ValueError('Unsupported robot identifiers')
-        self.ids={r:'R'+r[-1] for r in self.robots};self.names={v:k for k,v in self.ids.items()}
+        if not self.robots:
+            raise ValueError('No robots in snapshot')
+        # Fleet robot "robotN" is MACRO robot "RN" (any N).
+        self.ids={r:'R'+str(robot_index(r)) for r in self.robots};self.names={v:k for k,v in self.ids.items()}
         self.positions={self.ids[r]:self.grid.cell(snapshot['robots'][r]['pose']) for r in self.robots}
         if any(c not in self.grid.cells for c in self.positions.values()):
             raise ValueError('A robot footprint overlaps unknown/occupied map cells; check localization')
-        self.goals={};self.tasks=[]
+        # MACRO scenario objects, given in metric map coordinates instead of grid cells.
+        objects={}
+        for item in mission.get('objects',[]):
+            pose=item.get('pose') if isinstance(item,dict) else None
+            if not isinstance(item,dict) or not isinstance(item.get('name'),str) or not isinstance(pose,list) \
+                    or len(pose) not in (2,3) or not all(finite(v) for v in pose):
+                raise ValueError('Each object needs a name and a finite map pose [x,y] or [x,y,yaw]')
+            objects[item['name']]=list(pose)
+        self.goals={};self.tasks=[];self.durations={}
+        # MACRO object table (name -> grid cell): scenario objects keep their real
+        # names so MACRO's DAG model sees e.g. a picked kit carried to its target.
+        self.object_cells={name:self.grid.cell(pose) for name,pose in objects.items()}
         for t in mission['tasks']:
             if not isinstance(t,dict) or type(t.get('id')) is not int or t['id']<=0:
                 raise ValueError('Each task needs a unique positive integer id')
-            goal=t.get('goal');candidates=t.get('candidates',list(self.robots));dependencies=t.get('depends_on',[])
+            candidates=t.get('candidate',t.get('candidates',list(self.robots)))
+            dependencies=t.get('node',t.get('depends_on',[]))
+            action=t.get('action','navigate');duration=t.get('duration',.001)
+            if 'goal' in t:
+                goal=t['goal']
+            else:
+                # MACRO (standalone/app.py _destination_name): a place goes to its target.
+                destination=t.get('target') if action=='place' else t.get('object')
+                if destination not in objects:
+                    raise ValueError(f'Task {t["id"]}: unknown object/target {destination!r}')
+                goal=objects[destination]
             if not isinstance(goal,list) or len(goal) not in (2,3) or not all(finite(v) for v in goal):
                 raise ValueError('Task goal must be finite [x,y] or [x,y,yaw] in map')
+            candidates=[self.names.get(r,r) for r in candidates] if isinstance(candidates,list) else candidates
             if not isinstance(candidates,list) or not candidates or any(r not in self.ids for r in candidates):
-                raise ValueError('Candidates must reference active robots')
+                raise ValueError(f'Task {t["id"]}: candidates must reference active robots')
             if not isinstance(dependencies,list) or any(type(v) is not int for v in dependencies):
-                raise ValueError('depends_on must contain task IDs')
+                raise ValueError('node/depends_on must contain task IDs')
+            if not finite(duration) or duration<=0:
+                raise ValueError(f'Task {t["id"]}: duration must be positive seconds')
             cell=self.grid.cell(goal)
-            if cell not in self.grid.cells:raise ValueError('Goal is not footprint-safe in the map')
-            self.goals[str(t['id'])]=(cell,goal)
-            self.tasks.append({'id':t['id'],'candidate':[self.ids[r] for r in candidates],
-                               'node':dependencies,'action':'navigate','object':str(t['id']),'duration':.001})
+            if cell not in self.grid.cells:raise ValueError(f'Task {t["id"]}: goal is not footprint-safe in the map')
+            self.goals[str(t['id'])]=(cell,goal);self.durations[t['id']]=float(duration)
+            item={'id':t['id'],'candidate':[self.ids[r] for r in candidates],'node':dependencies,
+                  'action':action,'duration':float(duration)}
+            if 'goal' in t:
+                item['object']=str(t['id']);self.object_cells[str(t['id'])]=cell
+            else:
+                item['object']=t['object']
+                if action=='place':item['target']=t['target']
+            self.tasks.append(item)
         self.core.validate_tasks(self.tasks)
         self._mission=mission
 
@@ -163,14 +207,15 @@ class Planner:
             def plan(self,robot,location,start_position=None):
                 rid=parent.ids[robot]
                 start=start_position if start_position is not None else parent.positions[rid]
-                goal=parent.goals[location][0]
+                goal=parent.object_cells[location]
                 route=parent.algorithms.astar(parent.grid.cells,start,goal)
                 if route is None:raise ValueError('No static route for task '+location)
                 return parent.algorithms.path_length(route,parent.grid.res),goal
         from core.assignment_cpp import require_native
         require_native()
         mode='chain_bnb_cpp'
-        result=self.core.optimize_task_assignments(self.tasks,Distance(),robot_speed=self.speed,service_time=.001,search_mode=mode)
+        # service_time=None: MACRO reads each task's own duration.
+        result=self.core.optimize_task_assignments(self.tasks,Distance(),robot_speed=self.speed,service_time=None,search_mode=mode)
         return {'assignment':{str(k):self.names[v] for k,v in result['assignment'].items()},
                 'sequences':{self.names[k]:v for k,v in result['robot_plans'].items()},
                 'estimated_makespan_s':result['makespan'],'total_distance_m':result['total_distance'],
@@ -192,12 +237,20 @@ class Planner:
         # Additional half-cell protection covers centre quantization at execution.
         radius=self.dynamic_radius()
         for rid,start in self.positions.items():
-            task=current.get(rid);goal=self.goals[task['object']][0] if task else None
+            task=current.get(rid);goal=self.goals[str(task['id'])][0] if task else None
             route=self.algorithms.astar(self.grid.cells,start,goal) if task else [start]
             if route is None:raise ValueError('No route from current robot position')
             routes[rid]=route
             states.append(self.RobotState(rid,start,(0,0,0),goal=goal,path=route,phase='preview' if task else 'idle',current_task=task))
         clearance=2*radius/self.grid.res
+        def drive_route(rid,goal):
+            """Driving is the lower layer: A* from the robot's cell to the goal that
+            MARCO (or the task) chose, around the bodies of every other robot."""
+            centres=[(self.positions[o] if self.marco_radius is not None else
+                      self.grid.continuous_cell(snapshot['robots'][self.names[o]]['pose']))
+                     for o in self.positions if o!=rid]
+            return self.algorithms._astar_around_robot_bodies(self.grid.cells,self.positions[rid],goal,
+                robot_centres=centres,clearance_cells=clearance)
         if intent:
             priority=intent['priority'];tid=intent['task']
             if priority not in current or current[priority]['id']!=tid:
@@ -205,21 +258,11 @@ class Planner:
             remaining=intent.get('relocations',[])
             if remaining:
                 step=remaining[0];rid=step['robot'];goal=tuple(step['destination']);task_id=None
-                planned=step.get('path')
                 next_intent={**intent,'relocations':remaining[1:]}
             else:
                 rid=priority;goal=self.goals[str(tid)][0];task_id=tid;next_intent=None
-                planned=intent.get('priority_path')
-            # MACRO executes the paths of the selected MARCO plan. Reuse them while
-            # the robot still starts where the plan expects; replan only after drift.
-            start=self.positions[rid]
-            if planned and math.dist(planned[0],start)<=1.5 and tuple(planned[-1])==goal:
-                route=[tuple(c) for c in planned]
-                if route[0]!=start:route=[start]+route
-            else:
-                route=self.algorithms._astar_around_robot_bodies(self.grid.cells,start,goal,
-                    robot_centres=[self.grid.continuous_cell(state['pose']) for name,state in snapshot['robots'].items()
-                                   if self.ids[name]!=rid],clearance_cells=clearance)
+            # MARCO fixed only the temporary holding goal; the move itself is A*.
+            route=drive_route(rid,goal)
             if route is None:raise RuntimeError('Committed clearance/priority path is no longer feasible')
             return self.package_actions(snapshot,[(rid,route,task_id)],{'strategy':'committed_clearance' if remaining else 'committed_priority'},next_intent)
         if self.priority_order and len(current)==1:
@@ -228,7 +271,7 @@ class Planner:
             if fixed:
                 task=current[rid]
                 route=self.algorithms._astar_around_robot_bodies(self.grid.cells,self.positions[rid],
-                    self.goals[task['object']][0],
+                    self.goals[str(task['id'])][0],
                     robot_centres=[self.grid.continuous_cell(state['pose']) for name,state in snapshot['robots'].items()
                                    if name!=robot],clearance_cells=clearance)
                 if route is not None:
@@ -244,7 +287,7 @@ class Planner:
         # Protect complete routes, including stationary peer footprints, rather
         # than assuming a simulator's predicted arrival times are exact.
         conflicts=blocked_by_idle or any(self.conflict(routes[a],routes[b],clearance) for i,a in enumerate(routes) for b in list(routes)[i+1:])
-        if conflicts and self._mission.get('nominal_until_contact') and not self._mission.get('intervene') and len(current)>=2:
+        if conflicts and self._mission.get('nominal_until_contact') and not self._mission.get('intervene') and len(current)>=1:
             # MARCO ROS execution (three_robot_t/execute.py): every robot first
             # drives its nominal route; the executor watches predicted swept
             # contacts and only then stops the robots and requests the MARCO
@@ -257,7 +300,7 @@ class Planner:
         selected=[(r,routes[r],current[r]['id']) for r in current]
         next_intent=None
         if conflicts:
-            objects={name:{'cell':cell,'cells':{cell},'interaction_cells':{cell},'blocking':False} for name,(cell,_) in self.goals.items()}
+            objects={name:{'cell':cell,'cells':{cell},'interaction_cells':{cell},'blocking':False} for name,cell in self.object_cells.items()}
             def timing(candidate,*_):
                 # Conservative metric timing supplied by this physical adapter.
                 steps=candidate.get('relocation_sequence',[])
@@ -265,32 +308,50 @@ class Planner:
                 priority=candidate['priority_robot']
                 route=candidate['preferred_paths'].get(priority,[])
                 return distance/self.speed+self.algorithms.path_length(route,self.grid.res)/self.speed+.5*(len(steps)+1)
-            priority_args={}
-            if self.priority_order:
+            task_status={t['id']:'completed' if t['id'] in completed else 'pending' for t in tasks}
+            if not self.priority_order:
+                # MARCO as in MACRO (standalone/app.py, used by three_robot_t): every
+                # robot is in the cluster with the whole-map DAG state; every active
+                # worker is a priority root H(r_p); reroute candidates, external
+                # protected paths and the release-event refiner rank the branches,
+                # and dag_aware selection picks which robot passes first.
+                from simulations.standalone.app import _compute_conflict_plan
+                plan=_compute_conflict_plan(cluster=states,dag_robots=states,tasks=tasks,task_status=task_status,
+                    objects=objects,navigation_cells=self.grid.cells,robot_radius=radius,grid_size=self.grid.res,
+                    speed_cells_per_second=self.speed/self.grid.res,selection_policy='dag_aware',
+                    planning_timeout_s=float(self._mission.get('planning_timeout_s',10.)),
+                    release_prediction_model='dynamic_events_guarded')
+            else:
+                # Legacy fixed-priority mode (CLI missions with priority_order).
                 active_priority=next(r for r in self.priority_order if self.ids[r] in current)
-                # Search only the highest-priority active root. An idle robot
-                # above it in the order must never be moved aside for a peer.
-                priority_args={'priority_robot_ids':[self.ids[active_priority]],
-                    'fixed_robot_ids':[self.ids[r] for r in self.priority_order[:self.priority_order.index(active_priority)]]}
-            plan=self.coordinator.search_relocation_plan(robots=states,dag_robots=states,tasks=tasks,
-                task_status={t['id']:'completed' if t['id'] in completed else 'pending' for t in tasks},objects=objects,
-                navigation_cells=self.grid.cells,robot_radius=radius,grid_size=self.grid.res,
-                speed_cells_per_second=self.speed/self.grid.res,planning_timeout_s=3.,
-                local_time_evaluator=timing,selection_policy='dag_aware',**priority_args)
+                plan=self.coordinator.search_relocation_plan(robots=states,dag_robots=states,tasks=tasks,
+                    task_status=task_status,objects=objects,
+                    navigation_cells=self.grid.cells,robot_radius=radius,grid_size=self.grid.res,
+                    speed_cells_per_second=self.speed/self.grid.res,planning_timeout_s=3.,
+                    local_time_evaluator=timing,selection_policy='dag_aware',
+                    priority_robot_ids=[self.ids[active_priority]],
+                    fixed_robot_ids=[self.ids[r] for r in self.priority_order[:self.priority_order.index(active_priority)]])
+                if plan and plan['priority_robot']!=self.ids[active_priority]:
+                    raise RuntimeError('MARCO returned a plan violating the fixed priority')
             if not plan:raise RuntimeError('No feasible guarded MARCO intervention')
-            if self.priority_order and plan['priority_robot']!=self.ids[active_priority]:
-                raise RuntimeError('MARCO returned a plan violating the fixed priority')
             audit={key:plan.get(key) for key in ('strategy','selected_hypothesis','priority_robot','local_resolution_delay','estimated_makespan')}
             relocations=plan.get('relocation_sequence',[])
+            # Use MARCO's decision (priority branch + ordered temporary holding
+            # goals); each move is driven by A* to that goal, not MARCO's grid path.
+            audit['holding_goals']=[{'robot':self.names[item['robot_id']],
+                'goal':list(self.grid.world(tuple(item['path'][-1]))[:2])} for item in relocations]
             if relocations:
-                step=relocations[0];selected=[(step['robot_id'],step['path'],None)]
+                step=relocations[0];rid=step['robot_id'];goal=tuple(step['path'][-1])
+                route=drive_route(rid,goal)
+                if route is None:raise RuntimeError(f'No A* route to MARCO holding goal for {self.names[rid]}')
+                selected=[(rid,route,None)]
                 priority=plan['priority_robot']
                 next_intent={'priority':priority,'task':current[priority]['id'],
-                    'relocations':[{'robot':item['robot_id'],'destination':list(item['path'][-1]),
-                                    'path':[list(c) for c in item['path']]} for item in relocations[1:]],
-                    'priority_path':[list(c) for c in plan['preferred_paths'].get(priority,[])]}
+                    'relocations':[{'robot':item['robot_id'],'destination':list(item['path'][-1])} for item in relocations[1:]]}
             else:
-                rid=plan['priority_robot'];selected=[(rid,plan['preferred_paths'][rid],current[rid]['id'])]
+                rid=plan['priority_robot'];route=drive_route(rid,self.goals[str(current[rid]['id'])][0])
+                if route is None:raise RuntimeError(f'No A* route for priority robot {self.names[rid]}')
+                selected=[(rid,route,current[rid]['id'])]
         return self.package_actions(snapshot,selected,audit,next_intent)
 
     def dynamic_radius(self):
@@ -304,7 +365,10 @@ class Planner:
     def package_actions(self,snapshot,selected,audit,intent,guard_peers=True):
         actions=[]
         clearance=2*self.dynamic_radius()/self.grid.res
-        physical=(2*self.radius if self.marco_radius is not None else
+        # MARCO verifies clearance between grid-cell centres; a measured pose sits
+        # up to half a cell diagonal from its centre. Bodies (0.35 m) still keep
+        # >= 5 cm apart at this threshold.
+        physical=(2*self.radius-math.sqrt(.5)*self.grid.res if self.marco_radius is not None else
                   2*(self._mission.get('robot_radius',.175)+self._mission.get('tracking_tolerance',.04))+.02)
         for rid,route,tid in selected:
             # Nominal MARCO batches are guarded at run time by the swept-contact
@@ -329,11 +393,14 @@ class Planner:
                 for a,b in zip(points,points[1:]):
                     dx,dy=b[0]-a[0],b[1]-a[1];denom=dx*dx+dy*dy
                     t=max(0.,min(1.,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/denom)) if denom else 0.
-                    if math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy)<physical:
-                        raise RuntimeError('Path violates physical peer clearance')
+                    gap=math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy)
+                    if gap<physical:
+                        raise RuntimeError(f'Path violates physical peer clearance: {name} passes {gap:.3f} m '
+                                           f'from held {other} (< {physical:.3f} m)')
             limit=self._mission.get('max_action_length_m')
             length=sum(math.dist(a[:2],b[:2]) for a,b in zip(points,points[1:]))
             if limit is not None and (not finite(limit) or limit<=0 or length>limit):
                 raise ValueError('Action exceeds the mission path-length limit')
-            actions.append({'robot':name,'task':tid,'points':points})
+            actions.append({'robot':name,'task':tid,'points':points,
+                            'duration':self.durations.get(tid,0.) if tid is not None else 0.})
         return {'actions':actions,'audit':audit,'intent':intent,'map_sha256':self.grid.signature,'optimality_claim':False}

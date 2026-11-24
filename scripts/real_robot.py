@@ -249,9 +249,9 @@ def multi(args, values, ids):
         # RViz Goal robot1/robot2 -> MARCO core -> leased FollowPath (robot1 has priority).
         command += ['coordinated_goals:=true', 'path_controller:=CorridorFollow']
         if mission:
-            # The CLI owns mission leases when a file is supplied. Keep RViz
-            # visible and accept paths through the same MARCO-only gateway.
-            command.append('marco_rviz_goals:=false')
+            # MACRO-style mission (objects + task DAG): the MARCO coordinator runs
+            # it with the same nominal -> swept trigger -> MARCO intervention loop.
+            command.append('marco_mission:=' + str(mission))
     with (directory/'session.log').open('w') as stream:
         child = subprocess.Popen(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT, start_new_session=True)
         try:
@@ -264,10 +264,13 @@ def multi(args, values, ids):
                 if mission or not (args.rviz_goals or args.marco) or child.poll() is not None:
                     raise
                 print('Cảnh báo:', error, 'Giữ RViz để đặt 2D Pose Estimate.', flush=True)
-            if mission:
+            if mission and not args.marco:
                 mission_run(mission, args.execute, directory)
                 if not args.keep_alive:
                     return
+            if mission and args.marco:
+                print('Coordinator MARCO đang chạy mission ' + str(mission) +
+                      ' (theo dõi log/pc/marco_rviz/status.json). Ctrl+C để dừng.', flush=True)
             print('Giữ phiên ROS/RViz; Ctrl+C để dừng. Terminal khác: bash run.bash mission FILE.json --execute', flush=True)
             child.wait()
             check_child(child)

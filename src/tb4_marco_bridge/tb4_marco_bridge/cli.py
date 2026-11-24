@@ -169,7 +169,7 @@ class CorridorViolation(RuntimeError):
 def execute_batch(actions,mission,port,map_revision,report,interrupted=None):
     owner=uuid.uuid4().hex;active={};completed=[]
     tolerance=mission.get('tracking_tolerance',.04)
-    started=time.monotonic();timeout=mission.get('action_timeout_s',180.)
+    started=time.monotonic();timeout=mission.get('action_timeout_s',180.)+sum(float(a.get('duration') or 0.) for a in actions)
     if type(timeout) not in (int,float) or not math.isfinite(timeout) or not 0<timeout<=600:raise ValueError('action_timeout_s must be 0..600')
     try:
         for action in actions:
@@ -207,6 +207,14 @@ def execute_batch(actions,mission,port,map_revision,report,interrupted=None):
                 if not state['busy']:
                     if state['last_result']!='succeeded':raise RuntimeError(robot+' path result: '+str(state['last_result']))
                     if math.dist(position[:2],action['points'][-1][:2])>.10:raise RuntimeError(robot+' final position mismatch')
+                    # MACRO task action (pick/place/toggle...): the robot holds its
+                    # pose for the task duration before the DAG sees it completed.
+                    duration=float(action.get('duration') or 0.)
+                    if action['task'] is not None and duration>0:
+                        if 'acting_since' not in action:
+                            action['acting_since']=time.monotonic()
+                            report.append({'event':'acting','robot':robot,'task':action['task'],'duration_s':duration})
+                        if time.monotonic()-action['acting_since']<duration:continue
                     if action['task'] is not None:completed.append(action['task'])
                     report.append({'event':'completed','robot':robot,'task':action['task'],'pose':position})
                     request({'command':'clear_preview','robot':robot},port)
