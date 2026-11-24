@@ -8,7 +8,7 @@ import shlex
 import tempfile
 
 
-MAX_ROBOTS = 3
+MAX_ROBOTS = 4
 
 
 def validate_address(value):
@@ -20,14 +20,14 @@ def validate_address(value):
 
 def robot_ids(value):
     ids = value.split(',') if isinstance(value, str) else list(value)
-    if not ids or ids != sorted(set(ids)) or any(r not in ('robot1', 'robot2', 'robot3') for r in ids):
-        raise ValueError('Chọn ID tăng dần, không trùng: robot1,robot2,robot3')
+    if not ids or ids != sorted(set(ids)) or any(r not in ('robot1', 'robot2', 'robot3', 'robot4') for r in ids):
+        raise ValueError('Chọn ID tăng dần, không trùng, trong robot1..robot4')
     return ids
 
 
 def discovery_ids(value, ids):
     result = [int(v) for v in value.split(',')] if isinstance(value, str) else list(value)
-    if len(result) != len(ids) or len(set(result)) != len(result) or any(type(i) is not int or not 0 <= i <= 2 for i in result):
+    if len(result) != len(ids) or len(set(result)) != len(result) or any(type(i) is not int or not 0 <= i <= 3 for i in result):
         raise ValueError('Discovery server IDs phải từ 0 đến 2, không trùng và khớp số robot.')
     return result
 
@@ -158,7 +158,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group()
     action.add_argument('--check', action='store_true')
-    action.add_argument('--print-robot-env', choices=('robot1', 'robot2', 'robot3'),
+    action.add_argument('--print-robot-env', choices=('robot1', 'robot2', 'robot3', 'robot4'),
                         help='In môi trường một robot cho phiên quét map; không ghi file cấu hình')
     parser.add_argument('--server-ids', help='Override discovery IDs thực tế, ví dụ 0 cho một Pi đang chạy server ID 0')
     parser.add_argument('--robots', help='Ví dụ robot2 hoặc robot1,robot3; mặc định chọn robot1..N')

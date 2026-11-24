@@ -53,7 +53,7 @@ class LaptopConfigTest(unittest.TestCase):
             values = pc.save_environment(path, ['10.0.0.1', '10.0.0.3'], 'robot1,robot3')
             self.assertEqual(values['ROS_DISCOVERY_SERVER'], '10.0.0.1:11811;;10.0.0.3:11811;')
             self.assertEqual(pc.load_environment(path), values)
-            for ids, servers in [('robot2,robot2', '0,1'), ('robot2', '3'), ('robot2', '0,1')]:
+            for ids, servers in [('robot2,robot2', '0,1'), ('robot2', '4'), ('robot2', '0,1')]:
                 with self.assertRaises(ValueError):
                     pc.make_environment(['10.11.52.137'], ids, servers)
 

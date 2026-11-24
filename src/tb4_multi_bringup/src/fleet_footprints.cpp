@@ -99,7 +99,7 @@ private:
   }
 
   void publish_markers() {
-    static const double colors[3][3] = {{.2, .8, 1.}, {1., .55, .1}, {.3, .9, .3}};
+    static const double colors[4][3] = {{.2, .8, 1.}, {1., .55, .1}, {.3, .9, .3}, {1., .3, .8}};
     MarkerArray array;
     for (size_t i = 0; i < robots_.size(); ++i) {
       const auto it = poses_.find(robots_[i]);
@@ -107,7 +107,7 @@ private:
       Marker m; m.header.frame_id = "map"; m.header.stamp = now();
       m.ns = "fleet_footprints"; m.id = int(i); m.type = Marker::LINE_STRIP; m.action = Marker::ADD;
       m.pose.orientation.w = 1.; m.scale.x = .02; m.lifetime = rclcpp::Duration::from_seconds(1.);
-      m.color.r = colors[i % 3][0]; m.color.g = colors[i % 3][1]; m.color.b = colors[i % 3][2]; m.color.a = 1.;
+      m.color.r = colors[i % 4][0]; m.color.g = colors[i % 4][1]; m.color.b = colors[i % 4][2]; m.color.a = 1.;
       const double radius = body_radius_ + peer_margin_;
       for (int k = 0; k <= 32; ++k) {
         geometry_msgs::msg::Point p;

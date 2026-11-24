@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 
-ROBOTS = ('robot1', 'robot2', 'robot3')
+ROBOTS = ('robot1', 'robot2', 'robot3', 'robot4')
 
 
 def startup_poses(filename, count, selected=None):
@@ -19,7 +19,7 @@ def startup_poses(filename, count, selected=None):
     with Path(filename).expanduser().open() as stream:
         poses = yaml.safe_load(stream)
     if not isinstance(poses, dict) or set(poses) - set(ROBOTS):
-        raise ValueError('Initial poses YAML must contain robot1/robot2/robot3 keys')
+        raise ValueError('Initial poses YAML may only contain robot1..robot4 keys')
     result = {}
     for robot in robots:
         pose = poses.get(robot)
@@ -34,14 +34,14 @@ def startup_poses(filename, count, selected=None):
 
 def active_robots(count, selected=None):
     if type(count) is not int or not 1 <= count <= len(ROBOTS):
-        raise ValueError('robot_count must be 1, 2 or 3')
+        raise ValueError('robot_count must be 1..4')
     if not selected:
         return ROBOTS[:count]
     robots = tuple(selected.split(',')) if isinstance(selected, str) else tuple(selected)
     if (len(robots) != count or len(set(robots)) != count
             or any(robot not in ROBOTS for robot in robots)
             or robots != tuple(sorted(robots))):
-        raise ValueError('robot_ids must list robot_count unique, ordered IDs: robot1,robot2,robot3')
+        raise ValueError('robot_ids must list robot_count unique, ordered IDs from robot1..robot4')
     return robots
 
 
@@ -51,7 +51,7 @@ def validate_discovery(value, count, selected=None, server_ids=None):
     if value is None:
         return
     indices = [int(v) for v in server_ids.split(',')] if server_ids else [int(r[-1]) - 1 for r in robots]
-    if len(indices) != count or len(set(indices)) != count or any(not 0 <= i <= 2 for i in indices):
+    if len(indices) != count or len(set(indices)) != count or any(not 0 <= i <= 3 for i in indices):
         raise ValueError('Invalid TB4_DISCOVERY_IDS')
     servers = value.split(';')
     if servers[-1] == '':

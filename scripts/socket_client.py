@@ -31,7 +31,7 @@ def main():
     sub.add_parser('menu')
     for command in ('goal', 'pose', 'cancel', 'select'):
         child = sub.add_parser(command)
-        child.add_argument('robot', choices=('robot1', 'robot2', 'robot3'))
+        child.add_argument('robot', choices=('robot1', 'robot2', 'robot3', 'robot4'))
         if command in ('goal', 'pose'):
             for coordinate in ('x', 'y', 'yaw'):
                 child.add_argument(coordinate, type=float)

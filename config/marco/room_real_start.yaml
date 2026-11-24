@@ -1,0 +1,7 @@
+# Bố trí chữ T trên maps/room_real.yaml, đo bằng so khớp scan LiDAR với map (2026-11-24).
+# Tọa độ mét, yaw radian. Dời robot thì đo lại, hoặc kéo nút "Pose robotN" trên RViz.
+# Fleet: robot1, robot2, robot4. robot1 ở A (đầu trái thanh ngang), robot2 ở B (đầu phải),
+# robot4 idle trong nhánh dưới, quay lên ngã ba.
+robot1: {x: 0.052, y: -0.027, yaw: -0.035}
+robot2: {x: 1.653, y: 0.023, yaw: -3.028}
+robot4: {x: 0.777, y: -0.815, yaw: 1.579}

@@ -463,6 +463,146 @@ Visualization Manager:
       Line Style: Lines
       Line Width: 0.03
       Buffer Length: 1
+  - Class: rviz_common/Group
+    Name: robot4
+    Enabled: true
+    Displays:
+    - Class: rviz_default_plugins/PoseWithCovariance
+      Name: robot4 AMCL pose
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot4/pose
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Shape: Arrow
+      Color: 255; 80; 200
+      Alpha: 1.0
+    - Class: rviz_default_plugins/RobotModel
+      Name: robot4 model
+      Enabled: true
+      Value: true
+      Description Source: Topic
+      Description Topic:
+        Value: /robot4/robot_description
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      TF Prefix: robot4
+      Visual Enabled: true
+      Collision Enabled: false
+      Alpha: 1.0
+    - Class: rviz_default_plugins/LaserScan
+      Name: robot4 scan
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot4/scan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color Transformer: FlatColor
+      Color: 255; 80; 200
+      Position Transformer: XYZ
+      Size (m): 0.025
+      Style: Points
+      Decay Time: 0
+    - Class: rviz_default_plugins/Path
+      Name: robot4 global plan
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot4/plan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 255; 80; 200
+      Line Style: Lines
+      Line Width: 0.04
+      Buffer Length: 1
+    - Class: rviz_default_plugins/Path
+      Name: robot4 local plan
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot4/local_plan
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 255; 80; 200
+      Line Style: Lines
+      Line Width: 0.02
+      Buffer Length: 1
+    - Class: rviz_default_plugins/Polygon
+      Name: robot4 footprint
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot4/local_costmap/published_footprint
+        Depth: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+      Color: 255; 80; 200
+    - Class: rviz_default_plugins/Map
+      Name: robot4 map
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot4/map
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: map
+      Use Timestamp: false
+    - Class: rviz_default_plugins/Map
+      Name: robot4 global_costmap/costmap
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot4/global_costmap/costmap
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: costmap
+      Use Timestamp: false
+    - Class: rviz_default_plugins/Map
+      Name: robot4 local_costmap/costmap
+      Enabled: false
+      Value: false
+      Topic:
+        Value: /tb4_view/robot4/local_costmap/costmap
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Alpha: 0.4
+      Color Scheme: costmap
+      Use Timestamp: false
+    - Class: rviz_default_plugins/Path
+      Name: robot4 MARCO reserved path
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /tb4_view/robot4/marco_plan
+        Depth: 1
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+      Color: 255; 80; 200
+      Line Style: Lines
+      Line Width: 0.03
+      Buffer Length: 1
   - Class: rviz_default_plugins/MarkerArray
     Name: Robot labels and selected target
     Enabled: true
@@ -520,6 +660,41 @@ Visualization Manager:
   - Class: tb4_multi_bringup/GoalRobot3
     Topic:
       Value: /tb4_view/robot3/goal_pose
+      Depth: 10
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: tb4_multi_bringup/PoseRobot1
+    Topic:
+      Value: /tb4_view/robot1/initialpose
+      Depth: 10
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: tb4_multi_bringup/PoseRobot2
+    Topic:
+      Value: /tb4_view/robot2/initialpose
+      Depth: 10
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: tb4_multi_bringup/PoseRobot3
+    Topic:
+      Value: /tb4_view/robot3/initialpose
+      Depth: 10
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: tb4_multi_bringup/GoalRobot4
+    Topic:
+      Value: /tb4_view/robot4/goal_pose
+      Depth: 10
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: tb4_multi_bringup/PoseRobot4
+    Topic:
+      Value: /tb4_view/robot4/initialpose
       Depth: 10
       History Policy: Keep Last
       Reliability Policy: Reliable

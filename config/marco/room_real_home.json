@@ -1,0 +1,62 @@
+{
+  "description": "Return every robot to its start pose of config/marco/room_real_start.yaml on maps/room_real.yaml, including the final heading, so the same start-pose file stays valid for the next run without re-measuring. No dependencies; MARCO resolves conflicts on the way back.",
+  "speed_mps": 0.16,
+  "objects": [
+    {
+      "name": "home_robot1",
+      "pose": [
+        0.052,
+        -0.027,
+        -0.035
+      ]
+    },
+    {
+      "name": "home_robot2",
+      "pose": [
+        1.653,
+        0.023,
+        -3.028
+      ]
+    },
+    {
+      "name": "home_robot4",
+      "pose": [
+        0.777,
+        -0.815,
+        1.579
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "candidate": [
+        "robot1"
+      ],
+      "action": "navigate",
+      "object": "home_robot1",
+      "duration": 0.5,
+      "node": []
+    },
+    {
+      "id": 2,
+      "candidate": [
+        "robot2"
+      ],
+      "action": "navigate",
+      "object": "home_robot2",
+      "duration": 0.5,
+      "node": []
+    },
+    {
+      "id": 3,
+      "candidate": [
+        "robot4"
+      ],
+      "action": "navigate",
+      "object": "home_robot4",
+      "duration": 0.5,
+      "node": []
+    }
+  ]
+}

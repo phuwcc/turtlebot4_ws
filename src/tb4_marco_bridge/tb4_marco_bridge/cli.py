@@ -166,8 +166,8 @@ class CorridorViolation(RuntimeError):
     pass
 
 
-def execute_batch(actions,mission,port,map_revision,report,interrupted=None):
-    owner=uuid.uuid4().hex;active={};completed=[]
+def execute_batch(actions,mission,port,map_revision,report,interrupted=None,extra=None):
+    owner=uuid.uuid4().hex;active={};completed=[];stale_since=None
     tolerance=mission.get('tracking_tolerance',.04)
     started=time.monotonic();timeout=mission.get('action_timeout_s',180.)+sum(float(a.get('duration') or 0.) for a in actions)
     if type(timeout) not in (int,float) or not math.isfinite(timeout) or not 0<timeout<=600:raise ValueError('action_timeout_s must be 0..600')
@@ -183,11 +183,25 @@ def execute_batch(actions,mission,port,map_revision,report,interrupted=None):
             snapshot=request({'command':'snapshot'},port)
             if snapshot['map_revision']!=map_revision:raise RuntimeError('Map changed during execution; replan required')
             try:
-                ready(snapshot)
+                ready(snapshot);stale_since=None
             except LocalizationUnavailable as error:
+                # One Wi-Fi-delayed scan (stamp > 0.5 s old) must not abort a mission:
+                # only a stale state lasting over 1 s counts as lost localization.
+                if error.is_stale and time.monotonic()-(stale_since or time.monotonic())<1.:
+                    stale_since=stale_since or time.monotonic();time.sleep(.2);continue
                 report.append({'event': 'localization_unavailable', 'robot': error.robot, 'state': error.state})
                 raise
             status=request({'command':'status'},port)['robots']
+            if extra:
+                # Concurrent execution: robots released while this batch runs are
+                # dispatched at once under the same lease owner.
+                for action in extra(dict(active),snapshot,status) or ():
+                    if action['robot'] in active:continue
+                    response=request({'command':'path','robot':action['robot'],'points':action['points'],'owner':owner},port)
+                    active[action['robot']]=action;actions.append(action)
+                    timeout+=float(action.get('duration') or 0.)+mission.get('action_timeout_s',180.)/2
+                    report.append({'event':'release','action':action,'response':response})
+                status=request({'command':'status'},port)['robots']
             for robot,action in list(active.items()):
                 state=status[robot];position=snapshot['robots'][robot]['pose']
                 distance = tracking_error(position, action.get('reserved', action['points']))

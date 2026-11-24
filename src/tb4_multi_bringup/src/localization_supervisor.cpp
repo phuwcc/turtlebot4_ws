@@ -41,10 +41,17 @@ public:
     const auto profile=declare_parameter<std::string>("localization_profile","strict");
     if(profile!="strict"&&profile!="navigation")throw std::invalid_argument("Unknown localization profile");
     const bool interactive=profile=="navigation";
-    max_covariance_xy_=interactive?.04:.01;
-    max_covariance_yaw_=interactive?.09:.04;
-    min_scan_match_=interactive?.65:.70;
-    recover_covariance_xy_=interactive?.09:.04;
+    // "navigation" (MARCO on the real fleet) is deliberately tolerant: office
+    // Wi-Fi delays scans and AMCL settles slowly; "strict" stays for tests.
+    max_covariance_xy_=interactive?.09:.01;
+    max_covariance_yaw_=interactive?.20:.04;
+    min_scan_match_=interactive?.50:.70;
+    recover_covariance_xy_=interactive?.15:.04;
+    max_scan_age_s_=interactive?1.0:.5;
+    max_scan_gap_=interactive?std::chrono::milliseconds(1200):std::chrono::milliseconds(700);
+    max_odom_gap_=interactive?std::chrono::milliseconds(1000):std::chrono::milliseconds(500);
+    ready_hold_=interactive?std::chrono::milliseconds(1000):std::chrono::milliseconds(3000);
+    pause_after_=interactive?std::chrono::milliseconds(5000):std::chrono::milliseconds(2000);
     nav_=create_client<Manage>("lifecycle_manager_navigation/manage_nodes");
     nomotion_=create_client<Empty>("request_nomotion_update");
     status_pub_=create_publisher<std_msgs::msg::String>("localization_status",rclcpp::QoS(1).transient_local());
@@ -108,9 +115,9 @@ private:
     status["odom_receipt_age_s"]=std::chrono::duration<double>(odom_gap).count();
     status["ekf_receipt_age_s"]=std::chrono::duration<double>(received-filtered_at_).count();
     status["imu_receipt_age_s"]=std::chrono::duration<double>(received-imu_at_).count();
-    if(scan_age<-.1||scan_age>.5){status["reason"]="stale_scan_timestamp";return false;}
-    if(scan_gap>700ms||odom_gap>500ms){status["reason"]="stale_sensors";return false;}
-    if(received-filtered_at_>500ms||received-imu_at_>500ms){status["reason"]="stale_fusion";return false;}
+    if(scan_age<-.1||scan_age>max_scan_age_s_){status["reason"]="stale_scan_timestamp";return false;}
+    if(scan_gap>max_scan_gap_||odom_gap>max_odom_gap_){status["reason"]="stale_sensors";return false;}
+    if(received-filtered_at_>max_odom_gap_||received-imu_at_>max_odom_gap_){status["reason"]="stale_fusion";return false;}
     if(!pose_){status["reason"]="waiting_for_amcl_pose";return false;}
     const double pose_age=(now()-rclcpp::Time(pose_->header.stamp)).seconds();
     status["amcl_pose_age_s"]=pose_age;
@@ -191,14 +198,25 @@ private:
     }
     if(!ok){if(!bad_quality_)bad_since_=stamp;bad_quality_=true;}else bad_quality_=false;
     if(ok){if(!quality_started_)quality_since_=stamp;quality_started_=true;}else quality_started_=false;
-    const bool ready=ok&&quality_started_&&((phase_=="running"&&hint_verified_)||stamp-quality_since_>=3s);
+    const bool ready=ok&&quality_started_&&((phase_=="running"&&hint_verified_)||stamp-quality_since_>=ready_hold_);
     if(ready)hint_verified_=true;
     if(!pending_&&phase_=="localizing"&&ready) {
       if(!navigate_)phase_="running";
       else if(nav_->service_is_ready())manage(Manage::Request::STARTUP,"running");
     }
+    // Nav2 bringup can abort on a transient service timeout while several
+    // robots' stacks start at once (lifecycle manager: "Aborting bringup").
+    // Reset the navigation lifecycle and start it again instead of staying failed.
+    if(phase_=="nav_lifecycle_failed"||phase_=="nav_lifecycle_timeout") {
+      if(!nav_failed_seen_){nav_failed_seen_=true;nav_failed_at_=stamp;}
+      if(!pending_&&navigate_&&nav_->service_is_ready()&&nav_retries_<5&&stamp-nav_failed_at_>=5s) {
+        ++nav_retries_;nav_failed_seen_=false;
+        RCLCPP_WARN(get_logger(),"Navigation lifecycle bringup failed; reset and retry %d/5",nav_retries_);
+        manage(Manage::Request::RESET,"localizing");
+      }
+    } else nav_failed_seen_=false;
     if(!pending_&&navigate_&&nav_->service_is_ready()) {
-      if(phase_=="running"&&bad_quality_&&stamp-bad_since_>(recovering?10s:2s))
+      if(phase_=="running"&&bad_quality_&&stamp-bad_since_>(recovering?std::chrono::milliseconds(10000):pause_after_))
         manage(Manage::Request::PAUSE,"paused");
       else if(phase_=="paused"&&ready)manage(Manage::Request::RESUME,"running");
     }
@@ -216,6 +234,8 @@ private:
   std::map<std::string,Peer> peers_;std::vector<rclcpp::Subscription<Pose>::SharedPtr> peer_subs_;
   bool has_hint_{false},hint_verified_{false};
   bool navigate_{true},pending_{false},quality_started_{false},bad_quality_{false};
+  bool nav_failed_seen_{false};int nav_retries_{0};Clock::time_point nav_failed_at_{};
+  double max_scan_age_s_{.5};std::chrono::milliseconds max_scan_gap_{700},max_odom_gap_{500},ready_hold_{3000},pause_after_{2000};
   double hint_x_{0},hint_y_{0},hint_std_xy_{.2},peer_radius_{.25};
   double max_covariance_xy_{.01},max_covariance_yaw_{.04},min_scan_match_{.70},recover_covariance_xy_{.04};
   std::string phase_{"localizing"},last_phase_,map_frame_,base_frame_;

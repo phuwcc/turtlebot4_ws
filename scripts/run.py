@@ -61,7 +61,7 @@ def script(repo, name, *args):
 
 
 def robot_command(repo, mode, robot):
-    if robot not in ('robot1', 'robot2', 'robot3'):
+    if robot not in ('robot1', 'robot2', 'robot3', 'robot4'):
         raise ValueError('Robot ID không hợp lệ.')
     commands = {'1': ('robot-start.sh', robot), '2': ('robot-teleop.sh', robot),
                 '3': ('robot-stop.sh', robot), '4': ('robot.sh', robot, 'check')}
@@ -148,7 +148,7 @@ def main():
     try:
         if args.role == 'robot':
             mode = args.mode or choose('Robot: chọn công việc', ROBOT_MODES, default='1')
-            robot = robot_choice(['robot1', 'robot2', 'robot3'])
+            robot = robot_choice(['robot1', 'robot2', 'robot3', 'robot4'])
             command = robot_command(repo, mode, robot)
             if mode != '3':
                 ensure_built(repo, 'robot')

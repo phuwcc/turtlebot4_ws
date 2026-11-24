@@ -64,7 +64,7 @@ def main():
         stamp = message.header.stamp.sec + message.header.stamp.nanosec * 1e-9
         ages[topic] = round(node.get_clock().now().nanoseconds * 1e-9 - stamp, 3)
 
-    for robot in ('robot1', 'robot2', 'robot3'):
+    for robot in ('robot1', 'robot2', 'robot3', 'robot4'):
         for suffix, kind in [('scan', LaserScan), ('odom', Odometry), ('imu', Imu)]:
             topic = '/' + robot + '/' + suffix
             subscriptions.append(node.create_subscription(kind, topic,
@@ -138,7 +138,7 @@ def main():
             print('Kiểm tra lifecycle của map_server và AMCL, dữ liệu EKF và pose đầu trong RViz.')
         if missing:
             print('THIẾU DỮ LIỆU: ' + ', '.join(missing))
-            detected = [r for r in ('robot1', 'robot2', 'robot3') if counts.get('/' + r + '/scan')]
+            detected = [r for r in ('robot1', 'robot2', 'robot3', 'robot4') if counts.get('/' + r + '/scan')]
             print('Hardware đang thấy: ' + (', '.join(detected) or 'không có'))
             print('Kiểm tra robot đã chọn, IP/discovery server ID và robot-start.sh trên đúng Pi.')
             return 1

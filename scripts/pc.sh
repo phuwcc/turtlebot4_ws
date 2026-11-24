@@ -74,7 +74,7 @@ open(sys.argv[1],"w").write(discovery_hub_xml(os.environ["ROS_DISCOVERY_SERVER"]
       setsid bash -c 'fast-discovery-server -x "$1" >"$2" 2>&1 & hub=$!
         while kill -0 "$3" 2>/dev/null && kill -0 "$hub" 2>/dev/null; do sleep 1; done
         sleep 30; kill "$hub" 2>/dev/null; wait "$hub" 2>/dev/null' \
-        _ "$tb4_hub_xml" "$ROS_LOG_DIR/discovery_hub.log" "$$" </dev/null >/dev/null 2>&1 &
+        _ "$tb4_hub_xml" "$ROS_LOG_DIR/discovery_hub.log" "$$" </dev/null >/dev/null 2>&1 9>&- &
       for ((tb4_i=0; tb4_i<20; tb4_i++)); do
         ss -lun 2>/dev/null | grep -q ":$tb4_hub_port " && break; sleep .25
       done
@@ -88,7 +88,7 @@ open(sys.argv[1],"w").write(discovery_hub_xml(os.environ["ROS_DISCOVERY_SERVER"]
     tb4_robot="${1:-${TB4_ROBOT_IDS%%,*}}"
     if [[ "$tb4_mode" == mapping && $# == 0 ]]; then tb4_robot=robot1; fi
     if (( $# )); then shift; fi
-    case "$tb4_robot" in robot1|robot2|robot3) ;; *) echo 'Cần robot1, robot2 hoặc robot3.' >&2; exit 2;; esac
+    case "$tb4_robot" in robot1|robot2|robot3|robot4) ;; *) echo 'Cần robot1..robot4.' >&2; exit 2;; esac
     [[ ",$TB4_ROBOT_IDS," == *",$tb4_robot,"* ]] || { echo 'Robot không có trong phiên.' >&2; exit 2; }
     if [[ "$tb4_mode" == teleop ]]; then
       exec ros2 run tb4_multi_tools teleop_keyboard --ros-args -r "__ns:=/$tb4_robot" -p remote:=true "$@"
@@ -103,7 +103,7 @@ open(sys.argv[1],"w").write(discovery_hub_xml(os.environ["ROS_DISCOVERY_SERVER"]
   save-map)
     tb4_robot="${1:-${TB4_ROBOT_IDS%%,*}}"; tb4_map="${2:-$tb4_repo/maps/room_real}"
     case "$tb4_map" in *.yaml|*.pgm) tb4_map="${tb4_map%.*}";; esac
-    case "$tb4_robot" in robot1|robot2|robot3) ;; *) exit 2;; esac
+    case "$tb4_robot" in robot1|robot2|robot3|robot4) ;; *) exit 2;; esac
     [[ ",$TB4_ROBOT_IDS," == *",$tb4_robot,"* ]] || exit 2
     mkdir -p "$(dirname "$tb4_map")"
     exec ros2 run nav2_map_server map_saver_cli -f "$tb4_map" --fmt pgm --ros-args \

@@ -22,6 +22,7 @@ def main():
             if request.get('shutdown'):break
             if request['command']=='assign':result=planner.assign(request['snapshot'],request['mission'])
             elif request['command']=='next':result=planner.next_batch(request['snapshot'],request['mission'],request['assignment'],request['completed'],request.get('intent'))
+            elif request['command']=='release':result=planner.release(request['snapshot'],request['mission'],request['assignment'],request['completed'],request['moving'])
             else:raise ValueError('Unknown planner request')
             print(json.dumps({'ok':True,'result':result},allow_nan=False),flush=True)
         except Exception as error:

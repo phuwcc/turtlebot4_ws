@@ -65,7 +65,7 @@ def setup(context):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('robot_count', default_value=os.environ.get('TB4_ROBOT_COUNT', '3'),
-                              choices=['1', '2', '3'], description='Number of active robots (robot1..robotN)'),
+                              choices=['1', '2', '3', '4'], description='Number of active robots (robot1..robotN)'),
         DeclareLaunchArgument('robot_ids', default_value=os.environ.get('TB4_ROBOT_IDS', '')),
         DeclareLaunchArgument('require_localization', default_value='false', choices=['true', 'false']),
         DeclareLaunchArgument('navigation_tf', default_value='false', choices=['true', 'false']),

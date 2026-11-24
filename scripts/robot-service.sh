@@ -4,7 +4,7 @@ set -eo pipefail
 tb4_repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 tb4_robot="${1:-}"
 tb4_action="${2:-status}"
-case "$tb4_robot" in robot1|robot2|robot3) ;; *) echo 'Usage: robot-service.sh robot1|robot2|robot3 install|start|stop|status|disable' >&2; exit 2;; esac
+case "$tb4_robot" in robot1|robot2|robot3|robot4) ;; *) echo 'Usage: robot-service.sh robot1|robot2|robot3|robot4 install|start|stop|status|disable' >&2; exit 2;; esac
 case "$tb4_action" in install|start|stop|status|disable) ;; *) echo 'Unknown service action' >&2; exit 2;; esac
 [[ -f /etc/turtlebot4/setup.bash ]] || { echo 'Run this on the robot Pi.' >&2; exit 1; }
 source /etc/turtlebot4/setup.bash

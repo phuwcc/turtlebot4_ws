@@ -44,7 +44,7 @@ class FleetConfigurationTest(unittest.TestCase):
     def test_configuration_filters_and_rejects_broken_discovery(self):
         template = yaml.safe_load((FilePath(__file__).resolve().parents[1] /
                                    'config/fleet.rviz').read_text())
-        for count in (1, 2, 3):
+        for count in (1, 2, 3, 4):
             view = rviz_for_count(template, count)
             groups = [d['Name'] for d in view['Visualization Manager']['Displays'] if d['Name'] in ROBOTS]
             self.assertEqual(groups, list(ROBOTS[:count]))
@@ -54,13 +54,13 @@ class FleetConfigurationTest(unittest.TestCase):
             valid = ';'.join(f'10.11.63.{119 + index}:11811' for index in range(count)) + ';'
             validate_discovery(valid, count)
         self.assertEqual(len([d for d in template['Visualization Manager']['Displays']
-                              if d['Name'] in ROBOTS]), 3)
+                              if d['Name'] in ROBOTS]), 4)
         for value, count in ((':11811;:11811;:11811;', 3), ('', 1),
                              ('10.11.63.119:11811;:11811;', 2),
                              ('999.0.0.1:11811;', 1), ('10.11.63.119:11811;', 2)):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 validate_discovery(value, count)
-        for count in (0, 4, True):
+        for count in (0, 5, True):
             with self.assertRaises(ValueError):
                 active_robots(count)
 

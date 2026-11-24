@@ -15,7 +15,8 @@ from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import String
 from visualization_msgs.msg import Marker, MarkerArray
 
-from .cli import Worker, request, ready, execute_batch, ReplanRequested
+from .cli import (Worker, request, ready, execute_batch, ReplanRequested, CorridorViolation,
+                  LocalizationUnavailable, wait_recovery)
 from .planning import robot_index
 from .smoothing import smooth_points
 
@@ -56,6 +57,10 @@ class RvizCoordinator(Node):
         # One value drives MARCO planning, the swept trigger and the bridge's
         # last-line peer guard, so they never disagree.
         self.safety_margin=float(self.declare_parameter('safety_margin',.015).value)
+        # Seconds the whole fleet must stay localized and Nav2-ready before a
+        # mission (or a new RViz goal set) starts.
+        self.start_stable_s=float(self.declare_parameter('start_stable_s',2.).value)
+        if not 0<=self.start_stable_s<=60:raise ValueError('start_stable_s must be within 0..60 s')
         if not 0<=self.safety_margin<=.05:raise ValueError('safety_margin must be within 0..0.05 m')
         self.coordination_radius=float(ROBOT_RADIUS)+self.safety_margin
         if not 0<=self.smooth_deviation<=self.tolerance/2:
@@ -72,6 +77,11 @@ class RvizCoordinator(Node):
         self.worker=None
         self.status_pub=self.create_publisher(String,'/tb4_view/marco_status',10)
         self.markers=self.create_publisher(MarkerArray,'/tb4_view/marco_coordination',10)
+        # Manual start: the session (RViz, localization, Nav2) comes up idle; poses
+        # are set with the Pose robotN tools, then `marco_start.bash MISSION.json`
+        # publishes the mission path here and the MARCO run begins.
+        self.manual_start=False
+        self.start_subscription=self.create_subscription(String,'/tb4_view/marco/start',self.receive_start,10)
         self.goal_subscriptions=[self.create_subscription(PoseStamped,'/tb4_view/'+r+'/goal_pose',
             lambda m,r=r:self.receive_goal(r,m),10) for r in self.robots]
         self.timer=self.create_timer(.3,self.publish_status)
@@ -88,7 +98,22 @@ class RvizCoordinator(Node):
             self.changed_at=time.monotonic()
         self.get_logger().info('MARCO goal queued for '+robot)
 
-    def contact(self,actions,report,hits):
+    def receive_start(self,message):
+        try:
+            path=Path(message.data).expanduser() if message.data else None
+            mission=json.loads(path.read_text()) if path else self.file_mission
+            if not isinstance(mission,dict) or not isinstance(mission.get('tasks'),list) or not mission['tasks']:
+                raise ValueError('mission needs a non-empty tasks list')
+        except (OSError,ValueError) as error:
+            self.set_state('error','Start rejected: '+str(error));return
+        with self.lock:
+            if self.phase=='executing' or self.phase=='planning':
+                self.get_logger().warn('MARCO start ignored: a mission is already running');return
+            self.file_mission=mission;self.file_done=False;self.manual_start=True
+            self.revision+=1;self.changed_at=0.
+        self.get_logger().info('MARCO start requested: '+(str(path) if path else 'mission_file'))
+
+    def contact(self,actions,report,hits,moving_only=False):
         """MARCO swept-contact trigger (three_robot_t/swept_trigger.predicted_contacts)."""
         if self.predicted_contacts is None:
             from simulations.ros2.three_robot_t.swept_trigger import predicted_contacts
@@ -102,11 +127,59 @@ class RvizCoordinator(Node):
             if a['robot'] in finished:continue
             routes[a['robot']]=[p[:2] for p in a.get('reserved',a['points'])];speeds[a['robot']]=self.speed
         pairs=[(a,b) for i,a in enumerate(self.robots) for b in self.robots[i+1:]]
+        if moving_only:
+            # Inside a MARCO intervention held robots were already cleared by the
+            # plan; only pairs that are both driving (e.g. a released yielder and
+            # the priority robot) need the swept trigger.
+            pairs=[(a,b) for a,b in pairs if speeds[a]>0 and speeds[b]>0]
+            if not pairs:return False
         found=self.predicted_contacts(poses,routes,pairs,speeds,horizon_s=self.trigger_horizon,radius_m=self.coordination_radius)
         if found:
             hits[:]=found
             self.get_logger().info('MARCO contact trigger: '+json.dumps(found))
         return bool(found)
+
+    def releaser(self,mission,assignment,completed,report):
+        """Build the concurrent-execution hook: about once per second ask MARCO's
+        planner which waiting robots may start now, given the remaining paths of
+        the robots that are driving."""
+        last=[0.]
+        def remaining(action,pose):
+            points=action.get('reserved',action['points'])
+            k=min(range(len(points)),key=lambda i:math.dist(points[i][:2],pose[:2]))
+            return [list(pose[:2])]+[p[:2] for p in points[k+1:]]
+        def extra(active,snapshot,status):
+            if time.monotonic()-last[0]<1.:return []
+            last[0]=time.monotonic()
+            done=completed+[e['task'] for e in report if e.get('event')=='completed' and e.get('task') is not None]
+            moving={r:remaining(a,snapshot['robots'][r]['pose']) for r,a in active.items()
+                    if status[r]['busy'] or 'acting_since' not in a}
+            snap=dict(snapshot);snap['map']=self.base_map
+            try:
+                batch=self.worker.call({'command':'release','snapshot':snap,'mission':mission,
+                    'assignment':assignment,'completed':done,'moving':moving})
+            except RuntimeError as error:
+                self.get_logger().warn('release check failed: '+str(error));return []
+            for action in batch['actions']:
+                action['reserved']=action['points']
+                action['points']=smooth_points(action['points'],self.smooth_deviation)
+                request({'command':'preview','robot':action['robot'],'points':action['points']},self.port)
+            if batch['actions']:
+                self.get_logger().info('MARCO release: '+', '.join(a['robot'] for a in batch['actions']))
+                with self.lock:self.active=sorted(set(self.active)|{a['robot'] for a in batch['actions']})
+            return batch['actions']
+        return extra
+
+    def ready_snapshot(self,timeout=8.):
+        """Fresh fleet snapshot; ride out a few Wi-Fi-delayed (stale) scans."""
+        deadline=time.monotonic()+timeout
+        while True:
+            snapshot=request({'command':'snapshot'},self.port)
+            try:
+                ready(snapshot);return snapshot
+            except LocalizationUnavailable as error:
+                if not error.is_stale or time.monotonic()>deadline:raise
+            self.stop.wait(.2)
 
     def set_state(self,phase,detail,active=()):
         with self.lock:self.phase=phase;self.detail=detail;self.active=list(active)
@@ -144,7 +217,7 @@ class RvizCoordinator(Node):
         self.markers.publish(array)
 
     def run(self):
-        blocked=-1
+        blocked=-1;stable_since=None
         try:
             while not self.stop.wait(.15):
                 with self.lock:goals=dict(self.goals);revision=self.revision;changed=self.changed_at
@@ -155,10 +228,20 @@ class RvizCoordinator(Node):
                     ready(snapshot)
                     status=request({'command':'status'},self.port)
                     if not status.get('coordinated_goals'):raise RuntimeError('Gateway is not in MARCO mode')
-                    if any(s['busy'] for s in status['robots'].values()):continue
-                    if not all(s['path_ready'] for s in status['robots'].values()):continue
+                    if any(s['busy'] for s in status['robots'].values()):raise RuntimeError('A robot is still executing')
+                    if not all(s['path_ready'] for s in status['robots'].values()):raise RuntimeError('Nav2 FollowPath not ready')
                 except (OSError,RuntimeError) as error:
-                    self.set_state('waiting',str(error));self.stop.wait(1.);continue
+                    stable_since=None
+                    self.set_state('waiting',str(error)[:160]);self.stop.wait(1.);continue
+                # Start the MARCO scenario only after every robot has been localized,
+                # fresh and Nav2-ready without interruption for start_stable_s.
+                stable_since=stable_since or time.monotonic()
+                held=time.monotonic()-stable_since
+                if held<(0. if self.manual_start else self.start_stable_s):
+                    self.set_state('waiting','All robots localized; holding %.1f/%.0f s before starting MARCO'
+                                   %(held,self.start_stable_s))
+                    self.stop.wait(.5);continue
+                stable_since=None;self.manual_start=False
                 try:
                     if self.worker is None:self.worker=Worker(self.root,self.directory/'worker.log')
                     mission={'speed_mps':self.speed,'tracking_tolerance':self.tolerance,
@@ -169,10 +252,10 @@ class RvizCoordinator(Node):
                         mission.update(objects=self.file_mission.get('objects',[]),tasks=self.file_mission['tasks'])
                     self.set_state('planning','Planning (MARCO chooses the priority branch)')
                     assignment=self.worker.call({'command':'assign','snapshot':snapshot,'mission':mission})
-                    base_map=snapshot['map'];map_revision=snapshot['map_revision'];completed=[];intent=None
+                    base_map=snapshot['map'];map_revision=snapshot['map_revision'];completed=[];intent=None;recoveries=0;self.base_map=base_map
                     for _ in range(32):
                         if self.interrupted(revision):raise ReplanRequested('New goal')
-                        snapshot=request({'command':'snapshot'},self.port);ready(snapshot)
+                        snapshot=self.ready_snapshot()
                         if snapshot['map_revision']!=map_revision:raise RuntimeError('Map changed; set goals again')
                         snapshot['map']=base_map
                         batch=self.worker.call({'command':'next','snapshot':snapshot,'mission':mission,
@@ -191,9 +274,11 @@ class RvizCoordinator(Node):
                         strategy=batch['audit']['strategy']
                         self.set_state('executing',strategy,[a['robot'] for a in batch['actions']])
                         report=[];hits=[]
-                        watch=(lambda:self.interrupted(revision) or self.contact(batch['actions'],report,hits)) if strategy=='nominal' else (lambda:self.interrupted(revision))
+                        nominal=strategy=='nominal'
+                        watch=lambda:self.interrupted(revision) or self.contact(batch['actions'],report,hits,moving_only=not nominal)
+                        release=self.releaser(mission,assignment,completed,report)
                         try:
-                            done=execute_batch(batch['actions'],mission,self.port,map_revision,report,watch)
+                            done=execute_batch(batch['actions'],mission,self.port,map_revision,report,watch,release)
                         except ReplanRequested:
                             if not hits or self.interrupted(revision):raise
                             # MARCO trigger: robots were stopped by execute_batch; let them
@@ -208,6 +293,18 @@ class RvizCoordinator(Node):
                             else:raise RuntimeError('Robots did not stop after the contact trigger')
                             self.stop.wait(.5)   # MARCO settle time before planning
                             mission['intervene']=True;intent=None
+                        except (CorridorViolation,LocalizationUnavailable) as error:
+                            # Execution fault (Wi-Fi-delayed scans, AMCL loss, corridor
+                            # drift): execute_batch already cancelled the leased paths.
+                            # Wait for a stopped, localized fleet and replan from the
+                            # measured poses instead of abandoning the mission.
+                            if isinstance(error,LocalizationUnavailable) and not error.is_stale:raise
+                            recoveries+=1
+                            if recoveries>3:raise
+                            done=[e['task'] for e in report if e.get('event')=='completed' and e.get('task') is not None]
+                            self.set_state('waiting','Recovering (%d/3): %s'%(recoveries,str(error)[:120]))
+                            wait_recovery(self.port,map_revision,tuple(self.robots),timeout=30.)
+                            intent=None
                         else:
                             # Intervention finished: remaining routes run nominally again.
                             if mission['intervene'] and intent is None:mission['intervene']=False

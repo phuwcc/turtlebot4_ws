@@ -8,7 +8,7 @@ import time
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--robots', nargs='+', choices=('robot1', 'robot2', 'robot3'), required=True)
+    parser.add_argument('--robots', nargs='+', choices=('robot1', 'robot2', 'robot3', 'robot4'), required=True)
     parser.add_argument('--timeout', type=float, default=45.)
     parser.add_argument('--map-ready', action='store_true')
     parser.add_argument('--require-undocked', action='store_true')

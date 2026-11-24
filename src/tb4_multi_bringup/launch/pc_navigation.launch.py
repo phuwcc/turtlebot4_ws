@@ -91,7 +91,7 @@ def setup(context):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('robot_count', default_value=os.environ.get('TB4_ROBOT_COUNT', '1'),
-                              choices=['1', '2', '3']),
+                              choices=['1', '2', '3', '4']),
         DeclareLaunchArgument('map'),
         DeclareLaunchArgument('localization_profile', default_value='strict', choices=['strict','navigation']),
         DeclareLaunchArgument('peer_footprints', default_value='false', choices=['true', 'false']),

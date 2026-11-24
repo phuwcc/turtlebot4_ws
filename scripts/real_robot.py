@@ -330,13 +330,13 @@ def parser():
     sub = p.add_subparsers(dest='mode')
     for name in ('check', 'hardware', 'stop'):
         s = sub.add_parser(name)
-        s.add_argument('robot', nargs='?', choices=('robot1', 'robot2', 'robot3', 'all'), default='all')
+        s.add_argument('robot', nargs='?', choices=('robot1', 'robot2', 'robot3', 'robot4', 'all'), default='all')
         if name == 'check':
             s.add_argument('--drive', action='store_true', help='Kiểm tra đã rời dock và bánh xe đã bật; không gửi lệnh chạy')
         if name == 'hardware':
             s.add_argument('--install-service', action='store_true', help='Cài/bật hardware tự chạy sau reboot trên Pi')
     s = sub.add_parser('mapping')
-    s.add_argument('--robot', choices=('robot1', 'robot2', 'robot3'), default='robot1')
+    s.add_argument('--robot', choices=('robot1', 'robot2', 'robot3', 'robot4'), default='robot1')
     s.add_argument('--save-as', default='maps/room_real', help='Tên map; mặc định maps/room_real (.yaml và .pgm)')
     s.add_argument('--no-teleop', action='store_true')
     s.add_argument('--no-rviz', action='store_true')
@@ -358,10 +358,10 @@ def parser():
     s.add_argument('filename')
     s.add_argument('--execute', action='store_true')
     s = sub.add_parser('teleop')
-    s.add_argument('robot', choices=('robot1', 'robot2', 'robot3'), default='robot1', nargs='?')
+    s.add_argument('robot', choices=('robot1', 'robot2', 'robot3', 'robot4'), default='robot1', nargs='?')
     s = sub.add_parser('save-map')
     s.add_argument('filename', nargs='?', default='maps/room_real')
-    s.add_argument('--robot', choices=('robot1', 'robot2', 'robot3'), default='robot1')
+    s.add_argument('--robot', choices=('robot1', 'robot2', 'robot3', 'robot4'), default='robot1')
     return p
 
 

@@ -1,0 +1,77 @@
+{
+  "description": "MACRO-style task DAG on maps/room_real.yaml (T built in the room). robot1 carries a kit from A (left end of the bar) to the station at B (right end) and switches it on (1->2->3); robot2 fetches a tool at A (4, no successors); robot4 is idle in the stem. robot1's active task has the longer downstream chain, so MACRO's dag_aware ordering gives it the priority branch; nothing forces it.",
+  "speed_mps": 0.16,
+  "objects": [
+    {
+      "name": "kit",
+      "pose": [
+        0.18,
+        0.035,
+        0.0
+      ]
+    },
+    {
+      "name": "tool",
+      "pose": [
+        0.18,
+        0.035,
+        3.14159
+      ]
+    },
+    {
+      "name": "station",
+      "pose": [
+        1.577,
+        0.072,
+        0.0
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "candidate": [
+        "robot1"
+      ],
+      "action": "pick",
+      "object": "kit",
+      "duration": 2.0,
+      "node": []
+    },
+    {
+      "id": 2,
+      "candidate": [
+        "robot1"
+      ],
+      "action": "place",
+      "object": "kit",
+      "target": "station",
+      "duration": 2.0,
+      "node": [
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "candidate": [
+        "robot1"
+      ],
+      "action": "toggle_on",
+      "object": "station",
+      "duration": 4.0,
+      "node": [
+        2
+      ]
+    },
+    {
+      "id": 4,
+      "candidate": [
+        "robot2"
+      ],
+      "action": "pick",
+      "object": "tool",
+      "duration": 1.0,
+      "node": []
+    }
+  ]
+}

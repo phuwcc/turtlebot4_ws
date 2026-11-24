@@ -253,6 +253,10 @@ class Planner:
                 robot_centres=centres,clearance_cells=clearance)
         if intent:
             priority=intent['priority'];tid=intent['task']
+            if tid in completed:
+                # The priority robot was released early (concurrent execution) and
+                # already finished: the intervention is over; continue nominally.
+                return self.next_batch(snapshot,mission,assignment,sorted(completed),None)
             if priority not in current or current[priority]['id']!=tid:
                 raise RuntimeError('Committed intervention no longer matches ready DAG tasks')
             remaining=intent.get('relocations',[])
@@ -359,6 +363,38 @@ class Planner:
                 if route is None:raise RuntimeError(f'No A* route for priority robot {self.names[rid]}')
                 selected=[(rid,route,current[rid]['id'])]
         return self.package_actions(snapshot,selected,audit,next_intent)
+
+    def release(self, snapshot, mission, assignment, completed, moving):
+        """MACRO-style release while a batch runs. ``moving`` maps robot name ->
+        remaining metric path of every robot that is currently driving. A robot
+        with a ready task that is not moving is released at once when its A*
+        route to the task goal keeps the coordination clearance from every moving
+        robot's remaining path and from every other body."""
+        self.prepare(snapshot,mission)
+        assigned={int(k):self.ids[v] for k,v in assignment['assignment'].items()}
+        completed=set(completed);task_by_id={t['id']:dict(t,robot=assigned[t['id']]) for t in self.tasks}
+        clearance=2*self.dynamic_radius()/self.grid.res
+        remaining_cells={self.ids[name]:[self.grid.cell(p) for p in points] for name,points in moving.items() if points}
+        selected=[]
+        for name,sequence in assignment['sequences'].items():
+            rid=self.ids[name]
+            if name in moving:continue
+            todo=[tid for tid in sequence if tid not in completed]
+            if not todo or not set(task_by_id[todo[0]]['node'])<=completed:continue
+            task=task_by_id[todo[0]];goal=self.goals[str(task['id'])][0]
+            if self.positions[rid]==goal:continue
+            route=self.algorithms._astar_around_robot_bodies(self.grid.cells,self.positions[rid],goal,
+                robot_centres=[c for o,c in self.positions.items() if o!=rid],clearance_cells=clearance)
+            if route is None:continue
+            if any(self.conflict(route,cells,clearance) for cells in remaining_cells.values()):continue
+            if any(self.conflict(route,other,clearance) for _,other,_ in selected):continue
+            selected.append((rid,route,task['id']))
+        if not selected:return {'actions':[],'audit':{'strategy':'release'},'intent':None}
+        moving_ids={self.ids[n] for n in moving}
+        # Moving robots are not held peers; their remaining paths were checked above.
+        held=[r for r in self.robots if self.ids[r] not in moving_ids]
+        sub=dict(snapshot,robots={r:snapshot['robots'][r] for r in held})
+        return self.package_actions(sub,selected,{'strategy':'release','released':[self.names[r] for r,_,_ in selected]},None)
 
     def dynamic_radius(self):
         if self.marco_radius is not None:

@@ -47,8 +47,8 @@ using InitialPose=geometry_msgs::msg::PoseWithCovarianceStamped;
 using TF=tf2_msgs::msg::TFMessage;
 using Trigger=std_srvs::srv::Trigger;
 using Clock=std::chrono::steady_clock;
-static const std::array<std::string,3> ROBOTS{{"robot1","robot2","robot3"}};
-static const float COLORS[3][3]={{.2f,.8f,1.f},{1.f,.55f,.1f},{.3f,1.f,.3f}};
+static const std::array<std::string,4> ROBOTS{{"robot1","robot2","robot3","robot4"}};
+static const float COLORS[4][3]={{.2f,.8f,1.f},{1.f,.55f,.1f},{.3f,1.f,.3f},{1.f,.3f,.8f}};
 
 static std::string display_frame(const std::string& robot,std::string frame,const std::string& map) {
   const auto begin=frame.find_first_not_of('/');
@@ -101,7 +101,7 @@ public:
     if (!std::isfinite(scan_period_) || scan_period_<=0.) throw std::invalid_argument("visualization_scan_hz must be positive and finite");
     const int count=declare_parameter<int>("robot_count",3);
     const auto ids=declare_parameter<std::string>("robot_ids","");
-    if (count<1 || count>3) throw std::invalid_argument("robot_count must be 1, 2 or 3");
+    if (count<1 || count>4) throw std::invalid_argument("robot_count must be 1..4");
     if (ids.empty()) robots_.assign(ROBOTS.begin(),ROBOTS.begin()+count);
     else {
       std::stringstream stream(ids); std::string id;
@@ -198,6 +198,14 @@ public:
       relay<nav_msgs::msg::OccupancyGrid>(r,"global_costmap/costmap",latched);
       relay<nav_msgs::msg::OccupancyGrid>(r,"local_costmap/costmap",latched);
       relay<geometry_msgs::msg::PolygonStamped>(r,"local_costmap/published_footprint",live);
+    }
+    // Per-robot 2D Pose Estimate tools (Pose robotN) set that robot's pose only.
+    for (const auto& r:robots_) {
+      subscriptions_.push_back(create_subscription<InitialPose>("/tb4_view/"+r+"/initialpose",10,
+        [this,r](InitialPose::UniquePtr p) {
+          if (p->header.frame_id=="map" && valid_pose(p->pose.pose)) initial_pose(*p,r);
+          else RCLCPP_ERROR(get_logger(),"Pose for %s rejected: use frame map and a finite normalized pose",r.c_str());
+        }));
     }
     subscriptions_.push_back(create_subscription<InitialPose>("/tb4_view/initialpose",10,
       [this](InitialPose::UniquePtr p) {

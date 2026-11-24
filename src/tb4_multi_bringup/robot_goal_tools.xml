@@ -8,4 +8,19 @@
   <class name="tb4_multi_bringup/GoalRobot3" type="tb4_multi_bringup::GoalRobot3" base_class_type="rviz_common::Tool">
     <description>Goal robot3</description>
   </class>
+  <class name="tb4_multi_bringup/PoseRobot1" type="tb4_multi_bringup::PoseRobot1" base_class_type="rviz_common::Tool">
+    <description>Pose robot1 (2D Pose Estimate for robot1)</description>
+  </class>
+  <class name="tb4_multi_bringup/PoseRobot2" type="tb4_multi_bringup::PoseRobot2" base_class_type="rviz_common::Tool">
+    <description>Pose robot2 (2D Pose Estimate for robot2)</description>
+  </class>
+  <class name="tb4_multi_bringup/PoseRobot3" type="tb4_multi_bringup::PoseRobot3" base_class_type="rviz_common::Tool">
+    <description>Pose robot3 (2D Pose Estimate for robot3)</description>
+  </class>
+  <class name="tb4_multi_bringup/GoalRobot4" type="tb4_multi_bringup::GoalRobot4" base_class_type="rviz_common::Tool">
+    <description>Goal robot4</description>
+  </class>
+  <class name="tb4_multi_bringup/PoseRobot4" type="tb4_multi_bringup::PoseRobot4" base_class_type="rviz_common::Tool">
+    <description>Pose robot4</description>
+  </class>
 </library>
