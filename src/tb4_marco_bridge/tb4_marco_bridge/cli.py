@@ -230,7 +230,9 @@ def main():
     parser.add_argument('--port',type=int,default=int(os.environ.get('TB4_SOCKET_PORT','8765')))
     parser.add_argument('--out',type=Path,default=Path('log/marco/mission.json'))
     parser.add_argument('--execute',action='store_true',help='Explicitly permit physical path execution')
+    parser.add_argument('--full',action='store_true',help='Check every batch offline before showing the first preview')
     args=parser.parse_args()
+    if args.full and args.command!='plan':parser.error('--full requires plan')
     if args.command=='status':print(json.dumps(request({'command':'snapshot'},args.port),indent=2));return
     if args.command=='run' and not args.execute:parser.error('run requires --execute; plan never moves robots')
     if args.mission is None:parser.error('mission JSON is required')
@@ -266,6 +268,23 @@ def main():
                     action['reserved'] = action['points']
                     action['points'] = smooth_points(action['points'], deviation)
             report['events'].append({'event':'plan','batch':batch})
+            if args.full:
+                if not batch['actions']:
+                    goals={task['id']:task['goal'] for task in mission['tasks']}
+                    if batch.get('reason')!='completed' or sorted(completed)!=sorted(goals):
+                        raise RuntimeError('DAG cannot make progress')
+                    for robot,tasks in assignment['sequences'].items():
+                        if tasks and math.dist(snapshot['robots'][robot]['pose'][:2],goals[tasks[-1]][:2])>.025:
+                            raise RuntimeError(robot+' would be relocated away from its final goal')
+                    for action in report['events'][0]['batch']['actions']:
+                        request({'command':'preview','robot':action['robot'],'points':action['points'],
+                                 'task':action['task']},args.port)
+                    report['result']='full_preview'
+                    break
+                for action in batch['actions']:
+                    snapshot['robots'][action['robot']]['pose']=action['points'][-1]
+                    if action['task'] is not None:completed.append(action['task'])
+                continue
             for action in batch['actions']:
                 request({'command':'preview','robot':action['robot'],'points':action['points'],
                          'task':action['task']},args.port)

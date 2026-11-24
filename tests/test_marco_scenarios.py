@@ -68,6 +68,39 @@ class DocumentedScenarioTest(unittest.TestCase):
         self.assertEqual(state['robots']['robot1']['pose'], initial['robot2']['pose'])
         self.assertEqual(state['robots']['robot2']['pose'], initial['robot1']['pose'])
 
+    def test_live_pose_three_robot_cycle_completes(self):
+        state = scenario('three_robot_cycle')
+        state['ok'] = True
+        state['robots']['robot3'] = {'pose': [0., -1., math.pi / 2]}
+        for robot in state['robots'].values():
+            robot.update(localized=True, odom_fresh=True, busy=False, velocity=[0., 0.])
+        initial = copy.deepcopy(state['robots'])
+        state['robots']['robot3']['velocity'] = [.03, 0.]
+        with self.assertRaisesRegex(ValueError, 'robot3 cần đứng yên'):
+            swap_mission(state, three_robots=True)
+        state['robots']['robot3']['velocity'] = [0., 0.]
+
+        mission = swap_mission(state, three_robots=True)
+        planner = Planner(ROOT / 'MACRO')
+        assignment = planner.assign(state, mission)
+        completed, intent = [], None
+        for _ in range(32):
+            batch = planner.next_batch(state, mission, assignment, completed, intent)
+            intent = batch.get('intent')
+            if not batch['actions']:
+                self.assertEqual(batch['reason'], 'completed')
+                break
+            for action in batch['actions']:
+                state['robots'][action['robot']]['pose'] = action['points'][-1]
+                if action['task'] is not None:
+                    completed.append(action['task'])
+        else:
+            self.fail('Cycle did not finish within the batch limit')
+
+        self.assertCountEqual(completed, [1, 2, 3])
+        for robot, target in (('robot1', 'robot2'), ('robot2', 'robot3'), ('robot3', 'robot1')):
+            self.assertEqual(state['robots'][robot]['pose'], initial[target]['pose'])
+
     def test_fixed_robot1_priority_and_idle_robot_protection(self):
         for name in ('04_crossing','05_head_on','06_idle_blocker','09_head_on_1m'):
             with self.subTest(name=name):

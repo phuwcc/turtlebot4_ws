@@ -134,4 +134,22 @@ class MarcoPlanningTest(unittest.TestCase):
         self.assertEqual([action['robot'] for action in batch['actions']], ['robot2'])
         self.assertEqual(batch['actions'][0]['points'][-1][:2], [0., 0.])
 
+    def test_replans_when_a_peer_still_blocks_the_committed_path(self):
+        state = snapshot()
+        state['robots']['robot2']['pose'] = [1., 0., math.pi]
+        mission = {
+            'priority_order': ['robot1', 'robot2'],
+            'tasks': [{'id': 1, 'goal': [1., 0., math.pi], 'candidates': ['robot1']},
+                      {'id': 2, 'goal': [-1., 0., 0.], 'candidates': ['robot2']}],
+        }
+        assignment = self.planner.assign(state, mission)
+        stale_intent = {'priority': 'R1', 'task': 1, 'relocations': []}
+
+        batch = self.planner.next_batch(state, mission, assignment, [], stale_intent)
+
+        self.assertTrue(batch['audit']['replanned_committed_path'])
+        self.assertEqual(batch['intent']['priority'], 'R1')
+        self.assertEqual(batch['actions'][0]['robot'], 'robot2')
+        self.assertIsNone(batch['actions'][0]['task'])
+
 if __name__=='__main__':unittest.main()

@@ -1,9 +1,10 @@
 """PC owns localization, all Nav2 stacks, socket gateway and a single RViz."""
+import math
 import os
 from pathlib import Path
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from tb4_multi_bringup.configuration import share
@@ -16,8 +17,10 @@ def setup(context):
     robots = active_robots(count, ids)
     coordinated=LaunchConfiguration('coordinated_goals').perform(context)=='true'
     interactive_marco = coordinated and LaunchConfiguration('marco_rviz_goals').perform(context) == 'true'
-    if coordinated and (robots!=('robot1','robot2') or LaunchConfiguration('localization_only').perform(context)=='true'):
-        raise ValueError('RViz MARCO requires robot1,robot2 with navigation')
+    if coordinated and LaunchConfiguration('localization_only').perform(context) == 'true':
+        raise ValueError('MARCO requires navigation')
+    if interactive_marco and robots != ('robot1', 'robot2'):
+        raise ValueError('Interactive RViz MARCO requires robot1,robot2')
     hints = localization_hints(LaunchConfiguration('localization_hints').perform(context), count, ids, float(LaunchConfiguration('anchor_yaw').perform(context)))
     poses = startup_poses(LaunchConfiguration('initial_poses').perform(context), count, ids)
     validate_discovery(os.environ.get('ROS_DISCOVERY_SERVER'), count, ids,
@@ -26,8 +29,11 @@ def setup(context):
     if not map_path.is_file():
         raise ValueError('Map missing on PC: ' + str(map_path))
     directory = share() / 'launch'
+    spacing = float(LaunchConfiguration('robot_startup_spacing_s').perform(context))
+    if not math.isfinite(spacing) or spacing < 0:
+        raise ValueError('robot_startup_spacing_s must be finite and nonnegative')
     actions = []
-    for robot in robots:
+    for index, robot in enumerate(robots):
         arguments = {'robot_id': robot, 'map': str(map_path),
                      'localization_profile': LaunchConfiguration('localization_profile'),
                      'peer_footprints': LaunchConfiguration('peer_footprints'),
@@ -39,9 +45,12 @@ def setup(context):
                      'initialize_pose': 'true' if robot in poses else 'false'}
         arguments.update(poses.get(robot, {}))
         arguments.update(hints.get(robot, {}))
-        actions.append(IncludeLaunchDescription(
+        robot_launch = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(str(directory / 'navigation.launch.py')),
-            launch_arguments=arguments.items()))
+            launch_arguments=arguments.items())
+        if spacing and index:
+            robot_launch = TimerAction(period=index * spacing, actions=[robot_launch])
+        actions.append(robot_launch)
     actions.append(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(directory / 'fleet_visualization.launch.py')),
         launch_arguments={'robot_count': str(count), 'robot_ids': ','.join(robots), 'socket': 'true',
@@ -91,5 +100,7 @@ def generate_launch_description():
         DeclareLaunchArgument('localization_only', default_value='false', choices=['true', 'false'],
                               description='Only map/localization/RViz; navigation goals unavailable'),
         DeclareLaunchArgument('socket_port', default_value='8765'),
+        DeclareLaunchArgument('robot_startup_spacing_s', default_value='0',
+                              description='Delay between starting each robot namespace on the PC'),
         OpaqueFunction(function=setup),
     ])

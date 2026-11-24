@@ -1,0 +1,4 @@
+# Map poses in metres/radians for the filtered Gazebo room.
+robot1: {x: 0.04, y: 0.0, yaw: 0.0}
+robot2: {x: 1.59, y: 0.0, yaw: 3.141593}
+robot3: {x: 0.836, y: 0.86, yaw: -1.570796}

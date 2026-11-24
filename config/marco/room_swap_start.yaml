@@ -1,5 +1,4 @@
-# Task 2 trên maps/room_real.yaml. Tọa độ tính bằng mét, yaw tính bằng radian.
-# Robot1 dùng x/y của robot2 trong room_green_start.yaml và quay 180°.
-# Robot2 cách robot1 1,15 m theo hướng nhìn của robot1 và quay mặt về robot1.
-robot1: {x: -0.016, y: 0.566, yaw: -3.127593}
-robot2: {x: -1.165887, y: 0.549901, yaw: 0.014}
+# Task 1 trên maps/room_real.yaml. Tọa độ tính bằng mét, yaw tính bằng radian.
+# Hai robot đối đầu và cách nhau 1,15 m giữa hai tâm.
+robot1: {x: 0.20, y: 2.20, yaw: 0.0}
+robot2: {x: 1.35, y: 2.20, yaw: 3.141593}
