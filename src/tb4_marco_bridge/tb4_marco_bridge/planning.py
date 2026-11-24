@@ -263,7 +263,13 @@ class Planner:
                 rid=priority;goal=self.goals[str(tid)][0];task_id=tid;next_intent=None
             # MARCO fixed only the temporary holding goal; the move itself is A*.
             route=drive_route(rid,goal)
-            if route is None:raise RuntimeError('Committed clearance/priority path is no longer feasible')
+            if route is None:
+                # FollowPath can finish within its goal tolerance while leaving
+                # a peer inside the clearance assumed by the old intervention.
+                # Search again from the measured poses and keep mission goals fixed.
+                batch = self.next_batch(snapshot, mission, assignment, completed)
+                batch['audit']['replanned_committed_path'] = True
+                return batch
             return self.package_actions(snapshot,[(rid,route,task_id)],{'strategy':'committed_clearance' if remaining else 'committed_priority'},next_intent)
         if self.priority_order and len(current)==1:
             rid=next(iter(current));robot=self.names[rid]

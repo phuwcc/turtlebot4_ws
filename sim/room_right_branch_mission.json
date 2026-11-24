@@ -1,0 +1,85 @@
+{
+  "description": "Robot3 lùi 60 cm rồi MARCO tự lên lịch đổi chỗ B, C, A theo ba đích độc lập.",
+  "robot_radius": 0.175,
+  "safety_margin": 0.01,
+  "tracking_tolerance": 0.06,
+  "smooth_deviation_m": 0.02,
+  "speed_mps": 0.1,
+  "action_timeout_s": 180,
+  "tasks": [
+    {
+      "id": 1,
+      "label": "robot3 → lùi vào nhánh",
+      "goal": [
+        0.836,
+        1.46,
+        -1.5707963267948966
+      ],
+      "candidates": [
+        "robot3"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": 2,
+      "label": "robot1 → B",
+      "goal": [
+        1.59,
+        0.0,
+        3.141593
+      ],
+      "candidates": [
+        "robot1"
+      ],
+      "depends_on": [
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "label": "robot2 → C",
+      "goal": [
+        0.836,
+        0.86,
+        -1.570796
+      ],
+      "candidates": [
+        "robot2"
+      ],
+      "depends_on": [
+        1
+      ]
+    },
+    {
+      "id": 4,
+      "label": "robot3 → A",
+      "goal": [
+        0.04,
+        0.0,
+        3.141592653589793
+      ],
+      "candidates": [
+        "robot3"
+      ],
+      "depends_on": [
+        1
+      ]
+    },
+    {
+      "id": 5,
+      "label": "robot2 → trở lại C sau khi nhường",
+      "goal": [
+        0.836,
+        0.86,
+        -1.570796
+      ],
+      "candidates": [
+        "robot2"
+      ],
+      "depends_on": [
+        4
+      ]
+    }
+  ],
+  "priority_robot": "robot1"
+}

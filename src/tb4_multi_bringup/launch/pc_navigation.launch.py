@@ -1,9 +1,10 @@
 """PC owns localization, all Nav2 stacks, socket gateway and a single RViz."""
+import math
 import os
 from pathlib import Path
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from tb4_multi_bringup.configuration import share
@@ -17,6 +18,8 @@ def setup(context):
     robots = active_robots(count, ids)
     coordinated=LaunchConfiguration('coordinated_goals').perform(context)=='true'
     interactive_marco = coordinated and LaunchConfiguration('marco_rviz_goals').perform(context) == 'true'
+    # MARCO coordinator (RViz goals or a MACRO-style mission file) supports any
+    # fleet of two or more robots; MARCO itself picks the priority branch.
     if coordinated and (len(robots) < 2 or LaunchConfiguration('localization_only').perform(context)=='true'):
         raise ValueError('MARCO requires at least two robots with navigation')
     hints = localization_hints(LaunchConfiguration('localization_hints').perform(context), count, ids, float(LaunchConfiguration('anchor_yaw').perform(context)))
@@ -27,10 +30,13 @@ def setup(context):
     if not map_path.is_file():
         raise ValueError('Map missing on PC: ' + str(map_path))
     directory = share() / 'launch'
+    spacing = float(LaunchConfiguration('robot_startup_spacing_s').perform(context))
+    if not math.isfinite(spacing) or spacing < 0:
+        raise ValueError('robot_startup_spacing_s must be finite and nonnegative')
     actions = []
     # The PC discovery hub is owned by scripts/pc.sh (nav), which keeps it alive
     # past this launch so the Pi servers learn that PC nodes are gone.
-    for robot in robots:
+    for index, robot in enumerate(robots):
         arguments = {'robot_id': robot, 'map': str(map_path),
                      'localization_profile': LaunchConfiguration('localization_profile'),
                      'peer_footprints': LaunchConfiguration('peer_footprints'),
@@ -45,9 +51,12 @@ def setup(context):
                      'initialize_pose': 'true' if robot in poses else 'false'}
         arguments.update(poses.get(robot, {}))
         arguments.update(hints.get(robot, {}))
-        actions.append(IncludeLaunchDescription(
+        robot_launch = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(str(directory / 'navigation.launch.py')),
-            launch_arguments=arguments.items()))
+            launch_arguments=arguments.items())
+        if spacing and index:
+            robot_launch = TimerAction(period=index * spacing, actions=[robot_launch])
+        actions.append(robot_launch)
     actions.append(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(str(directory / 'fleet_visualization.launch.py')),
         launch_arguments={'robot_count': str(count), 'robot_ids': ','.join(robots), 'socket': 'true',
@@ -69,7 +78,7 @@ def setup(context):
         from launch.events import Shutdown
         coordinator=Node(package='tb4_marco_bridge',executable='marco_rviz',name='marco_rviz',
             parameters=[{'robot_ids':','.join(robots),'socket_port':LaunchConfiguration('socket_port'),
-                         'speed_mps':.16,
+                         'speed_mps':float(LaunchConfiguration('marco_speed_mps').perform(context)),
                          # Max path deviation before abort; with safety_margin 0.015 a robot
                          # passing a held peer keeps >= ~6 cm body gap in the worst case.
                          'tracking_tolerance':.06,'safety_margin':.015,
@@ -87,6 +96,8 @@ def generate_launch_description():
         DeclareLaunchArgument('localization_profile', default_value='strict', choices=['strict','navigation']),
         DeclareLaunchArgument('peer_footprints', default_value='false', choices=['true', 'false']),
         DeclareLaunchArgument('coordinated_goals', default_value='false', choices=['true','false']),
+        DeclareLaunchArgument('marco_speed_mps', default_value='0.16',
+                              description='Speed the MARCO coordinator predicts with; must match the Nav2 controller'),
         DeclareLaunchArgument('marco_mission', default_value='',
                               description='MACRO-style mission JSON (objects + task DAG) run by the MARCO coordinator'),
         DeclareLaunchArgument('marco_rviz_goals', default_value='true', choices=['true','false'],
@@ -103,5 +114,7 @@ def generate_launch_description():
         DeclareLaunchArgument('localization_only', default_value='false', choices=['true', 'false'],
                               description='Only map/localization/RViz; navigation goals unavailable'),
         DeclareLaunchArgument('socket_port', default_value='8765'),
+        DeclareLaunchArgument('robot_startup_spacing_s', default_value='0',
+                              description='Delay between starting each robot namespace on the PC'),
         OpaqueFunction(function=setup),
     ])

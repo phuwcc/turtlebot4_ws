@@ -142,6 +142,12 @@ class Fleet(Node):
         self.routes = {a['robot']: a['points'] for a in actions}
         deadline = time.monotonic() + 240.
         try:
+            # Planning is synchronous, so refresh odometry before sending motion.
+            started = time.monotonic()
+            while any(self.received.get(robot, 0.) < started for robot in self.spawn):
+                if time.monotonic() - started > 1.:
+                    raise RuntimeError('Lost simulated odometry')
+                rclpy.spin_once(self, timeout_sec=.02)
             while pending and time.monotonic() < deadline:
                 rclpy.spin_once(self, timeout_sec=.02)
                 now = time.monotonic()

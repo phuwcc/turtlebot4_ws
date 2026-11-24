@@ -187,7 +187,7 @@ def mission_run(path, execute, directory):
 def marco_mission_nav_params(mission_path, directory):
     import yaml
 
-    mission = json.loads(mission_path.read_text())
+    mission = json.loads(mission_path.read_text()) if mission_path else {'speed_mps': .10}
     speed = mission.get('speed_mps', .05)
     if type(speed) not in (int, float) or not math.isfinite(speed) or not 0 < speed <= .16:
         raise ValueError('Mission MARCO thật cần speed_mps trong (0, 0.16].')
@@ -213,7 +213,7 @@ def multi(args, values, ids):
     if args.poses is None:
         if not sys.stdin.isatty():
             raise ValueError('Cần --poses FILE.yaml chứa vị trí x/y/yaw thật của từng robot trên map.')
-        args.poses = input('File pose thật của hai robot trên map (YAML): ').strip()
+        args.poses = input('File pose thật của các robot trên map (YAML): ').strip()
         if not args.poses:
             raise ValueError('Chưa khai báo pose; chưa khởi động localization.')
     poses = file_path(args.poses)
@@ -241,23 +241,29 @@ def multi(args, values, ids):
         # README: RViz goals use the navigation localization profile and Nav2 params;
         # strict thresholds are for MARCO tests and cancel ordinary goals while driving.
         # Peer footprints are stamped into each robot's costmap (MARCO fleet_obstacles).
-        nav_params = (marco_mission_nav_params(mission, directory) if args.marco and mission
+        nav_params = (marco_mission_nav_params(mission, directory) if args.marco and (mission or len(ids) == 3)
                       else ROOT/'config/navigation/nav2.yaml')
         command += ['localization_profile:=navigation', 'peer_footprints:=true',
                     'nav_params_file:='+str(nav_params)]
     if args.marco:
-        # RViz Goal robot1/robot2 -> MARCO core -> leased FollowPath (robot1 has priority).
+        # Use leased FollowPath for MARCO coordination.
         command += ['coordinated_goals:=true', 'path_controller:=CorridorFollow']
+        if len(ids) == 3:
+            command.append('robot_startup_spacing_s:=10')
+        # The coordinator's swept-contact prediction must use the speed Nav2 drives.
+        marco_speed = (json.loads(mission.read_text()) if mission else {'speed_mps': .10 if len(ids) == 3 else .16})
+        command.append('marco_speed_mps:=' + str(float(marco_speed.get('speed_mps', .05 if mission else .16))))
         if mission:
             # MACRO-style mission (objects + task DAG): the MARCO coordinator runs
-            # it with the same nominal -> swept trigger -> MARCO intervention loop.
+            # it with the same nominal -> swept trigger -> MARCO intervention loop,
+            # for any number of robots.
             command.append('marco_mission:=' + str(mission))
     with (directory/'session.log').open('w') as stream:
         child = subprocess.Popen(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT, start_new_session=True)
         try:
             try:
                 wait_navigation(child, ids, args.timeout)
-                print(str(len(ids)) + ' robot sẵn sàng. MACRO chạy khi nhận mission, có kiểm tra conflict và watchdog.', flush=True)
+                print(f'{len(ids)} robot sẵn sàng. MACRO chạy khi nhận mission, có kiểm tra conflict và watchdog.', flush=True)
             except RuntimeError as error:
                 # RViz goal modes: keep RViz up so the user can fix poses with
                 # 2D Pose Estimate; goals stay gated by localization_supervisor.
@@ -347,7 +353,7 @@ def parser():
     s.add_argument('--rviz-goals', action='store_true',
                    help='Lái bằng nút Goal trên RViz: localization_profile=navigation + config/navigation/nav2.yaml')
     s.add_argument('--marco', action='store_true',
-                   help='Goal RViz đi qua MARCO (điều phối xung đột, robot1 ưu tiên); gồm cả --rviz-goals')
+                   help='Điều phối MARCO cho mission; hỗ trợ Goal RViz tương tác khi chọn robot1 và robot2')
     s = sub.add_parser('mission')
     s.add_argument('filename')
     s.add_argument('--execute', action='store_true')

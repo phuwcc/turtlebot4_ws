@@ -1,0 +1,5 @@
+# Task 2 trên maps/room_real.yaml. Tọa độ tính bằng mét, yaw tính bằng radian.
+# Pose khởi tạo trên bản đồ quét mới. Đối chiếu với vị trí thật trên RViz.
+robot1: {x: 0.121, y: 0.085, yaw: -0.048}
+robot2: {x: 1.557, y: 0.085, yaw: 3.136}
+robot3: {x: 0.865, y: -0.807, yaw: 1.579}
