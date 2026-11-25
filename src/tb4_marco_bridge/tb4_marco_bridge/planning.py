@@ -475,7 +475,7 @@ class Planner:
         the clearance from the other robots (at their staged/current cells) and
         moves away from the priority robot's protected path.
         """
-        extra=float(self._mission.get('holding_extra_m',.20))/self.grid.res
+        extra=float(self._mission.get('holding_extra_m',0.))/self.grid.res  # off: MARCO's own holding goals
         if extra<=0 or len(path)<2:return goal
         a=path[max(0,len(path)-4)];dx,dy=goal[0]-a[0],goal[1]-a[1];n=math.hypot(dx,dy)
         if n<1e-6:return goal
