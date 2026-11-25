@@ -1,13 +1,12 @@
 {
-  "description": "Return every robot to its start pose of config/marco/room_real_start.yaml on maps/room_real.yaml, including the final heading, so the same start-pose file stays valid for the next run without re-measuring. No dependencies; MARCO resolves conflicts on the way back.",
+  "description": "Return every robot to its start pose of config/marco/room_real_start.yaml on maps/room_real.yaml, including the final heading, so the same start-pose file stays valid for the next run without re-measuring. No dependencies; MARCO resolves conflicts on the way back. home_robot1 has no heading: robot1 stops facing the way it arrived instead of turning 180 degrees.",
   "speed_mps": 0.16,
   "objects": [
     {
       "name": "home_robot1",
       "pose": [
         0.052,
-        -0.027,
-        -0.035
+        -0.027
       ]
     },
     {

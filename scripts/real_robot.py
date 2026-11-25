@@ -184,19 +184,27 @@ def mission_run(path, execute, directory):
         checked(script('marco.sh', 'run', path, '--execute', '--out', directory/'execution.json'))
 
 
-def marco_mission_nav_params(mission_path, directory):
+def marco_mission_nav_params(mission_path, directory, demo=False):
     import yaml
 
-    mission = json.loads(mission_path.read_text()) if mission_path else {'speed_mps': .10}
+    mission = json.loads(mission_path.read_text()) if mission_path else {'speed_mps': .14}
     speed = mission.get('speed_mps', .05)
     if type(speed) not in (int, float) or not math.isfinite(speed) or not 0 < speed <= .16:
         raise ValueError('Mission MARCO thật cần speed_mps trong (0, 0.16].')
     parameters = yaml.safe_load((ROOT/'config/navigation/nav2.yaml').read_text())
-    controller = parameters['controller_server']['ros__parameters']['CorridorFollow']
+    controllers = parameters['controller_server']['ros__parameters']
+    controller = controllers['CorridorFollow']
+    # Turn in place only beyond ~34 deg; smaller errors are corrected while driving
+    # the (straightened) path, within the 0.06 m tracking tolerance.
+    controller['rotate_to_heading_min_angle'] = .60
     controller['desired_linear_vel'] = speed
-    controller['rotate_to_heading_min_angle'] = .15
     for key in ('regulated_linear_scaling_min_speed', 'min_approach_linear_velocity'):
         controller[key] = min(controller[key], speed)
+    if demo:
+        # Video demo: RPP's costmap collision check (peer bodies stamped into the
+        # local costmap) stalled robots at holding goals MARCO had verified; robot
+        # separation stays with MARCO and the swept-contact trigger.
+        controller['use_collision_detection'] = False
     smoother = parameters['velocity_smoother']['ros__parameters']
     smoother['max_velocity'][0] = speed
     smoother['min_velocity'][0] = max(smoother['min_velocity'][0], -speed)
@@ -241,9 +249,10 @@ def multi(args, values, ids):
         # README: RViz goals use the navigation localization profile and Nav2 params;
         # strict thresholds are for MARCO tests and cancel ordinary goals while driving.
         # Peer footprints are stamped into each robot's costmap (MARCO fleet_obstacles).
-        nav_params = (marco_mission_nav_params(mission, directory) if args.marco and (mission or len(ids) == 3)
+        nav_params = (marco_mission_nav_params(mission, directory, getattr(args, 'demo', False)) if args.marco and (mission or len(ids) == 3)
                       else ROOT/'config/navigation/nav2.yaml')
-        command += ['localization_profile:=navigation', 'peer_footprints:=true',
+        # --demo (video recording): tolerant localization/Wi-Fi profile, wider corridor.
+        command += ['localization_profile:=' + ('demo' if getattr(args, 'demo', False) else 'navigation'), 'peer_footprints:=true',
                     'nav_params_file:='+str(nav_params)]
     if args.marco:
         # Use leased FollowPath for MARCO coordination.
@@ -251,7 +260,7 @@ def multi(args, values, ids):
         if len(ids) == 3:
             command.append('robot_startup_spacing_s:=10')
         # The coordinator's swept-contact prediction must use the speed Nav2 drives.
-        marco_speed = (json.loads(mission.read_text()) if mission else {'speed_mps': .10 if len(ids) == 3 else .16})
+        marco_speed = (json.loads(mission.read_text()) if mission else {'speed_mps': .14 if len(ids) == 3 else .16})
         command.append('marco_speed_mps:=' + str(float(marco_speed.get('speed_mps', .05 if mission else .16))))
         if mission:
             # MACRO-style mission (objects + task DAG): the MARCO coordinator runs
@@ -354,6 +363,8 @@ def parser():
                    help='Lái bằng nút Goal trên RViz: localization_profile=navigation + config/navigation/nav2.yaml')
     s.add_argument('--marco', action='store_true',
                    help='Điều phối MARCO cho mission; hỗ trợ Goal RViz tương tác khi chọn robot1 và robot2')
+    s.add_argument('--demo', action='store_true',
+                   help='Quay video demo: chịu Wi-Fi/AMCL chập chờn (không hủy đường đi), hành lang bám đường 0.10 m')
     s = sub.add_parser('mission')
     s.add_argument('filename')
     s.add_argument('--execute', action='store_true')

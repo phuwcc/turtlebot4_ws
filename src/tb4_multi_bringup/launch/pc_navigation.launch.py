@@ -71,6 +71,7 @@ def setup(context):
         actions.append(Node(package='tb4_multi_bringup', executable='fleet_footprints', name='fleet_footprints',
                             parameters=[{'robot_ids': ','.join(robots), 'map_topic': '/' + robots[0] + '/map'}],
                             output='screen'))
+    demo = LaunchConfiguration('localization_profile').perform(context) == 'demo'
     if interactive_marco:
         from launch_ros.actions import Node
         from launch.actions import RegisterEventHandler, EmitEvent
@@ -81,7 +82,12 @@ def setup(context):
                          'speed_mps':float(LaunchConfiguration('marco_speed_mps').perform(context)),
                          # Max path deviation before abort; with safety_margin 0.015 a robot
                          # passing a held peer keeps >= ~6 cm body gap in the worst case.
-                         'tracking_tolerance':.06,'safety_margin':.015,
+                         'tracking_tolerance':.15 if demo else .06,'safety_margin':.015,
+                         'stale_tolerance_s':3. if demo else 1.,
+                         # Demo: start the next robot as soon as MARCO's clearance holds.
+                         'follow_margin_m':0. if demo else .05,
+                         # Rounder corners for video within the wider demo corridor.
+                         'smooth_deviation':.05 if demo else .03,
                          'mission_file':LaunchConfiguration('marco_mission')}],output='screen')
         actions += [RegisterEventHandler(OnProcessExit(target_action=coordinator,
             on_exit=[EmitEvent(event=Shutdown(reason='MARCO coordinator exited'))])),coordinator]
@@ -93,7 +99,7 @@ def generate_launch_description():
         DeclareLaunchArgument('robot_count', default_value=os.environ.get('TB4_ROBOT_COUNT', '1'),
                               choices=['1', '2', '3', '4']),
         DeclareLaunchArgument('map'),
-        DeclareLaunchArgument('localization_profile', default_value='strict', choices=['strict','navigation']),
+        DeclareLaunchArgument('localization_profile', default_value='strict', choices=['strict','navigation','demo']),
         DeclareLaunchArgument('peer_footprints', default_value='false', choices=['true', 'false']),
         DeclareLaunchArgument('coordinated_goals', default_value='false', choices=['true','false']),
         DeclareLaunchArgument('marco_speed_mps', default_value='0.16',

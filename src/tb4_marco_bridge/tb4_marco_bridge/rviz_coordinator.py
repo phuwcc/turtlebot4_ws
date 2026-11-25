@@ -40,13 +40,17 @@ class RvizCoordinator(Node):
         self.root=Path(self.declare_parameter('marco_root',os.environ.get('MARCO_ROOT',str(default))).value)
         self.speed=float(self.declare_parameter('speed_mps',.16).value)
         self.tolerance=float(self.declare_parameter('tracking_tolerance',.06).value)
-        if not 0<self.speed<=.25 or not .04<=self.tolerance<=.10:
+        # Demo (video) mode rides out longer Wi-Fi stalls before treating localization as lost.
+        self.stale_tolerance=float(self.declare_parameter('stale_tolerance_s',1.).value)
+        # Extra gap (beyond the coordination radius) for a robot starting behind/after a moving one.
+        self.follow_margin=float(self.declare_parameter('follow_margin_m',.05).value)
+        if not 0<self.speed<=.25 or not .04<=self.tolerance<=.15:
             raise ValueError('Invalid coordinated speed/tracking tolerance')
         # Corner rounding after the MARCO core; 0 disables. Must leave most of
         # the tracking corridor (checked against the reserved MARCO path).
         self.smooth_deviation=float(self.declare_parameter('smooth_deviation',.03).value)
         # MARCO execute.py DEMO_TRIGGER_HORIZON_S default.
-        self.trigger_horizon=float(self.declare_parameter('trigger_horizon_s',3.).value)
+        self.trigger_horizon=float(self.declare_parameter('trigger_horizon_s',1.5).value)
         if not 0<self.trigger_horizon<=10:raise ValueError('trigger_horizon_s must be within 0..10 s')
         self.predicted_contacts=None
         # Coordination clearance comes from MACRO itself (same radius as the
@@ -120,11 +124,14 @@ class RvizCoordinator(Node):
             self.predicted_contacts=predicted_contacts
         snapshot=request({'command':'snapshot'},self.port)
         poses={r:snapshot['robots'][r]['pose'] for r in self.robots}
-        finished={e['robot'] for e in report if e.get('event')=='completed'}
+        # Only actions that were dispatched and have not completed drive; a robot
+        # may own several staged actions (pipelined MARCO), each started in turn.
+        finished={e.get('action_id') for e in report if e.get('event')=='completed'}
         routes={r:[poses[r][:2]] for r in self.robots}   # idle robots hold position
         speeds={r:0. for r in self.robots}
+        started={id(e['action']) for e in report if e.get('event') in ('dispatch','staged_release','release')}
         for a in actions:
-            if a['robot'] in finished:continue
+            if id(a) in finished or id(a) not in started:continue
             routes[a['robot']]=[p[:2] for p in a.get('reserved',a['points'])];speeds[a['robot']]=self.speed
         pairs=[(a,b) for i,a in enumerate(self.robots) for b in self.robots[i+1:]]
         if moving_only:
@@ -149,7 +156,7 @@ class RvizCoordinator(Node):
             k=min(range(len(points)),key=lambda i:math.dist(points[i][:2],pose[:2]))
             return [list(pose[:2])]+[p[:2] for p in points[k+1:]]
         def extra(active,snapshot,status):
-            if time.monotonic()-last[0]<1.:return []
+            if time.monotonic()-last[0]<.4:return []  # quick concurrent releases for a fluid demo
             last[0]=time.monotonic()
             done=completed+[e['task'] for e in report if e.get('event')=='completed' and e.get('task') is not None]
             moving={r:remaining(a,snapshot['robots'][r]['pose']) for r,a in active.items()
@@ -244,7 +251,7 @@ class RvizCoordinator(Node):
                 stable_since=None;self.manual_start=False
                 try:
                     if self.worker is None:self.worker=Worker(self.root,self.directory/'worker.log')
-                    mission={'speed_mps':self.speed,'tracking_tolerance':self.tolerance,
+                    mission={'speed_mps':self.speed,'tracking_tolerance':self.tolerance,'stale_tolerance_s':self.stale_tolerance,'follow_margin_m':self.follow_margin,
                         'robot_radius':.175,'safety_margin':.05,'coordination_radius':self.coordination_radius,'action_timeout_s':180.,'nominal_until_contact':True,'intervene':False,
                         'tasks':[{'id':robot_index(r),'goal':g['pose'],'candidates':[r],'depends_on':[]} for r,g in sorted(goals.items())]}
                     if pending_file and not goals:
@@ -286,12 +293,12 @@ class RvizCoordinator(Node):
                             done=[e['task'] for e in report if e.get('event')=='completed' and e.get('task') is not None]
                             self.set_state('waiting','Contact predicted '+'/'.join(hits[0]['robots'])+
                                 ' (%.2f m in %.1f s); MARCO intervention'%(hits[0]['predicted_separation_m'],hits[0]['interval_s'][1]))
-                            self.stop.wait(1.)
+                            self.stop.wait(.3)
                             for _ in range(25):
                                 if not any(s['busy'] for s in request({'command':'status'},self.port)['robots'].values()):break
                                 self.stop.wait(.2)
                             else:raise RuntimeError('Robots did not stop after the contact trigger')
-                            self.stop.wait(.5)   # MARCO settle time before planning
+                            self.stop.wait(.25)  # MARCO settle time before planning (robots already stopped)
                             mission['intervene']=True;intent=None
                         except (CorridorViolation,LocalizationUnavailable) as error:
                             # Execution fault (Wi-Fi-delayed scans, AMCL loss, corridor

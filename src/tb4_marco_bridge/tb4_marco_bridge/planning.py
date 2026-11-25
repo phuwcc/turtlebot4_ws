@@ -149,8 +149,19 @@ class Planner:
         # Fleet robot "robotN" is MACRO robot "RN" (any N).
         self.ids={r:'R'+str(robot_index(r)) for r in self.robots};self.names={v:k for k,v in self.ids.items()}
         self.positions={self.ids[r]:self.grid.cell(snapshot['robots'][r]['pose']) for r in self.robots}
-        if any(c not in self.grid.cells for c in self.positions.values()):
-            raise ValueError('A robot footprint overlaps unknown/occupied map cells; check localization')
+        # The planning disc (coordination radius) is wider than the body: a robot
+        # that drifted a few cm towards a wall (corner cutting, AMCL jitter) is
+        # still physically clear, so plan from the nearest footprint-safe cell.
+        snap=float(mission.get('snap_to_safe_m',.08))/self.grid.res
+        reach=[(dx,dy) for dx in range(-math.ceil(snap),math.ceil(snap)+1) for dy in range(-math.ceil(snap),math.ceil(snap)+1)
+               if math.hypot(dx,dy)<=snap]
+        reach.sort(key=lambda d:math.hypot(*d))
+        for rid,c in list(self.positions.items()):
+            if c in self.grid.cells:continue
+            near=next(((c[0]+dx,c[1]+dy) for dx,dy in reach if (c[0]+dx,c[1]+dy) in self.grid.cells),None)
+            if near is None:
+                raise ValueError('A robot footprint overlaps unknown/occupied map cells; check localization')
+            self.positions[rid]=near
         # MACRO scenario objects, given in metric map coordinates instead of grid cells.
         objects={}
         for item in mission.get('objects',[]):
@@ -243,13 +254,15 @@ class Planner:
             routes[rid]=route
             states.append(self.RobotState(rid,start,(0,0,0),goal=goal,path=route,phase='preview' if task else 'idle',current_task=task))
         clearance=2*radius/self.grid.res
+        staged={}
         def drive_route(rid,goal):
             """Driving is the lower layer: A* from the robot's cell to the goal that
-            MARCO (or the task) chose, around the bodies of every other robot."""
-            centres=[(self.positions[o] if self.marco_radius is not None else
+            MARCO (or the task) chose, around the bodies of every other robot
+            (pipelined staging: earlier movers at their holding goals)."""
+            centres=[staged[o] if o in staged else (self.positions[o] if self.marco_radius is not None else
                       self.grid.continuous_cell(snapshot['robots'][self.names[o]]['pose']))
                      for o in self.positions if o!=rid]
-            return self.algorithms._astar_around_robot_bodies(self.grid.cells,self.positions[rid],goal,
+            return self.algorithms._astar_around_robot_bodies(self.grid.cells,staged.get(rid,self.positions[rid]),goal,
                 robot_centres=centres,clearance_cells=clearance)
         if intent:
             priority=intent['priority'];tid=intent['task']
@@ -344,12 +357,60 @@ class Planner:
                 if plan and plan['priority_robot']!=self.ids[active_priority]:
                     raise RuntimeError('MARCO returned a plan violating the fixed priority')
             if not plan:raise RuntimeError('No feasible guarded MARCO intervention')
+            held_priority=False
+            if (self._mission.get('hold_priority',True) and
+                    any(item['robot_id']==plan['priority_robot'] for item in plan.get('relocation_sequence',[]))):
+                # User rule: the priority robot MARCO picked waits in place until the
+                # others have cleared its route; it does not step aside itself. Re-run
+                # MARCO's relocation search for that same priority robot (the search
+                # never moves the priority robot); keep the original plan only if no
+                # such clearance exists.
+                keep=plan['priority_robot']
+                def moves(candidate):
+                    steps=candidate.get('relocation_sequence') or candidate.get('relocations') or ()
+                    return any(step.get('robot_id')==keep for step in steps)
+                def priority_waits(leaves,*_):
+                    # MARCO still scores the remaining candidates; only those that
+                    # move the priority robot are dropped.
+                    return [c for c in leaves if not moves(c)] or leaves
+                alt=self.coordinator.search_relocation_plan(robots=states,dag_robots=states,tasks=tasks,
+                    task_status=task_status,objects=objects,navigation_cells=self.grid.cells,robot_radius=radius,
+                    grid_size=self.grid.res,speed_cells_per_second=self.speed/self.grid.res,
+                    planning_timeout_s=float(self._mission.get('planning_timeout_s',5.)),
+                    local_time_evaluator=timing,selection_policy='dag_aware',
+                    priority_robot_ids=[keep],dag_candidate_refiner=priority_waits)
+                if alt and alt['priority_robot']==keep and not moves(alt):
+                    plan=alt;held_priority=True
             audit={key:plan.get(key) for key in ('strategy','selected_hypothesis','priority_robot','local_resolution_delay','estimated_makespan')}
+            audit['priority_held_in_place']=held_priority
             relocations=plan.get('relocation_sequence',[])
             # Use MARCO's decision (priority branch + ordered temporary holding
             # goals); each move is driven by A* to that goal, not MARCO's grid path.
             audit['holding_goals']=[{'robot':self.names[item['robot_id']],
                 'goal':list(self.grid.world(tuple(item['path'][-1]))[:2])} for item in relocations]
+            if relocations:
+                # MACRO ROS executor (three_robot_t/execute.py, pipelined staging):
+                # every holding action and the priority resume form one batch; each
+                # starts as soon as its route is disjoint from the remaining routes of
+                # all earlier unfinished actions (execute_batch gates on 'stage').
+                # Routes are A* over the staged poses (earlier movers at their goals).
+                # A robot may appear more than once (e.g. the priority robot first
+                # steps aside, or a composed clearance moves a robot twice): its later
+                # action starts where the earlier one ended, after it finished.
+                priority=plan['priority_robot'];selected=[]
+                protected=[c for c in plan.get('planned_paths',{}).get(priority,[])]
+                for item in relocations:
+                    rid=item['robot_id'];goal=self.deepen(tuple(item['path'][-1]),item['path'],rid,staged,protected,clearance)
+                    route=drive_route(rid,goal)
+                    if route is None:raise RuntimeError(f'No A* route to MARCO holding goal for {self.names[rid]}')
+                    selected.append((rid,route,None));staged[rid]=goal
+                route=drive_route(priority,self.goals[str(current[priority]['id'])][0])
+                if route is None:raise RuntimeError(f'No A* route for priority robot {self.names[priority]}')
+                selected.append((priority,route,current[priority]['id']))
+                audit['pipelined']=True
+                batch=self.package_actions(snapshot,selected,audit,None)
+                for index,action in enumerate(batch['actions']):action['stage']=index
+                return batch
             if relocations:
                 step=relocations[0];rid=step['robot_id'];goal=tuple(step['path'][-1])
                 route=drive_route(rid,goal)
@@ -404,6 +465,68 @@ class Planner:
         # The exact metric segment audit below independently enforces physical clearance.
         return self.radius+max(0.,math.sqrt(.5)*self.grid.res-self._mission.get('safety_margin',.05)+.01)
 
+    def deepen(self,goal,path,rid,staged,protected,clearance):
+        """Park a yielding robot deeper than MARCO's minimal holding goal.
+
+        MARCO's holding goal only just clears the priority corridor; for the
+        real robots (and to let the priority robot start while the yielder is
+        still entering) continue along the yielder's own approach direction by
+        up to ``holding_extra_m`` while every cell stays footprint-safe, keeps
+        the clearance from the other robots (at their staged/current cells) and
+        moves away from the priority robot's protected path.
+        """
+        extra=float(self._mission.get('holding_extra_m',.20))/self.grid.res
+        if extra<=0 or len(path)<2:return goal
+        a=path[max(0,len(path)-4)];dx,dy=goal[0]-a[0],goal[1]-a[1];n=math.hypot(dx,dy)
+        if n<1e-6:return goal
+        dx,dy=dx/n,dy/n
+        others=[staged.get(o,self.positions[o]) for o in self.positions if o!=rid]
+        away=lambda c:min((math.dist(c,q) for q in protected),default=float('inf'))
+        best=goal
+        for k in range(1,int(extra)+1):
+            cell=(round(goal[0]+dx*k),round(goal[1]+dy*k))
+            if cell not in self.grid.cells:break
+            if any(math.dist(cell,o)<=clearance for o in others):break
+            if away(cell)+1e-9<away(best):break
+            best=cell
+        return best
+
+    def straighten(self,route,centres,clearance):
+        """Any-angle shortcut of an 8-connected A* route (string pulling).
+
+        A grid route only moves in 45-degree steps, so a goal a few cm to the side
+        starts with a diagonal kink and the controller turns in place first. Each
+        shortcut keeps every sample inside the footprint-safe cells (all cells
+        around it) and outside the clearance disc of every other robot body (a
+        start inside a disc may only move outwards, as in MACRO's A*). Output is
+        densified to <= 1 cell spacing for the gateway.
+        """
+        if len(route)<3:return route
+        # A robot parked close to a wall starts outside the footprint-safe set;
+        # A* still leaves from there, so its own route cells count as free.
+        cells=self.grid.cells|{(round(c[0]),round(c[1])) for c in route}
+        def samples(a,b):
+            n=max(1,math.ceil(math.dist(a,b)/.25))
+            return [(a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n) for k in range(n+1)]
+        def free(a,b):
+            previous={i:math.dist(a,c) for i,c in enumerate(centres)}
+            for p in samples(a,b)[1:]:
+                x,y=p
+                if (round(x),round(y)) not in cells:return False
+                for i,c in enumerate(centres):
+                    d=math.dist(p,c)
+                    if d<=clearance and d+1e-9<previous[i]:return False
+                    previous[i]=d
+            return True
+        result=[route[0]];i=0;last=len(route)-1
+        while i<last:
+            j=last
+            while j>i+1 and not free(route[i],route[j]):j-=1
+            a,b=route[i],route[j];n=max(1,math.ceil(math.dist(a,b)))
+            result+=[(a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n) for k in range(1,n+1)]
+            i=j
+        return result
+
     def package_actions(self,snapshot,selected,audit,intent,guard_peers=True):
         actions=[]
         clearance=2*self.dynamic_radius()/self.grid.res
@@ -412,6 +535,26 @@ class Planner:
         # >= 5 cm apart at this threshold.
         physical=(2*self.radius-math.sqrt(.5)*self.grid.res if self.marco_radius is not None else
                   2*(self._mission.get('robot_radius',.175)+self._mission.get('tracking_tolerance',.04))+.02)
+        moving={item[0] for item in selected}
+        straightened=[];seen={}
+        for rid,route,tid in selected:
+            # Straight segments instead of 45-degree grid steps: fewer turns in place.
+            # Bodies: parked robots now, movers at the end of their routes.
+            centres=[self.positions[o] for o in self.positions if o!=rid and o not in moving]
+            if guard_peers:
+                # Intervention batch: keep clear of where the other movers end up.
+                # (Nominal batches are guarded by the swept-contact trigger instead.)
+                centres+=[r[-1] for o,r,_ in selected if o!=rid]
+            # Shortcut from the measured pose to the exact task goal, so the first
+            # and last segments do not kink towards cell centres.
+            ends=list(route)
+            if len(ends)>=2:
+                # A robot with a second staged action starts where its first ended.
+                ends[0]=seen[rid] if rid in seen else self.grid.continuous_cell(snapshot['robots'][self.names[rid]]['pose'])
+                if tid is not None:ends[-1]=self.grid.continuous_cell(self.goals[str(tid)][1])
+            path=self.straighten(ends,centres,clearance)
+            straightened.append((rid,path if path is not ends else route,tid));seen[rid]=straightened[-1][1][-1]
+        selected=straightened;last_pose={}
         for rid,route,tid in selected:
             # Nominal MARCO batches are guarded at run time by the swept-contact
             # trigger instead of these static held-peer checks.
@@ -428,7 +571,22 @@ class Planner:
                         raise RuntimeError('Path enters a held peer corridor')
                     cleared=cleared or distance>clearance;previous=distance
             name=self.names[rid];goal=self.goals[str(tid)][1] if tid is not None else None
-            points=self.grid.points(route,snapshot['robots'][name]['pose'],goal)
+            pose=last_pose.get(name,snapshot['robots'][name]['pose'])
+            arrive=float(self._mission.get('arrive_tolerance_m',.07))
+            if goal is not None and math.dist(pose[:2],goal[:2])<=arrive:
+                # Already at the task location (e.g. stopped a few cm past it by the
+                # contact trigger): do the task here instead of a few-cm correction
+                # that would make a differential-drive robot turn around twice.
+                final=goal[2] if len(goal)==3 else pose[2]
+                actions.append({'robot':name,'task':tid,'points':[list(pose[:3]),[pose[0],pose[1],final]],
+                                'duration':self.durations.get(tid,0.)})
+                last_pose[name]=actions[-1]['points'][-1]
+                continue
+            points=self.grid.points(route,pose,goal)
+            # Holding move of a yielding/idle robot: its heading does not matter, so
+            # it never turns in place at the holding goal (yaw-free goal checker).
+            # A task goal given without a yaw (object pose [x, y]) is heading-free too.
+            extra={'goal_checker':'holding_goal_checker'} if tid is None or len(goal)==2 else {}
             for other,state in snapshot['robots'].items():
                 if not guard_peers or other==name or self.ids[other] in {v[0] for v in selected}:continue
                 p=state['pose']
@@ -444,5 +602,6 @@ class Planner:
             if limit is not None and (not finite(limit) or limit<=0 or length>limit):
                 raise ValueError('Action exceeds the mission path-length limit')
             actions.append({'robot':name,'task':tid,'points':points,
-                            'duration':self.durations.get(tid,0.) if tid is not None else 0.})
+                            'duration':self.durations.get(tid,0.) if tid is not None else 0.,**extra})
+            last_pose[name]=points[-1]
         return {'actions':actions,'audit':audit,'intent':intent,'map_sha256':self.grid.signature,'optimality_claim':False}

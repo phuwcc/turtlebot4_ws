@@ -39,19 +39,22 @@ public:
        hint_std_xy_<.05||hint_std_xy_>1.)throw std::invalid_argument("Invalid localization hint");
     navigate_=declare_parameter<bool>("navigation",true);
     const auto profile=declare_parameter<std::string>("localization_profile","strict");
-    if(profile!="strict"&&profile!="navigation")throw std::invalid_argument("Unknown localization profile");
-    const bool interactive=profile=="navigation";
+    if(profile!="strict"&&profile!="navigation"&&profile!="demo")throw std::invalid_argument("Unknown localization profile");
+    const bool interactive=profile!="strict";
+    // "demo" (video recording): ride out multi-second Wi-Fi stalls and loose AMCL
+    // instead of cancelling paths; MARCO's swept-contact trigger stays active.
+    const bool demo=profile=="demo";
     // "navigation" (MARCO on the real fleet) is deliberately tolerant: office
     // Wi-Fi delays scans and AMCL settles slowly; "strict" stays for tests.
-    max_covariance_xy_=interactive?.09:.01;
-    max_covariance_yaw_=interactive?.20:.04;
-    min_scan_match_=interactive?.50:.70;
-    recover_covariance_xy_=interactive?.15:.04;
-    max_scan_age_s_=interactive?1.0:.5;
-    max_scan_gap_=interactive?std::chrono::milliseconds(1200):std::chrono::milliseconds(700);
-    max_odom_gap_=interactive?std::chrono::milliseconds(1000):std::chrono::milliseconds(500);
+    max_covariance_xy_=demo?.20:interactive?.09:.01;
+    max_covariance_yaw_=demo?.40:interactive?.20:.04;
+    min_scan_match_=demo?.35:interactive?.50:.70;
+    recover_covariance_xy_=demo?.30:interactive?.15:.04;
+    max_scan_age_s_=demo?3.0:interactive?1.0:.5;
+    max_scan_gap_=std::chrono::milliseconds(demo?3500:interactive?1200:700);
+    max_odom_gap_=std::chrono::milliseconds(demo?3000:interactive?1000:500);
     ready_hold_=interactive?std::chrono::milliseconds(1000):std::chrono::milliseconds(3000);
-    pause_after_=interactive?std::chrono::milliseconds(5000):std::chrono::milliseconds(2000);
+    pause_after_=std::chrono::milliseconds(demo?10000:interactive?5000:2000);
     nav_=create_client<Manage>("lifecycle_manager_navigation/manage_nodes");
     nomotion_=create_client<Empty>("request_nomotion_update");
     status_pub_=create_publisher<std_msgs::msg::String>("localization_status",rclcpp::QoS(1).transient_local());

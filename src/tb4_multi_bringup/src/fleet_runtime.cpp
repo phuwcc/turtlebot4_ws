@@ -354,17 +354,18 @@ private:
     auto& s=states_.at(robot);if(s.generation!=generation)return;
     s.path_goal.reset();s.validating=false;s.busy=false;s.cancel_requested=false;s.last_result=result;s.owner.clear();
   }
-  void start_path(const std::string& robot,nav_msgs::msg::Path path,const std::string& owner) {
+  void start_path(const std::string& robot,nav_msgs::msg::Path path,const std::string& owner,
+                  const std::string& checker) {
     auto& s=states_.at(robot);s.busy=true;s.path_mode=true;s.validating=true;s.cancel_requested=false;s.owner=owner;s.last_result=nullptr;
     s.lease_until=Clock::now()+2s;s.validation_until=Clock::now()+5s;const auto generation=++s.generation;
     auto request=std::make_shared<ValidPath::Request>();request->path=path;
-    s.validator->async_send_request(request,[this,robot,generation,path](rclcpp::Client<ValidPath>::SharedFuture f) {
+    s.validator->async_send_request(request,[this,robot,generation,path,checker](rclcpp::Client<ValidPath>::SharedFuture f) {
       auto& st=states_.at(robot);if(st.generation!=generation||!st.busy)return;
       st.validating=false;
       if(st.cancel_requested||Clock::now()>st.lease_until||!localized(robot)){path_finished(robot,generation,"canceled");return;}
       try {
         if(!f.get()->is_valid){path_finished(robot,generation,"invalid_path");return;}
-        Follow::Goal goal;goal.path=path;goal.path.header.stamp=now();goal.controller_id=path_controller_;goal.goal_checker_id="general_goal_checker";
+        Follow::Goal goal;goal.path=path;goal.path.header.stamp=now();goal.controller_id=path_controller_;goal.goal_checker_id=checker;
         rclcpp_action::Client<Follow>::SendGoalOptions options;
         options.goal_response_callback=[this,robot,generation](FollowHandle::SharedPtr handle) {
           auto& current=states_.at(robot);if(current.generation!=generation)return;
@@ -472,7 +473,10 @@ private:
       const auto pose=current_pose(robot);
       if(pose.is_null()||std::hypot(pose[0].get<double>()-path.poses.front().pose.position.x,pose[1].get<double>()-path.poses.front().pose.position.y)>.10)
         return {{"ok",false},{"reason","stale_path_start"}};
-      start_path(robot,path,owner);return {{"ok",true},{"message","Path validation queued; renew lease and poll status"}};
+      // MARCO holding moves ignore the final yaw (holding_goal_checker in nav2.yaml).
+      const auto checker=request.value("goal_checker",std::string("general_goal_checker"));
+      if(checker!="general_goal_checker"&&checker!="holding_goal_checker")throw std::invalid_argument("goal_checker must be general_goal_checker or holding_goal_checker");
+      start_path(robot,path,owner,checker);return {{"ok",true},{"message","Path validation queued; renew lease and poll status"}};
     }
     if (command=="select") {
       auto result=set_parameter(rclcpp::Parameter("selected_robot",robot));

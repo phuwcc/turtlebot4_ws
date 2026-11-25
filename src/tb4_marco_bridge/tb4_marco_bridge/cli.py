@@ -166,18 +166,89 @@ class CorridorViolation(RuntimeError):
     pass
 
 
+class PathInterrupted(CorridorViolation):
+    """The gateway or Nav2 stopped a path (e.g. 'Cancel robot2: stale_sensors'
+    after a >1 s Wi-Fi gap, or a controller abort): recover like a corridor
+    violation - wait for a stopped, localized fleet and replan from the
+    measured poses - instead of abandoning the mission."""
+
+
+def path_request(action,owner):
+    """Gateway 'path' command; holding moves use the yaw-free goal checker
+    (see config/navigation/nav2.yaml)."""
+    message={'command':'path','robot':action['robot'],'points':action['points'],'owner':owner}
+    if action.get('goal_checker'):message['goal_checker']=action['goal_checker']
+    return message
+
+
 def execute_batch(actions,mission,port,map_revision,report,interrupted=None,extra=None):
     owner=uuid.uuid4().hex;active={};completed=[];stale_since=None
     tolerance=mission.get('tracking_tolerance',.04)
     started=time.monotonic();timeout=mission.get('action_timeout_s',180.)+sum(float(a.get('duration') or 0.) for a in actions)
     if type(timeout) not in (int,float) or not math.isfinite(timeout) or not 0<timeout<=600:raise ValueError('action_timeout_s must be 0..600')
+    # Pipelined MARCO staging (three_robot_t/execute.py): an action with 'stage'
+    # starts once its route is disjoint (MACRO release margin) from the remaining
+    # route of every earlier unfinished staged action of another robot.
+    pending=[a for a in actions if a.get('stage') is not None]
+    finished=set()
+    margin=float(mission.get('release_margin_m',.10))
+    def remaining_of(action,pose):
+        points=action.get('reserved',action['points'])
+        k=min(range(len(points)),key=lambda i:math.dist(points[i][:2],pose[:2]))
+        return [list(pose[:2])]+[p[:2] for p in points[k+1:]]
+    def dispatch(action,event='dispatch'):
+        response=request(path_request(action,owner),port)
+        active[action['robot']]=action
+        report.append({'event':event,'action':action,'response':response})
+    def follows_safely(action,other,route,mine,snapshot):
+        """Maximise parallelism: an action whose route overlaps a driving earlier
+        action may still start behind it (e.g. R2 following R3 into the stem at the
+        same speed) when MACRO's swept-contact preview over both complete remaining
+        routes keeps the coordination radius plus a follow margin. The leader must
+        already be driving (>= 0.10 m from its start); the runtime swept trigger
+        stays active as the safety net."""
+        from simulations.ros2.three_robot_t.swept_trigger import predicted_contacts
+        start=other.get('reserved',other['points'])[0]
+        pose=snapshot['robots'][other['robot']]['pose']
+        if math.dist(pose[:2],start[:2])<.10:return False
+        speed=float(mission.get('speed_mps',.10))
+        length=lambda r:sum(math.dist(a[:2],b[:2]) for a,b in zip(r,r[1:]))
+        # The leader stops at the end of its route: preview while it drives, and
+        # require the follower's whole route to keep clear of that final pose.
+        leader_time=length(route)/speed
+        if leader_time>9.:return False
+        from simulations.ros2.marco_geometry import routes_are_disjoint
+        if not routes_are_disjoint([route[-1][:2]],mine,margin):return False
+        horizon=min(10.,max(leader_time,length(mine)/speed)+1.)
+        a,b=action['robot'],other['robot']
+        own=snapshot['robots'][a]['pose']
+        radius=float(mission.get('coordination_radius',.235))+float(mission.get('follow_margin_m',.05))
+        hits=predicted_contacts({a:own,b:pose},{a:mine,b:route},[(a,b)],{a:speed,b:speed},
+                                horizon_s=horizon,step_s=.1,radius_m=radius)
+        if not hits:report.append({'event':'follow_release','robot':a,'leader':b})
+        return not hits
+    def gate(snapshot):
+        from simulations.ros2.marco_geometry import routes_are_disjoint
+        for action in list(pending):
+            mine=[p[:2] for p in action.get('reserved',action['points'])]
+            clear=True
+            for other in actions:
+                if other.get('stage') is None or other['stage']>=action['stage'] or id(other) in finished:continue
+                if other['robot']==action['robot']:clear=False;break
+                pose=snapshot['robots'][other['robot']]['pose']
+                route=([p[:2] for p in other.get('reserved',other['points'])] if any(o is other for o in pending)
+                       else remaining_of(other,pose))
+                if routes_are_disjoint(route,mine,margin):continue
+                if not any(o is other for o in pending) and follows_safely(action,other,route,mine,snapshot):continue
+                clear=False;break
+            if clear:
+                pending.remove(action);dispatch(action,'staged_release')
     try:
         for action in actions:
             if interrupted and interrupted():raise ReplanRequested('New RViz goal or coordinator shutdown')
-            response=request({'command':'path','robot':action['robot'],'points':action['points'],'owner':owner},port)
-            active[action['robot']]=action
-            report.append({'event':'dispatch','action':action,'response':response})
-        while active:
+            if action.get('stage') is None:dispatch(action)
+        if pending:gate(request({'command':'snapshot'},port))
+        while active or pending:
             if interrupted and interrupted():raise ReplanRequested('New RViz goal or coordinator shutdown')
             if time.monotonic()-started>timeout:raise TimeoutError('Execution deadline exceeded')
             snapshot=request({'command':'snapshot'},port)
@@ -187,17 +258,20 @@ def execute_batch(actions,mission,port,map_revision,report,interrupted=None,extr
             except LocalizationUnavailable as error:
                 # One Wi-Fi-delayed scan (stamp > 0.5 s old) must not abort a mission:
                 # only a stale state lasting over 1 s counts as lost localization.
-                if error.is_stale and time.monotonic()-(stale_since or time.monotonic())<1.:
+                if error.is_stale and time.monotonic()-(stale_since or time.monotonic())<float(mission.get('stale_tolerance_s',1.)):
                     stale_since=stale_since or time.monotonic();time.sleep(.2);continue
                 report.append({'event': 'localization_unavailable', 'robot': error.robot, 'state': error.state})
                 raise
+            if pending:gate(snapshot)
             status=request({'command':'status'},port)['robots']
             if extra:
                 # Concurrent execution: robots released while this batch runs are
                 # dispatched at once under the same lease owner.
-                for action in extra(dict(active),snapshot,status) or ():
-                    if action['robot'] in active:continue
-                    response=request({'command':'path','robot':action['robot'],'points':action['points'],'owner':owner},port)
+                # Staged robots that have not started yet still own their routes.
+                waiting={a['robot']:a for a in pending}
+                for action in extra({**waiting,**active},snapshot,status) or ():
+                    if action['robot'] in active or action['robot'] in waiting:continue
+                    response=request(path_request(action,owner),port)
                     active[action['robot']]=action;actions.append(action)
                     timeout+=float(action.get('duration') or 0.)+mission.get('action_timeout_s',180.)/2
                     report.append({'event':'release','action':action,'response':response})
@@ -219,6 +293,9 @@ def execute_batch(actions,mission,port,map_revision,report,interrupted=None,extr
                         state=request({'command':'status'},port)['robots'][robot]
                         if state['busy'] or state['last_result']!='succeeded':raise
                 if not state['busy']:
+                    if state['last_result'] in ('canceled','aborted'):
+                        report.append({'event':'path_interrupted','robot':robot,'result':state['last_result']})
+                        raise PathInterrupted(robot+' path '+str(state['last_result'])+' by gateway/Nav2')
                     if state['last_result']!='succeeded':raise RuntimeError(robot+' path result: '+str(state['last_result']))
                     if math.dist(position[:2],action['points'][-1][:2])>.10:raise RuntimeError(robot+' final position mismatch')
                     # MACRO task action (pick/place/toggle...): the robot holds its
@@ -230,11 +307,11 @@ def execute_batch(actions,mission,port,map_revision,report,interrupted=None,extr
                             report.append({'event':'acting','robot':robot,'task':action['task'],'duration_s':duration})
                         if time.monotonic()-action['acting_since']<duration:continue
                     if action['task'] is not None:completed.append(action['task'])
-                    report.append({'event':'completed','robot':robot,'task':action['task'],'pose':position})
+                    report.append({'event':'completed','robot':robot,'task':action['task'],'pose':position,'action_id':id(action)})
                     request({'command':'clear_preview','robot':robot},port)
-                    del active[robot]
+                    finished.add(id(action));del active[robot]
             time.sleep(.2)
-        time.sleep(.6)  # Let the permission/stamper/guard stop chain settle at the batch barrier.
+        time.sleep(.3)  # Let the permission/stamper/guard stop chain settle at the batch barrier.
         return completed
     finally:
         # Cancellation is supplemented by the gateway lease and command permission
@@ -258,6 +335,7 @@ def main():
     if args.command=='status':print(json.dumps(request({'command':'snapshot'},args.port),indent=2));return
     if args.command=='run' and not args.execute:parser.error('run requires --execute; plan never moves robots')
     if args.mission is None:parser.error('mission JSON is required')
+    sys.path.insert(0,str(args.root.resolve()/'src'))  # MACRO geometry for the pipelined staging gate
     args.out.parent.mkdir(parents=True,exist_ok=True)
     completed = []
     report={'result':'incomplete','events':[],'completed_tasks':completed,

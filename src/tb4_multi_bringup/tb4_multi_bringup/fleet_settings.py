@@ -80,7 +80,10 @@ def validate_discovery(value, count, selected=None, server_ids=None):
 
 
 
-PC_HUB_ID = 3
+# Must differ from every robot's discovery_server_id (robot1..robot4 use 0..3):
+# an equal id gives the hub the same GUID prefix as that Pi server, and the hub
+# then never links to it (robot4 data was invisible on the PC).
+PC_HUB_ID = 4
 PC_HUB_PORT = 11888
 
 
@@ -108,6 +111,8 @@ def discovery_hub_xml(value, port=PC_HUB_PORT):
             '          </RemoteServer>')
     if not remotes:
         raise ValueError('No robot discovery servers for the PC hub')
+    if len(value.split(';')) > PC_HUB_ID + 1 and value.split(';')[PC_HUB_ID]:
+        raise ValueError(f'Robot discovery server id {PC_HUB_ID} collides with the PC hub')
     return ('<?xml version="1.0" encoding="UTF-8"?>\n'
             '<dds><profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">\n'
             '  <participant profile_name="tb4_pc_discovery_hub" is_default_profile="true">\n'

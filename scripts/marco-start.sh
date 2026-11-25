@@ -12,7 +12,7 @@ source /opt/ros/humble/setup.bash
 source "$tb4_repo/install/setup.bash"
 source "$HOME/.config/turtlebot4/pc_env.sh"
 # The coordinator discovers through the PC-local hub started by scripts/pc.sh.
-ss -lun 2>/dev/null | grep -q ':11888 ' || { echo 'Chưa có phiên MARCO trên PC: chạy multi_robot.bash --marco trước.' >&2; exit 1; }
+grep -q ':11888 ' <<<"$(ss -lun 2>/dev/null)" || { echo 'Chưa có phiên MARCO trên PC: chạy multi_robot.bash --marco trước.' >&2; exit 1; }
 export ROS_DISCOVERY_SERVER="$(python3 -c 'from tb4_multi_bringup.fleet_settings import discovery_hub_client; print(discovery_hub_client())')"
 export ROS_SUPER_CLIENT=False
 unset FASTRTPS_DEFAULT_PROFILES_FILE

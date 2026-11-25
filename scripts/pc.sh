@@ -59,11 +59,11 @@ case "$tb4_mode" in
       # instead of leaving ghost publishers that block the one-writer guards.
       tb4_hub_port=11888
       for ((tb4_i=0; tb4_i<45; tb4_i++)); do
-        ss -lun 2>/dev/null | grep -q ":$tb4_hub_port " || break
+        grep -q ":$tb4_hub_port " <<<"$(ss -lun 2>/dev/null)" || break
         (( tb4_i == 0 )) && echo 'Đợi discovery hub của phiên trước kết thúc (tối đa 45 giây)...'
         sleep 1
       done
-      if ss -lun 2>/dev/null | grep -q ":$tb4_hub_port "; then
+      if grep -q ":$tb4_hub_port " <<<"$(ss -lun 2>/dev/null)"; then
         echo "Cổng $tb4_hub_port vẫn bận; dừng fast-discovery-server cũ trước." >&2; exit 1
       fi
       mkdir -p "$ROS_LOG_DIR"
@@ -76,7 +76,7 @@ open(sys.argv[1],"w").write(discovery_hub_xml(os.environ["ROS_DISCOVERY_SERVER"]
         sleep 30; kill "$hub" 2>/dev/null; wait "$hub" 2>/dev/null' \
         _ "$tb4_hub_xml" "$ROS_LOG_DIR/discovery_hub.log" "$$" </dev/null >/dev/null 2>&1 9>&- &
       for ((tb4_i=0; tb4_i<20; tb4_i++)); do
-        ss -lun 2>/dev/null | grep -q ":$tb4_hub_port " && break; sleep .25
+        grep -q ":$tb4_hub_port " <<<"$(ss -lun 2>/dev/null)" && break; sleep .25
       done
       export TB4_ROBOT_DISCOVERY_SERVER="$ROS_DISCOVERY_SERVER"
       ROS_DISCOVERY_SERVER="$(python3 -c 'from tb4_multi_bringup.fleet_settings import discovery_hub_client; print(discovery_hub_client())')"

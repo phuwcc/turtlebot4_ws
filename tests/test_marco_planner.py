@@ -59,7 +59,10 @@ class MarcoPlanningTest(unittest.TestCase):
         m={'tasks':[{'id':1,'goal':[1,0],'candidates':['robot1']},
                     {'id':2,'goal':[-1,0],'candidates':['robot2']}]}
         a=self.planner.assign(s,m);batch=self.planner.next_batch(s,m,a,[])
-        self.assertEqual(len(batch['actions']),1)
+        # Pipelined MARCO staging: holding action(s) then the priority resume, gated by 'stage'.
+        self.assertIsNone(batch['actions'][0]['task'])
+        self.assertEqual([x['stage'] for x in batch['actions']],list(range(len(batch['actions']))))
+        self.assertIsNotNone(batch['actions'][-1]['task'])
         self.assertIn(batch['audit']['strategy'],('relocate','short_replan'))
         self.assertGreaterEqual(len(batch['actions'][0]['points']),2)
         completed=[];intent=None
@@ -148,7 +151,9 @@ class MarcoPlanningTest(unittest.TestCase):
         batch = self.planner.next_batch(state, mission, assignment, [], stale_intent)
 
         self.assertTrue(batch['audit']['replanned_committed_path'])
-        self.assertEqual(batch['intent']['priority'], 'R1')
+        self.assertTrue(batch['audit']['pipelined'])
+        self.assertEqual(batch['actions'][-1]['robot'], 'robot1')
+        self.assertEqual(batch['actions'][-1]['task'], 1)
         self.assertEqual(batch['actions'][0]['robot'], 'robot2')
         self.assertIsNone(batch['actions'][0]['task'])
 

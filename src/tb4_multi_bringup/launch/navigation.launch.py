@@ -30,7 +30,7 @@ def setup(context):
             raise ValueError('AMCL initial pose must be finite')
     localization_only = LaunchConfiguration('localization_only').perform(context) == 'true'
     path_only = LaunchConfiguration('path_only').perform(context) == 'true'
-    interactive = LaunchConfiguration('localization_profile').perform(context) == 'navigation'
+    interactive = LaunchConfiguration('localization_profile').perform(context) in ('navigation', 'demo')
     # With peer footprints the local costmap static layer reads the shared map plus
     # the other robots' bodies (fleet_footprints); the global costmap keeps the clean map.
     costmap_map = '/' + ns + '/fleet_map' if LaunchConfiguration('peer_footprints').perform(context) == 'true' else 'map'
@@ -135,7 +135,7 @@ def setup(context):
 def generate_launch_description():
     return LaunchDescription(robot_arguments() + [
         DeclareLaunchArgument('map', description='Absolute path to the shared saved map YAML'),
-        DeclareLaunchArgument('localization_profile', default_value='strict', choices=['strict','navigation']),
+        DeclareLaunchArgument('localization_profile', default_value='strict', choices=['strict','navigation','demo']),
         DeclareLaunchArgument('peer_ids', default_value='',
                               description='Comma list of other robots whose bodies are excluded from scan-match scoring'),
         DeclareLaunchArgument('peer_footprints', default_value='false', choices=['true', 'false'],
